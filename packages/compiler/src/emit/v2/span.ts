@@ -1265,7 +1265,9 @@ function emitUntilSpan(
   if (useTrim) lines.push(`  let __lastNonWs = off;`);
   if (balanced && !useAc) lines.push(`  let __depth = 0;`);
   if (stopNeedsC2 && !useAc) lines.push(`  let __c2 = -1;`);
-  if (hasComments) lines.push(`  const __comments: [number, number][] = [];`);
+  // Lazy: most scans see no interior comment — allocate the list only when
+  // the first one shows up (the consumer branches on null instead of length).
+  if (hasComments) lines.push(`  let __comments: [number, number][] | null = null;`);
 
   // --- main loop ------------------------------------------------------------
   if (useAc) {
@@ -1377,7 +1379,7 @@ function emitUntilSpan(
     lines.push(`      let __ce = off + 2;`);
     lines.push(`      while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;`);
     lines.push(`      if (__ce < len) {`);
-    lines.push(`        __comments.push([off, __ce + 2]);`);
+    lines.push(`        (__comments ??= []).push([off, __ce + 2]);`);
     lines.push(`        off = __ce + 2;`);
     lines.push(`        continue;`);
     lines.push(`      }`);
@@ -1457,7 +1459,7 @@ function emitUntilSpan(
     lines.push(`    ${v} = '';`);
     lines.push(`  } else {`);
     lines.push(`    off = ${trimEnd};`);
-    lines.push(`    if (__comments.length === 0) {`);
+    lines.push(`    if (__comments === null) {`);
     lines.push(`      ${v} = input.slice(${startVar}, ${trimEnd});`);
     lines.push(`    } else {`);
     lines.push(`      let __buf = '';`);

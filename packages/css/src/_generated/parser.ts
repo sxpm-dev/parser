@@ -1712,7 +1712,7 @@ function parseDeclaration__alt0(state: State): unknown {
     __prop_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -1772,7 +1772,7 @@ function parseDeclaration__alt0(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -1797,7 +1797,7 @@ function parseDeclaration__alt0(state: State): unknown {
       prop = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         prop = input.slice(__prop_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -1870,7 +1870,7 @@ function parseDeclaration__alt0(state: State): unknown {
     __value_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -1930,7 +1930,7 @@ function parseDeclaration__alt0(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -1955,7 +1955,7 @@ function parseDeclaration__alt0(state: State): unknown {
       value = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         value = input.slice(__value_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -2058,7 +2058,7 @@ function parseDeclaration__alt1(state: State): unknown {
     __prop_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -2118,7 +2118,7 @@ function parseDeclaration__alt1(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -2143,7 +2143,7 @@ function parseDeclaration__alt1(state: State): unknown {
       prop = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         prop = input.slice(__prop_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -2216,7 +2216,7 @@ function parseDeclaration__alt1(state: State): unknown {
     __value_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -2276,7 +2276,7 @@ function parseDeclaration__alt1(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -2301,7 +2301,7 @@ function parseDeclaration__alt1(state: State): unknown {
       value = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         value = input.slice(__value_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -2373,7 +2373,7 @@ function parseRule(state: State): unknown {
     __selector_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -2433,7 +2433,7 @@ function parseRule(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -2458,7 +2458,7 @@ function parseRule(state: State): unknown {
       selector = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         selector = input.slice(__selector_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -2638,7 +2638,7 @@ function parseAtRule__alt0(state: State): unknown {
     __params_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -2698,7 +2698,7 @@ function parseAtRule__alt0(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -2723,7 +2723,7 @@ function parseAtRule__alt0(state: State): unknown {
       params = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         params = input.slice(__params_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -2901,7 +2901,7 @@ function parseAtRule__alt1(state: State): unknown {
     __params_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -2961,7 +2961,7 @@ function parseAtRule__alt1(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -2986,7 +2986,7 @@ function parseAtRule__alt1(state: State): unknown {
       params = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         params = input.slice(__params_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -4903,7 +4903,7 @@ function __fusedRender_Declaration_0_source(state: State, out: string[]): boolea
       __prop_start = off;
       let __lastNonWs = off;
       let __depth = 0;
-      const __comments: [number, number][] = [];
+      let __comments: [number, number][] | null = null;
       const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
       while (off < len) {
         const __c = input.charCodeAt(off);
@@ -4963,7 +4963,7 @@ function __fusedRender_Declaration_0_source(state: State, out: string[]): boolea
           let __ce = off + 2;
           while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
           if (__ce < len) {
-            __comments.push([off, __ce + 2]);
+            (__comments ??= []).push([off, __ce + 2]);
             off = __ce + 2;
             continue;
           }
@@ -4988,7 +4988,7 @@ function __fusedRender_Declaration_0_source(state: State, out: string[]): boolea
         prop = '';
       } else {
         off = __lastNonWs;
-        if (__comments.length === 0) {
+        if (__comments === null) {
           prop = input.slice(__prop_start, __lastNonWs);
         } else {
           let __buf = '';
@@ -5055,7 +5055,7 @@ function __fusedRender_Declaration_0_source(state: State, out: string[]): boolea
       __value_start = off;
       let __lastNonWs = off;
       let __depth = 0;
-      const __comments: [number, number][] = [];
+      let __comments: [number, number][] | null = null;
       const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
       while (off < len) {
         const __c = input.charCodeAt(off);
@@ -5115,7 +5115,7 @@ function __fusedRender_Declaration_0_source(state: State, out: string[]): boolea
           let __ce = off + 2;
           while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
           if (__ce < len) {
-            __comments.push([off, __ce + 2]);
+            (__comments ??= []).push([off, __ce + 2]);
             off = __ce + 2;
             continue;
           }
@@ -5140,7 +5140,7 @@ function __fusedRender_Declaration_0_source(state: State, out: string[]): boolea
         value = '';
       } else {
         off = __lastNonWs;
-        if (__comments.length === 0) {
+        if (__comments === null) {
           value = input.slice(__value_start, __lastNonWs);
         } else {
           let __buf = '';
@@ -5235,7 +5235,7 @@ function __fusedRender_Declaration_1_source(state: State, out: string[]): boolea
       __prop_start = off;
       let __lastNonWs = off;
       let __depth = 0;
-      const __comments: [number, number][] = [];
+      let __comments: [number, number][] | null = null;
       const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
       while (off < len) {
         const __c = input.charCodeAt(off);
@@ -5295,7 +5295,7 @@ function __fusedRender_Declaration_1_source(state: State, out: string[]): boolea
           let __ce = off + 2;
           while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
           if (__ce < len) {
-            __comments.push([off, __ce + 2]);
+            (__comments ??= []).push([off, __ce + 2]);
             off = __ce + 2;
             continue;
           }
@@ -5320,7 +5320,7 @@ function __fusedRender_Declaration_1_source(state: State, out: string[]): boolea
         prop = '';
       } else {
         off = __lastNonWs;
-        if (__comments.length === 0) {
+        if (__comments === null) {
           prop = input.slice(__prop_start, __lastNonWs);
         } else {
           let __buf = '';
@@ -5387,7 +5387,7 @@ function __fusedRender_Declaration_1_source(state: State, out: string[]): boolea
       __value_start = off;
       let __lastNonWs = off;
       let __depth = 0;
-      const __comments: [number, number][] = [];
+      let __comments: [number, number][] | null = null;
       const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
       while (off < len) {
         const __c = input.charCodeAt(off);
@@ -5447,7 +5447,7 @@ function __fusedRender_Declaration_1_source(state: State, out: string[]): boolea
           let __ce = off + 2;
           while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
           if (__ce < len) {
-            __comments.push([off, __ce + 2]);
+            (__comments ??= []).push([off, __ce + 2]);
             off = __ce + 2;
             continue;
           }
@@ -5472,7 +5472,7 @@ function __fusedRender_Declaration_1_source(state: State, out: string[]): boolea
         value = '';
       } else {
         off = __lastNonWs;
-        if (__comments.length === 0) {
+        if (__comments === null) {
           value = input.slice(__value_start, __lastNonWs);
         } else {
           let __buf = '';
@@ -5535,7 +5535,7 @@ function __fusedRender_Rule_0_source(state: State, out: string[]): boolean {
       __selector_start = off;
       let __lastNonWs = off;
       let __depth = 0;
-      const __comments: [number, number][] = [];
+      let __comments: [number, number][] | null = null;
       const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
       while (off < len) {
         const __c = input.charCodeAt(off);
@@ -5595,7 +5595,7 @@ function __fusedRender_Rule_0_source(state: State, out: string[]): boolean {
           let __ce = off + 2;
           while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
           if (__ce < len) {
-            __comments.push([off, __ce + 2]);
+            (__comments ??= []).push([off, __ce + 2]);
             off = __ce + 2;
             continue;
           }
@@ -5620,7 +5620,7 @@ function __fusedRender_Rule_0_source(state: State, out: string[]): boolean {
         selector = '';
       } else {
         off = __lastNonWs;
-        if (__comments.length === 0) {
+        if (__comments === null) {
           selector = input.slice(__selector_start, __lastNonWs);
         } else {
           let __buf = '';
@@ -5807,7 +5807,7 @@ function __fusedRender_AtRule_0_source(state: State, out: string[]): boolean {
       __params_start = off;
       let __lastNonWs = off;
       let __depth = 0;
-      const __comments: [number, number][] = [];
+      let __comments: [number, number][] | null = null;
       const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
       while (off < len) {
         const __c = input.charCodeAt(off);
@@ -5867,7 +5867,7 @@ function __fusedRender_AtRule_0_source(state: State, out: string[]): boolean {
           let __ce = off + 2;
           while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
           if (__ce < len) {
-            __comments.push([off, __ce + 2]);
+            (__comments ??= []).push([off, __ce + 2]);
             off = __ce + 2;
             continue;
           }
@@ -5892,7 +5892,7 @@ function __fusedRender_AtRule_0_source(state: State, out: string[]): boolean {
         params = '';
       } else {
         off = __lastNonWs;
-        if (__comments.length === 0) {
+        if (__comments === null) {
           params = input.slice(__params_start, __lastNonWs);
         } else {
           let __buf = '';
@@ -6080,7 +6080,7 @@ function __fusedRender_AtRule_1_source(state: State, out: string[]): boolean {
       __params_start = off;
       let __lastNonWs = off;
       let __depth = 0;
-      const __comments: [number, number][] = [];
+      let __comments: [number, number][] | null = null;
       const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
       while (off < len) {
         const __c = input.charCodeAt(off);
@@ -6140,7 +6140,7 @@ function __fusedRender_AtRule_1_source(state: State, out: string[]): boolean {
           let __ce = off + 2;
           while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
           if (__ce < len) {
-            __comments.push([off, __ce + 2]);
+            (__comments ??= []).push([off, __ce + 2]);
             off = __ce + 2;
             continue;
           }
@@ -6165,7 +6165,7 @@ function __fusedRender_AtRule_1_source(state: State, out: string[]): boolean {
         params = '';
       } else {
         off = __lastNonWs;
-        if (__comments.length === 0) {
+        if (__comments === null) {
           params = input.slice(__params_start, __lastNonWs);
         } else {
           let __buf = '';
@@ -6350,7 +6350,7 @@ function __fusedRenderStructured_Declaration_0_ast(state: State): unknown {
     __prop_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -6410,7 +6410,7 @@ function __fusedRenderStructured_Declaration_0_ast(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -6435,7 +6435,7 @@ function __fusedRenderStructured_Declaration_0_ast(state: State): unknown {
       prop = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         prop = input.slice(__prop_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -6482,7 +6482,7 @@ function __fusedRenderStructured_Declaration_0_ast(state: State): unknown {
     __value_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -6542,7 +6542,7 @@ function __fusedRenderStructured_Declaration_0_ast(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -6567,7 +6567,7 @@ function __fusedRenderStructured_Declaration_0_ast(state: State): unknown {
       value = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         value = input.slice(__value_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -6633,7 +6633,7 @@ function __fusedRenderStructured_Declaration_1_ast(state: State): unknown {
     __prop_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -6693,7 +6693,7 @@ function __fusedRenderStructured_Declaration_1_ast(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -6718,7 +6718,7 @@ function __fusedRenderStructured_Declaration_1_ast(state: State): unknown {
       prop = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         prop = input.slice(__prop_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -6765,7 +6765,7 @@ function __fusedRenderStructured_Declaration_1_ast(state: State): unknown {
     __value_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -6825,7 +6825,7 @@ function __fusedRenderStructured_Declaration_1_ast(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -6850,7 +6850,7 @@ function __fusedRenderStructured_Declaration_1_ast(state: State): unknown {
       value = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         value = input.slice(__value_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -6906,7 +6906,7 @@ function __fusedRenderStructured_Rule_0_ast(state: State): unknown {
     __selector_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -6966,7 +6966,7 @@ function __fusedRenderStructured_Rule_0_ast(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -6991,7 +6991,7 @@ function __fusedRenderStructured_Rule_0_ast(state: State): unknown {
       selector = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         selector = input.slice(__selector_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -7095,7 +7095,7 @@ function __fusedRenderStructured_AtRule_0_ast(state: State): unknown {
     __params_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -7155,7 +7155,7 @@ function __fusedRenderStructured_AtRule_0_ast(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -7180,7 +7180,7 @@ function __fusedRenderStructured_AtRule_0_ast(state: State): unknown {
       params = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         params = input.slice(__params_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -7282,7 +7282,7 @@ function __fusedRenderStructured_AtRule_1_ast(state: State): unknown {
     __params_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -7342,7 +7342,7 @@ function __fusedRenderStructured_AtRule_1_ast(state: State): unknown {
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -7367,7 +7367,7 @@ function __fusedRenderStructured_AtRule_1_ast(state: State): unknown {
       params = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         params = input.slice(__params_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -7497,7 +7497,7 @@ function __fusedUntilDivShort_Declaration_ast(state: State, prop: string): unkno
     __value_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -7557,7 +7557,7 @@ function __fusedUntilDivShort_Declaration_ast(state: State, prop: string): unkno
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -7582,7 +7582,7 @@ function __fusedUntilDivShort_Declaration_ast(state: State, prop: string): unkno
       value = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         value = input.slice(__value_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -7638,7 +7638,7 @@ function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown 
     __prop_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -7698,7 +7698,7 @@ function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown 
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -7723,7 +7723,7 @@ function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown 
       prop = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         prop = input.slice(__prop_start, __lastNonWs);
       } else {
         let __buf = '';
@@ -7771,7 +7771,7 @@ function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown 
     __value_start = off;
     let __lastNonWs = off;
     let __depth = 0;
-    const __comments: [number, number][] = [];
+    let __comments: [number, number][] | null = null;
     const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
@@ -7831,7 +7831,7 @@ function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown 
         let __ce = off + 2;
         while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
         if (__ce < len) {
-          __comments.push([off, __ce + 2]);
+          (__comments ??= []).push([off, __ce + 2]);
           off = __ce + 2;
           continue;
         }
@@ -7856,7 +7856,7 @@ function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown 
       value = '';
     } else {
       off = __lastNonWs;
-      if (__comments.length === 0) {
+      if (__comments === null) {
         value = input.slice(__value_start, __lastNonWs);
       } else {
         let __buf = '';

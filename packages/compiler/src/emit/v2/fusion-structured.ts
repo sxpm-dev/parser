@@ -20,9 +20,10 @@
 
 import { isDynKey, isMerge, isStructureRef, isTemplate } from '@parser2/parser';
 import type { RenderBody } from '@parser2/parser';
-import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
+import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../../model.ts';
 import { computeReferencedSpanPresence, computeReferencedSpanValues } from '../captures.ts';
 import { detectSharedDispatch } from './shared-dispatch.ts';
+import { detectUntilDivergence, type UntilDivergence } from './detect-until-divergence.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { computeRoleFirstBytes } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, type SpanBindings, type SpanContext } from './span.ts';
@@ -167,6 +168,188 @@ export function structuredFnName(nodeName: string, prodIdx: number, target: stri
 
 export function structuredRoleDispatcherName(role: string, target: string): string {
   return `__fusedRenderStructuredDispatch_${jsIdent(role)}_${jsIdent(target)}`;
+}
+
+/**
+ * Merged dispatcher for an until-divergent production pair (see
+ * detect-until-divergence.ts). Replaces the two-probe speculation chain with
+ * ONE scan of the diverging until span using the long alt's stop set:
+ *
+ *   - stop char == extraStop x  → try the long tail (separate helper fn so
+ *     its span failures return null instead of aborting the dispatcher);
+ *     on long-tail failure, RESUME as the short alt by re-scanning the
+ *     diverging span from its start with the short stop set (rare path —
+ *     a depth-0 x existed but the tail didn't match).
+ *   - stop char ∈ short stops → the capture is byte-identical to what the
+ *     short alt's own scan would have produced (no depth-0 x preceded it),
+ *     so the short tail continues inline with ZERO rescanning.
+ *
+ * Returns null (caller falls back to the probe chain) when either alt is
+ * ineligible for structured fusion or the pair's shape exceeds what the
+ * merged emit models (recursive spans, optional/repeats prefix spans,
+ * short-before-long declaration order).
+ */
+export function emitFusedUntilDivergencePair(
+  info: NodeTypeInfo,
+  d: UntilDivergence,
+  schema: InferredSchema,
+  target: string,
+): string | null {
+  // Dispatch order today is declaration order for until-led alts (litLen 0
+  // tie-break). Merged emission tries the long tail exactly when the scan
+  // stops at x — semantically "long first". If the SHORT alt is declared
+  // first it would win on inputs both alts match, so merging would change
+  // behavior. Bail.
+  if (d.longAltIdx > d.shortAltIdx) return null;
+  const long = info.productions[d.longAltIdx]!;
+  const short = info.productions[d.shortAltIdx]!;
+  if (!canFuseStructured(long, schema, target)) return null;
+  if (!canFuseStructured(short, schema, target)) return null;
+  // Recursive spans route through emitStructuredRecursiveSpan in the normal
+  // fused emit; the merged emit only uses emitSpan. Keep it simple: bail.
+  for (const span of [...long.spans, ...short.spans]) {
+    if (span.recursiveRoles.length > 0) return null;
+  }
+  // Prefix spans must be plain (no optional/repeats): helpers receive
+  // prefix captures as plain string params, with no presence/iws channel.
+  for (let i = 0; i < d.scanIdx; i++) {
+    for (const m of long.spans[i]!.modifiers) {
+      if (m.kind === 'optional' || m.kind === 'repeats') return null;
+    }
+  }
+
+  const longEntry = long.renders.get(target)!;
+  const shortEntry = short.renders.get(target)!;
+  const scanSpan = long.spans[d.scanIdx]!;
+  const scanName = scanSpan.name!;
+  const xCode = d.extraStop.charCodeAt(0);
+
+  // Merged scan context: the prefix + diverging span serve BOTH alt bodies,
+  // so a span referenced by either body must be materialized.
+  const mergedCtx: SpanContext = {
+    ...buildSpanContextBase(schema),
+    referencedValueSpans: unionSets(computeReferencedSpanValues(long), computeReferencedSpanValues(short)),
+    referencedPresenceSpans: unionSets(computeReferencedSpanPresence(long), computeReferencedSpanPresence(short)),
+  };
+  const longCtx: SpanContext = buildSpanContext(schema, long);
+  const shortCtx: SpanContext = buildSpanContext(schema, short);
+
+  const newBindings = (): SpanBindings => ({
+    valueExpr: new Map(),
+    presenceExpr: new Map(),
+    startOffExpr: new Map(),
+    endOffExpr: new Map(),
+    iwsExpr: new Map(),
+  });
+
+  // --- dispatcher: prefix + diverging scan (long stops) --------------------
+  const dispBindings = newBindings();
+  const dispLines: string[] = [];
+  dispLines.push(`const input = state.input;`);
+  dispLines.push(`const len = state.len;`);
+  dispLines.push(`let off = state.pos;`);
+  dispLines.push(`const entryOff = off;`);
+  dispLines.push(skipWsBlock());
+  for (let i = 0; i < d.scanIdx; i++) {
+    if (i > 0) dispLines.push(skipWsBlock());
+    dispLines.push(emitSpan(long.spans[i]!, mergedCtx, dispBindings));
+  }
+  if (d.scanIdx > 0) dispLines.push(skipWsBlock());
+  dispLines.push(`const __scanStart = off;`);
+  dispLines.push(emitSpan(scanSpan, mergedCtx, dispBindings));
+  dispLines.push(skipWsBlock());
+
+  // Prefix captures that materialized as locals (named spans the bodies
+  // reference). These become helper params, in stable span order.
+  const prefixParams: string[] = [];
+  for (let i = 0; i < d.scanIdx; i++) {
+    const n = long.spans[i]!.name;
+    if (n && dispBindings.valueExpr.get(n) === n) prefixParams.push(n);
+  }
+  const scanCaptured = dispBindings.valueExpr.get(scanName) === scanName;
+  const longParams = scanCaptured ? [...prefixParams, scanName] : prefixParams;
+
+  const longHelper = `__fusedUntilDivLong_${jsIdent(info.name)}_${jsIdent(target)}`;
+  const shortHelper = `__fusedUntilDivShort_${jsIdent(info.name)}_${jsIdent(target)}`;
+
+  dispLines.push(`if (input.charCodeAt(off) === ${xCode}) {`);
+  dispLines.push(`  state.pos = off;`);
+  dispLines.push(`  const __long = ${longHelper}(state${longParams.map((p) => `, ${p}`).join('')});`);
+  dispLines.push(`  if (__long !== null) return __long;`);
+  dispLines.push(`  state.pos = __scanStart;`);
+  dispLines.push(`  const __resume = ${shortHelper}(state${prefixParams.map((p) => `, ${p}`).join('')});`);
+  dispLines.push(`  if (__resume === null) { state.pos = entryOff; }`);
+  dispLines.push(`  return __resume;`);
+  dispLines.push(`}`);
+
+  // Stop char ∈ short stops — continue as the short alt inline. The capture
+  // and offsets are exactly what the short alt's own scan would produce.
+  for (let i = d.scanIdx + 1; i < short.spans.length; i++) {
+    dispLines.push(skipWsBlock());
+    dispLines.push(emitSpan(short.spans[i]!, mergedCtx, dispBindings));
+  }
+  dispLines.push(`state.pos = off;`);
+  dispLines.push(`if (off > state.maxOff) state.maxOff = off;`);
+  dispLines.push(`return ${emitStructuredBody(shortEntry.body, dispBindings)};`);
+
+  const dispatcherName = structuredRoleDispatcherName(info.name, target);
+  const dispatcher = `function ${dispatcherName}(state: State): unknown {
+${indent(dispLines.filter((l) => l !== '').join('\n'), 1)}
+}`;
+
+  // --- long-tail helper -----------------------------------------------------
+  // Starts at the extra-stop char. Span failures inside use emitSpan's
+  // normal `state.pos = entryOff; return null` — entryOff here is the stop
+  // position, and the dispatcher re-anchors state.pos before resuming.
+  const longBindings = newBindings();
+  for (const p of longParams) longBindings.valueExpr.set(p, p);
+  const longLines: string[] = [];
+  longLines.push(`const input = state.input;`);
+  longLines.push(`const len = state.len;`);
+  longLines.push(`let off = state.pos;`);
+  longLines.push(`const entryOff = off;`);
+  for (let i = d.scanIdx + 1; i < long.spans.length; i++) {
+    longLines.push(skipWsBlock());
+    longLines.push(emitSpan(long.spans[i]!, longCtx, longBindings));
+  }
+  longLines.push(`state.pos = off;`);
+  longLines.push(`if (off > state.maxOff) state.maxOff = off;`);
+  longLines.push(`return ${emitStructuredBody(longEntry.body, longBindings)};`);
+  const longFn = `function ${longHelper}(state: State${longParams.map((p) => `, ${p}: string`).join('')}): unknown {
+${indent(longLines.filter((l) => l !== '').join('\n'), 1)}
+}`;
+
+  // --- short-resume helper ----------------------------------------------------
+  // Rare path: re-scans the diverging span from its start with the SHORT
+  // stop set (the depth-0 x belongs inside the capture), then the short tail.
+  const shortBindings = newBindings();
+  for (const p of prefixParams) shortBindings.valueExpr.set(p, p);
+  const shortLines: string[] = [];
+  shortLines.push(`const input = state.input;`);
+  shortLines.push(`const len = state.len;`);
+  shortLines.push(`let off = state.pos;`);
+  shortLines.push(`const entryOff = off;`);
+  shortLines.push(emitSpan(short.spans[d.scanIdx]!, shortCtx, shortBindings));
+  for (let i = d.scanIdx + 1; i < short.spans.length; i++) {
+    shortLines.push(skipWsBlock());
+    shortLines.push(emitSpan(short.spans[i]!, shortCtx, shortBindings));
+  }
+  shortLines.push(`state.pos = off;`);
+  shortLines.push(`if (off > state.maxOff) state.maxOff = off;`);
+  shortLines.push(`return ${emitStructuredBody(shortEntry.body, shortBindings)};`);
+  const shortFn = `function ${shortHelper}(state: State${prefixParams.map((p) => `, ${p}: string`).join('')}): unknown {
+${indent(shortLines.filter((l) => l !== '').join('\n'), 1)}
+}`;
+
+  return [longFn, shortFn, dispatcher].join('\n\n');
+}
+
+export { detectUntilDivergence } from './detect-until-divergence.ts';
+
+function unionSets(a: ReadonlySet<string>, b: ReadonlySet<string>): Set<string> {
+  const out = new Set(a);
+  for (const x of b) out.add(x);
+  return out;
 }
 
 /**
@@ -429,6 +612,18 @@ function literalMatchExpr(text: string, offVar: string): string {
 // --- internal helpers ------------------------------------------------------
 
 function buildSpanContext(schema: InferredSchema, production: Production): SpanContext {
+  return {
+    ...buildSpanContextBase(schema),
+    // Phase 5a — lazy capture also applies on the structured-fused fast
+    // path. The body walker in `emitStructuredBody` consults
+    // bindings.valueExpr directly; spans not referenced by the body have
+    // their value slice + captures field elided.
+    referencedValueSpans: computeReferencedSpanValues(production),
+    referencedPresenceSpans: computeReferencedSpanPresence(production),
+  };
+}
+
+function buildSpanContextBase(schema: InferredSchema): Omit<SpanContext, 'referencedValueSpans' | 'referencedPresenceSpans'> {
   const tokenClasses = new Set<string>();
   let cssIdent = false;
   for (const usage of schema.classes) {
@@ -467,12 +662,6 @@ function buildSpanContext(schema: InferredSchema, production: Production): SpanC
     // schemas stay 'none' here.
     wsCaptureMode: schema.whitespace === 'preserve' ? 'always' : 'none',
     lineCommentMarkers,
-    // Phase 5a — lazy capture also applies on the structured-fused fast
-    // path. The body walker in `emitStructuredBody` consults
-    // bindings.valueExpr directly; spans not referenced by the body have
-    // their value slice + captures field elided.
-    referencedValueSpans: computeReferencedSpanValues(production),
-    referencedPresenceSpans: computeReferencedSpanPresence(production),
   };
 }
 

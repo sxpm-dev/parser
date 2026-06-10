@@ -21,7 +21,9 @@ import { detectSharedDispatch } from './shared-dispatch.ts';
 import { buildPrefixShareOption, detectPrefixShare } from './prefix-share-dispatch.ts';
 import {
   canFuseStructured,
+  detectUntilDivergence,
   emitFusedRenderStructured,
+  emitFusedUntilDivergencePair,
   isRoleStructurallyFusable,
   structuredFnName,
   structuredRoleDispatcherName,
@@ -239,6 +241,18 @@ function emitStructuredFusion(schema: InferredSchema): { source: string; targets
   for (const [target, roles] of roleDispatchersByTarget) {
     for (const role of [...roles].sort()) {
       const info = schema.nodeTypes.get(role)!;
+      // Until-divergence pair: ONE scan serves both alts (the probe chain
+      // would parse the shared prefix + diverging capture twice for every
+      // input that matches the short alt). Falls through to the normal
+      // probe chain when the merged emit declines (returns null).
+      const div = detectUntilDivergence(info);
+      if (div !== null) {
+        const merged = emitFusedUntilDivergencePair(info, div, schema, target);
+        if (merged !== null) {
+          fns.push(merged);
+          continue;
+        }
+      }
       const fusableIdxs: number[] = [];
       for (let i = 0; i < info.productions.length; i++) {
         if (canFuseStructured(info.productions[i]!, schema, target)) fusableIdxs.push(i);

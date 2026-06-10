@@ -7450,10 +7450,450 @@ function __fusedRenderStructuredDispatch_Comment_ast(state: State): unknown {
   return null;
 }
 
+function __fusedUntilDivLong_Declaration_ast(state: State, prop: string, value: string): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __important_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __important_end = off;
+  const important = input.slice(__important_start, __important_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.charCodeAt(off) === 59) { off += 1; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "decl", prop: prop, value: value, important: true, _important: important };
+}
+
+function __fusedUntilDivShort_Declaration_ast(state: State, prop: string): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
+  {
+    let __lastLeadingCommentEnd = -1;
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      if (__c0 === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        off += 2;
+        while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+        if (off < len) off += 2;
+        __lastLeadingCommentEnd = off;
+        continue;
+      }
+      break;
+    }
+    __value_start = off;
+    let __lastNonWs = off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__depth === 0 && (__c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        off++;
+        while (off < len) {
+          const __sc = input.charCodeAt(off);
+          if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__sc === __q) { off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          off++;
+        }
+        __lastNonWs = off;
+        continue;
+      }
+      if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+        && off + 3 < len
+        && (input.charCodeAt(off + 1) | 32) === 0x72
+        && (input.charCodeAt(off + 2) | 32) === 0x6c
+        && input.charCodeAt(off + 3) === 0x28) {
+        off += 4;
+        while (off < len) {
+          const __uc = input.charCodeAt(off);
+          if (__uc === 0x29) { off++; break; }
+          if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            off++;
+            while (off < len) {
+              const __usc = input.charCodeAt(off);
+              if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+              if (__usc === __uq) { off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              off++;
+            }
+            continue;
+          }
+          off++;
+        }
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        let __ce = off + 2;
+        while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < len) {
+          __comments.push([off, __ce + 2]);
+          off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      if (__depth === 0 && __KB[__c] === 0) {
+        // unknown char (depth 0, no stop, no opener) — fail production
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
+      off++;
+    }
+    const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __value_start;
+    if (__lastNonWs === __value_start) {
+      off = __emptyAnchor;
+      value = '';
+    } else {
+      off = __lastNonWs;
+      if (__comments.length === 0) {
+        value = input.slice(__value_start, __lastNonWs);
+      } else {
+        let __buf = '';
+        let __cursor = __value_start;
+        for (let __i = 0; __i < __comments.length; __i++) {
+          const __cs = __comments[__i][0];
+          const __ce = __comments[__i][1];
+          if (__ce > __lastNonWs) break;
+          const __before = __cs > 0 ? input.charCodeAt(__cs - 1) : -1;
+          const __after = __ce < len ? input.charCodeAt(__ce) : -1;
+          const __isWsBefore = __before === 0x20 || __before === 0x09 || __before === 0x0a || __before === 0x0d;
+          const __isWsAfter = __after === 0x20 || __after === 0x09 || __after === 0x0a || __after === 0x0d;
+          if (!(__isWsBefore || __isWsAfter)) continue;
+          __buf += input.slice(__cursor, __cs);
+          __cursor = __ce;
+        }
+        __buf += input.slice(__cursor, __lastNonWs);
+        value = __buf;
+      }
+    }
+    __value_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.charCodeAt(off) === 59) { off += 1; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "decl", prop: prop, value: value };
+}
+
 function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown {
-  const r0 = __fusedRenderStructured_Declaration_0_ast(state); if (r0 !== null) return r0;
-  const r1 = __fusedRenderStructured_Declaration_1_ast(state); if (r1 !== null) return r1;
-  return null;
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let prop: string = '';
+  let __prop_start = off;
+  let __prop_end = off;
+  {
+    let __lastLeadingCommentEnd = -1;
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      if (__c0 === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        off += 2;
+        while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+        if (off < len) off += 2;
+        __lastLeadingCommentEnd = off;
+        continue;
+      }
+      break;
+    }
+    __prop_start = off;
+    let __lastNonWs = off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        off++;
+        while (off < len) {
+          const __sc = input.charCodeAt(off);
+          if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__sc === __q) { off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          off++;
+        }
+        __lastNonWs = off;
+        continue;
+      }
+      if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+        && off + 3 < len
+        && (input.charCodeAt(off + 1) | 32) === 0x72
+        && (input.charCodeAt(off + 2) | 32) === 0x6c
+        && input.charCodeAt(off + 3) === 0x28) {
+        off += 4;
+        while (off < len) {
+          const __uc = input.charCodeAt(off);
+          if (__uc === 0x29) { off++; break; }
+          if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            off++;
+            while (off < len) {
+              const __usc = input.charCodeAt(off);
+              if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+              if (__usc === __uq) { off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              off++;
+            }
+            continue;
+          }
+          off++;
+        }
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        let __ce = off + 2;
+        while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < len) {
+          __comments.push([off, __ce + 2]);
+          off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      if (__depth === 0 && __KB[__c] === 0) {
+        // unknown char (depth 0, no stop, no opener) — fail production
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
+      off++;
+    }
+    const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __prop_start;
+    if (__lastNonWs === __prop_start) {
+      off = __emptyAnchor;
+      prop = '';
+    } else {
+      off = __lastNonWs;
+      if (__comments.length === 0) {
+        prop = input.slice(__prop_start, __lastNonWs);
+      } else {
+        let __buf = '';
+        let __cursor = __prop_start;
+        for (let __i = 0; __i < __comments.length; __i++) {
+          const __cs = __comments[__i][0];
+          const __ce = __comments[__i][1];
+          if (__ce > __lastNonWs) break;
+          const __before = __cs > 0 ? input.charCodeAt(__cs - 1) : -1;
+          const __after = __ce < len ? input.charCodeAt(__ce) : -1;
+          const __isWsBefore = __before === 0x20 || __before === 0x09 || __before === 0x0a || __before === 0x0d;
+          const __isWsAfter = __after === 0x20 || __after === 0x09 || __after === 0x0a || __after === 0x0d;
+          if (!(__isWsBefore || __isWsAfter)) continue;
+          __buf += input.slice(__cursor, __cs);
+          __cursor = __ce;
+        }
+        __buf += input.slice(__cursor, __lastNonWs);
+        prop = __buf;
+      }
+    }
+    __prop_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __scanStart = off;
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
+  {
+    let __lastLeadingCommentEnd = -1;
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      if (__c0 === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        off += 2;
+        while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+        if (off < len) off += 2;
+        __lastLeadingCommentEnd = off;
+        continue;
+      }
+      break;
+    }
+    __value_start = off;
+    let __lastNonWs = off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__depth === 0 && (__c === 59 || __c === 125 || __c === 33)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        off++;
+        while (off < len) {
+          const __sc = input.charCodeAt(off);
+          if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__sc === __q) { off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          off++;
+        }
+        __lastNonWs = off;
+        continue;
+      }
+      if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+        && off + 3 < len
+        && (input.charCodeAt(off + 1) | 32) === 0x72
+        && (input.charCodeAt(off + 2) | 32) === 0x6c
+        && input.charCodeAt(off + 3) === 0x28) {
+        off += 4;
+        while (off < len) {
+          const __uc = input.charCodeAt(off);
+          if (__uc === 0x29) { off++; break; }
+          if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            off++;
+            while (off < len) {
+              const __usc = input.charCodeAt(off);
+              if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+              if (__usc === __uq) { off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              off++;
+            }
+            continue;
+          }
+          off++;
+        }
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        let __ce = off + 2;
+        while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < len) {
+          __comments.push([off, __ce + 2]);
+          off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      if (__depth === 0 && __KB[__c] === 0) {
+        // unknown char (depth 0, no stop, no opener) — fail production
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
+      off++;
+    }
+    const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __value_start;
+    if (__lastNonWs === __value_start) {
+      off = __emptyAnchor;
+      value = '';
+    } else {
+      off = __lastNonWs;
+      if (__comments.length === 0) {
+        value = input.slice(__value_start, __lastNonWs);
+      } else {
+        let __buf = '';
+        let __cursor = __value_start;
+        for (let __i = 0; __i < __comments.length; __i++) {
+          const __cs = __comments[__i][0];
+          const __ce = __comments[__i][1];
+          if (__ce > __lastNonWs) break;
+          const __before = __cs > 0 ? input.charCodeAt(__cs - 1) : -1;
+          const __after = __ce < len ? input.charCodeAt(__ce) : -1;
+          const __isWsBefore = __before === 0x20 || __before === 0x09 || __before === 0x0a || __before === 0x0d;
+          const __isWsAfter = __after === 0x20 || __after === 0x09 || __after === 0x0a || __after === 0x0d;
+          if (!(__isWsBefore || __isWsAfter)) continue;
+          __buf += input.slice(__cursor, __cs);
+          __cursor = __ce;
+        }
+        __buf += input.slice(__cursor, __lastNonWs);
+        value = __buf;
+      }
+    }
+    __value_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.charCodeAt(off) === 33) {
+    state.pos = off;
+    const __long = __fusedUntilDivLong_Declaration_ast(state, prop, value);
+    if (__long !== null) return __long;
+    state.pos = __scanStart;
+    const __resume = __fusedUntilDivShort_Declaration_ast(state, prop);
+    if (__resume === null) { state.pos = entryOff; }
+    return __resume;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.charCodeAt(off) === 59) { off += 1; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "decl", prop: prop, value: value };
 }
 
 function __fusedRenderStructuredDispatch_Rule_ast(state: State): unknown {

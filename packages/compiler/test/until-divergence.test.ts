@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { $, defineSchema, literal as litB, parse, relation, span } from '@parser2/parser';
 import type { NodeTypeInfo, Production, ResolvedSpan } from '../src/model.ts';
 import { detectUntilDivergence } from '../src/emit/v2/detect-until-divergence.ts';
+import { compileToModule } from './helpers/compile.ts';
 
 function lit(text: string): ResolvedSpan {
   return { class: 'literal', text, refinements: [], modifiers: [], recursiveRoles: [] };
@@ -98,6 +100,20 @@ test('returns null when the diverging spans disagree on rejectSuffix', () => {
   assert.equal(detectUntilDivergence(info), null);
 });
 
+test('returns null when the diverging span carries nonEmpty (semantics diverge on the extra-stop path)', () => {
+  const info = declPair();
+  info.productions[0]!.spans[2] = untilSpan('v', [';', '}', '!'], { nonEmpty: true });
+  info.productions[1]!.spans[2] = untilSpan('v', [';', '}'], { nonEmpty: true });
+  assert.equal(detectUntilDivergence(info), null);
+});
+
+test('returns null when the diverging span carries rejectSuffix on both alts', () => {
+  const info = declPair();
+  info.productions[0]!.spans[2] = untilSpan('v', [';', '}', '!'], { rejectSuffix: [','] });
+  info.productions[1]!.spans[2] = untilSpan('v', [';', '}'], { rejectSuffix: [','] });
+  assert.equal(detectUntilDivergence(info), null);
+});
+
 test('returns null when either until has requireStop', () => {
   const info = declPair();
   info.productions[0]!.spans[2] = untilSpan('v', [';', '}', '!'], { requireStop: true });
@@ -145,4 +161,139 @@ test('returns null when the diverging span is unbalanced', () => {
   (unbalanced.modifiers[0] as { balanced: boolean }).balanced = false;
   info.productions[0]!.spans[2] = unbalanced;
   assert.equal(detectUntilDivergence(info), null);
+});
+
+// ---------------------------------------------------------------------------
+// End-to-end: merged dispatcher behavior + shape pins. The schema is shaped
+// like the divergence pattern (NOT named after any language): Entry has a
+// marked variant `k : v !kw ;?` and a plain variant `k : v ;?`.
+// ---------------------------------------------------------------------------
+
+function divergentSchema() {
+  return defineSchema({
+    rootType: 'Doc',
+    punctuators: {
+      colon: ':',
+      semicolon: ';',
+      bang: '!',
+      lbrace: '{',
+      rbrace: '}',
+      lparen: '(',
+      rparen: ')',
+    },
+    tokens: ['string', 'comment'],
+    examples: [
+      relation('Entry', {
+        input: 'a: b !k;',
+        encodings: {
+          parse: parse([
+            span('p', 'a').until([':', ';', '}']),
+            litB(':'),
+            span('v', 'b').until([';', '}', '!']),
+            litB('!'),
+            span('kw', 'k').ident().css(),
+            litB(';').optional(),
+          ]),
+          ast: { type: 'entry', p: $.p, v: $.v, marked: true, kw: $.kw },
+        },
+      }),
+      relation('Entry', {
+        input: 'a: b;',
+        encodings: {
+          parse: parse([
+            span('p', 'a').until([':', ';', '}']),
+            litB(':'),
+            span('v', 'b').until([';', '}']),
+            litB(';').optional(),
+          ]),
+          ast: { type: 'entry', p: $.p, v: $.v },
+        },
+      }),
+      relation('Doc', {
+        input: 'a: b;',
+        encodings: {
+          parse: parse([
+            span('nodes', 'a: b;').of('Entry').repeats({ min: 0, sep: ';', trailing: 'allowed' }),
+          ]),
+          ast: { type: 'doc', nodes: $.nodes },
+        },
+      }),
+    ],
+  });
+}
+
+test('merged dispatcher: plain entry parses identically and the probe chain is gone', async () => {
+  const { render, source, cleanup } = await compileToModule(divergentSchema(), 'udiv-');
+  try {
+    assert.deepEqual(render('x: y;', { target: 'ast', mode: 'fast' }), {
+      type: 'doc',
+      nodes: [{ type: 'entry', p: 'x', v: 'y' }],
+    });
+    // Shape pin: the Entry/ast dispatcher no longer probes alt 0 then alt 1.
+    const dispatcher = source.match(
+      /function __fusedRenderStructuredDispatch_Entry_ast\(state: State\): unknown \{[\s\S]*?\n\}/,
+    );
+    assert.ok(dispatcher, 'Entry/ast dispatcher should exist');
+    assert.ok(
+      !/__fusedRenderStructured_Entry_0_ast\(state\)/.test(dispatcher[0]),
+      'dispatcher should not call the per-production probe chain',
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test('merged dispatcher: marked entry routes to long tail', async () => {
+  const { render, cleanup } = await compileToModule(divergentSchema(), 'udiv-');
+  try {
+    assert.deepEqual(render('x: y !k;', { target: 'ast', mode: 'fast' }), {
+      type: 'doc',
+      nodes: [{ type: 'entry', p: 'x', v: 'y', marked: true, kw: 'k' }],
+    });
+  } finally {
+    cleanup();
+  }
+});
+
+test('merged dispatcher rescue: depth-0 extra-stop whose tail fails falls back to short alt', async () => {
+  const { render, cleanup } = await compileToModule(divergentSchema(), 'udiv-');
+  try {
+    // '!' followed by a non-ident (':' is a declared punctuator but not an
+    // ident start): long tail fails, so the short alt must re-scan and
+    // capture the bang inside v.
+    assert.deepEqual(render('x: y ! :;', { target: 'ast', mode: 'fast' }), {
+      type: 'doc',
+      nodes: [{ type: 'entry', p: 'x', v: 'y ! :' }],
+    });
+  } finally {
+    cleanup();
+  }
+});
+
+test('merged dispatcher: bracketed extra-stop is not a stop (balanced)', async () => {
+  const { render, cleanup } = await compileToModule(divergentSchema(), 'udiv-');
+  try {
+    assert.deepEqual(render('x: (a!b);', { target: 'ast', mode: 'fast' }), {
+      type: 'doc',
+      nodes: [{ type: 'entry', p: 'x', v: '(a!b)' }],
+    });
+  } finally {
+    cleanup();
+  }
+});
+
+test('merged dispatcher: multiple entries, mixed variants', async () => {
+  const { render, cleanup } = await compileToModule(divergentSchema(), 'udiv-');
+  try {
+    assert.deepEqual(render('a: b; c: d !k; e: f', { target: 'ast', mode: 'fast' }), {
+      type: 'doc',
+      nodes: [
+        { type: 'entry', p: 'a', v: 'b' },
+        { type: 'entry', p: 'c', v: 'd', marked: true, kw: 'k' },
+        { type: 'entry', p: 'e', v: 'f' },
+      ],
+    });
+  } finally {
+    cleanup();
+  }
 });

@@ -80,6 +80,16 @@ export function detectUntilDivergence(info: NodeTypeInfo): UntilDivergence | nul
     const us = untilOf(ss)!;
     if (ul.requireStop || us.requireStop) continue;
     if (!ul.balanced || !us.balanced) continue;
+    // nonEmpty / rejectSuffix on the diverging span change semantics on the
+    // extra-stop path: a scan that stops at x with an empty (or suffix-
+    // rejected) capture hard-fails the merged production, but the short
+    // alt's own scan would have continued PAST x and may have succeeded.
+    // The merged emit cannot intercept emitSpan's hard failure, so bail.
+    if (ul.nonEmpty || us.nonEmpty) continue;
+    if ((ul.rejectSuffix && ul.rejectSuffix.length > 0) || (us.rejectSuffix && us.rejectSuffix.length > 0)) continue;
+    // Only the until modifier itself — an optional/repeats-wrapped scan has
+    // presence semantics the merged emit doesn't model.
+    if (ls.modifiers.length !== 1) continue;
 
     const longStops = new Set(ul.stops);
     const shortStops = new Set(us.stops);

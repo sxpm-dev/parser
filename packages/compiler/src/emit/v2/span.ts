@@ -6,6 +6,7 @@
 
 import type { Refinement, SpanModifier } from '@parser2/parser';
 import { type InferredSchema, type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
+import { lowerLiteralSpan } from '../../lower/literal-span.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import { emitRoleLadder } from './role-ladder.ts';
@@ -207,20 +208,33 @@ function emitLiteralSpan(
   bindings: SpanBindings,
   isOptional: boolean,
 ): string {
-  if (!span.text) throw new Error(`emit v2: literal span has no text`);
-  const text = span.text;
+  // Phase 1 unification — single source of truth for literal-span shape.
+  // Lowering converts the ResolvedSpan into a small declarative record
+  // shared with interp/parse.ts:parseLiteralSpan. The compile-time emit
+  // below specialises that record into inline TS; interp's runtime
+  // walker executes the same record verbatim. Both stay in lockstep
+  // via the LiteralSpanProgram type.
+  const prog = lowerLiteralSpan(span);
+  // Allow the caller's `isOptional` flag (computed once in emitSpan)
+  // to override the program's modifier flag — preserves the existing
+  // tail-call behaviour for optional spans hoisted into a parent.
+  const effective: typeof prog = prog.optional === isOptional
+    ? prog
+    : { ...prog, optional: isOptional };
+  const text = effective.text;
   const matchExpr = literalMatchExpr(text, 'off');
   const len = text.length;
 
-  if (isOptional) {
+  if (effective.optional) {
     // Optional literal: try to match, advance if matched. Never fails.
-    if (span.name) {
-      const v = jsIdent(span.name);
-      bindings.valueExpr.set(span.name, v);
-      bindings.presenceExpr.set(span.name, `(${v} !== null)`);
+    if (effective.name !== null) {
+      const name = effective.name;
+      const v = jsIdent(name);
+      bindings.valueExpr.set(name, v);
+      bindings.presenceExpr.set(name, `(${v} !== null)`);
       const startVar = `__${v}_start`, endVar = `__${v}_end`;
-      bindings.startOffExpr.set(span.name, startVar);
-      bindings.endOffExpr.set(span.name, endVar);
+      bindings.startOffExpr.set(name, startVar);
+      bindings.endOffExpr.set(name, endVar);
       return `let ${v}: string | null = null;
 let ${startVar} = off;
 let ${endVar} = off;
@@ -235,11 +249,12 @@ if (${matchExpr}) {
   }
 
   // Required literal
-  if (span.name) {
-    const v = jsIdent(span.name);
+  if (effective.name !== null) {
+    const name = effective.name;
+    const v = jsIdent(name);
     const startVar = `__${v}_start`, endVar = `__${v}_end`;
-    bindings.startOffExpr.set(span.name, startVar);
-    bindings.endOffExpr.set(span.name, endVar);
+    bindings.startOffExpr.set(name, startVar);
+    bindings.endOffExpr.set(name, endVar);
     // Phase 5a — lazy capture. A literal span's value is the known
     // constant `text`; emit the `const ${v} = "<text>"` line and bind
     // it into the captures payload only when some render body or
@@ -248,9 +263,9 @@ if (${matchExpr}) {
     // need them) but the constant-string allocation and the captures
     // field are skipped.
     const isReferenced =
-      ctx.referencedValueSpans === undefined || ctx.referencedValueSpans.has(span.name);
+      ctx.referencedValueSpans === undefined || ctx.referencedValueSpans.has(name);
     if (isReferenced) {
-      bindings.valueExpr.set(span.name, v);
+      bindings.valueExpr.set(name, v);
       return `if (!(${matchExpr})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
 const ${startVar} = off;
 off += ${len};

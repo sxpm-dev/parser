@@ -30,6 +30,7 @@ import {
   type Template,
 } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
+import { lowerLiteralSpan, runLiteralSpan } from '../lower/literal-span.ts';
 
 export type InterpOptions = {
   readonly onDiagnostic?: (d: Diagnostic) => void;
@@ -721,22 +722,26 @@ function parseLiteralSpan(
   ranges: Map<string, SpanRange>,
   isOptional: boolean,
 ): boolean {
-  if (!span.text) throw new Error(`interp: literal span has no text`);
-  const text = span.text;
-  if (state.input.startsWith(text, state.pos)) {
-    const start = state.pos;
-    state.pos += text.length;
-    bindSpan(span, text, start, state.pos, captures, ranges);
-    return true;
-  }
-  if (isOptional) {
-    // Optional literal absent — record null + zero-width range so synthetic
-    // refs that reference the span don't blow up.
-    bindSpan(span, null, state.pos, state.pos, captures, ranges);
-    return true;
-  }
-  if (state.pos > state.maxOff) state.maxOff = state.pos;
-  return false;
+  // Phase 1 unification — route the literal-span execution through
+  // packages/compiler/src/lower/literal-span.ts so emit/v2 and interp
+  // share a single source of truth. `isOptional` (the modifier-flag
+  // the caller pre-computed) is honored: if a future caller passes
+  // `isOptional=true` for a span that doesn't carry `.optional()`
+  // (e.g. tail-call paths), the program is rebuilt with that override.
+  const prog = lowerLiteralSpan(span);
+  const effective = prog.optional === isOptional
+    ? prog
+    : { ...prog, optional: isOptional };
+  return runLiteralSpan(effective, state, {
+    bind: (name, value, start, end) => {
+      // Adapt the lowered bind(name, value, start, end) callback back
+      // to interp's bindSpan signature. The span object is needed for
+      // ranges.set(...) and name-presence checks.
+      if (name === span.name) {
+        bindSpan(span, value, start, end, captures, ranges);
+      }
+    },
+  });
 }
 
 // ---- class span ----------------------------------------------------------

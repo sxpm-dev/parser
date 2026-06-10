@@ -23,60 +23,65 @@ type SpanData = {
   readonly modifiers: ReadonlyArray<SpanModifier>;
 };
 
-export class SpanNode {
+export class SpanNode<N extends string = string> {
+  // Type-only phantom carrying the capture name as a literal type. Never
+  // assigned at runtime; exists so `N` is structural (inference + nominal
+  // separation of differently-named spans both depend on it).
+  declare readonly __name?: N;
+
   constructor(private readonly data: SpanData) {}
 
-  private withData(patch: Partial<SpanData>): SpanNode {
-    return new SpanNode({ ...this.data, ...patch });
+  private withData(patch: Partial<SpanData>): SpanNode<N> {
+    return new SpanNode<N>({ ...this.data, ...patch });
   }
 
-  private setClass(cls: SpanClass): SpanNode {
+  private setClass(cls: SpanClass): SpanNode<N> {
     return this.withData({ class: cls });
   }
 
   // Classes
-  literal(): SpanNode { return this.setClass('literal'); }
-  ident(): SpanNode { return this.setClass('ident'); }
-  number(): SpanNode { return this.setClass('number'); }
-  string(): SpanNode { return this.setClass('string'); }
-  hex(): SpanNode { return this.setClass('hex'); }
-  comment(): SpanNode { return this.setClass('comment'); }
-  operator(alts?: ReadonlyArray<string>): SpanNode {
+  literal(): SpanNode<N> { return this.setClass('literal'); }
+  ident(): SpanNode<N> { return this.setClass('ident'); }
+  number(): SpanNode<N> { return this.setClass('number'); }
+  string(): SpanNode<N> { return this.setClass('string'); }
+  hex(): SpanNode<N> { return this.setClass('hex'); }
+  comment(): SpanNode<N> { return this.setClass('comment'); }
+  operator(alts?: ReadonlyArray<string>): SpanNode<N> {
     const next = this.withData({ class: 'operator' });
     return alts ? next.refine('alts', [alts]) : next;
   }
 
   // Refinements (additive)
-  private refine(name: string, args?: ReadonlyArray<unknown>): SpanNode {
+  private refine(name: string, args?: ReadonlyArray<unknown>): SpanNode<N> {
     const next: Refinement = args === undefined ? { name } : { name, args };
     return this.withData({ refinements: [...this.data.refinements, next] });
   }
-  int(): SpanNode { return this.refine('int'); }
-  float(): SpanNode { return this.refine('float'); }
-  bigint(): SpanNode { return this.refine('bigint'); }
-  binary(): SpanNode { return this.refine('binary'); }
-  octal(): SpanNode { return this.refine('octal'); }
-  scientific(): SpanNode { return this.refine('scientific'); }
-  separator(ch: string): SpanNode { return this.refine('separator', [ch]); }
-  singleQuoted(): SpanNode { return this.refine('singleQuoted'); }
-  doubleQuoted(): SpanNode { return this.refine('doubleQuoted'); }
-  backtick(): SpanNode { return this.refine('backtick'); }
-  hexString(): SpanNode { return this.refine('hexString'); }
-  lengths(values: ReadonlyArray<number>): SpanNode { return this.refine('lengths', [values]); }
-  urlString(): SpanNode { return this.refine('urlString'); }
-  css(): SpanNode { return this.refine('css'); }
-  js(): SpanNode { return this.refine('js'); }
-  html(): SpanNode { return this.refine('html'); }
-  oneOf(values: ReadonlyArray<string>): SpanNode { return this.refine('oneOf', [values]); }
-  coerce(): SpanNode { return this.refine('coerce'); }
-  line(marker: string): SpanNode { return this.refine('line', [marker]); }
-  block(open: string, close: string): SpanNode { return this.refine('block', [open, close]); }
+  int(): SpanNode<N> { return this.refine('int'); }
+  float(): SpanNode<N> { return this.refine('float'); }
+  bigint(): SpanNode<N> { return this.refine('bigint'); }
+  binary(): SpanNode<N> { return this.refine('binary'); }
+  octal(): SpanNode<N> { return this.refine('octal'); }
+  scientific(): SpanNode<N> { return this.refine('scientific'); }
+  separator(ch: string): SpanNode<N> { return this.refine('separator', [ch]); }
+  singleQuoted(): SpanNode<N> { return this.refine('singleQuoted'); }
+  doubleQuoted(): SpanNode<N> { return this.refine('doubleQuoted'); }
+  backtick(): SpanNode<N> { return this.refine('backtick'); }
+  hexString(): SpanNode<N> { return this.refine('hexString'); }
+  lengths(values: ReadonlyArray<number>): SpanNode<N> { return this.refine('lengths', [values]); }
+  urlString(): SpanNode<N> { return this.refine('urlString'); }
+  css(): SpanNode<N> { return this.refine('css'); }
+  js(): SpanNode<N> { return this.refine('js'); }
+  html(): SpanNode<N> { return this.refine('html'); }
+  oneOf(values: ReadonlyArray<string>): SpanNode<N> { return this.refine('oneOf', [values]); }
+  coerce(): SpanNode<N> { return this.refine('coerce'); }
+  line(marker: string): SpanNode<N> { return this.refine('line', [marker]); }
+  block(open: string, close: string): SpanNode<N> { return this.refine('block', [open, close]); }
 
   // Modifiers (additive)
-  private addModifier(mod: SpanModifier): SpanNode {
+  private addModifier(mod: SpanModifier): SpanNode<N> {
     return this.withData({ modifiers: [...this.data.modifiers, mod] });
   }
-  optional(): SpanNode {
+  optional(): SpanNode<N> {
     return this.addModifier({ kind: 'optional' });
   }
   repeats(opts: {
@@ -85,7 +90,7 @@ export class SpanNode {
     readonly min?: number;
     readonly max?: number;
     readonly stopBefore?: ReadonlyArray<string>;
-  } = {}): SpanNode {
+  } = {}): SpanNode<N> {
     return this.addModifier({
       kind: 'repeats',
       sep: opts.sep,
@@ -104,7 +109,7 @@ export class SpanNode {
       readonly nonEmpty?: boolean;
       readonly requireStop?: boolean;
     } = {},
-  ): SpanNode {
+  ): SpanNode<N> {
     const stopArr = Array.isArray(stops) ? [...stops] : [stops as string];
     const rs = opts.rejectSuffix;
     const rejectSuffix =
@@ -128,7 +133,7 @@ export class SpanNode {
       readonly requireStop?: boolean;
       readonly nonEmpty?: boolean;
     } = {},
-  ): SpanNode {
+  ): SpanNode<N> {
     const stopArr = Array.isArray(stops) ? [...stops] : [stops as string];
     const requireStop = opts.requireStop ?? false;
     const nonEmpty = opts.nonEmpty ?? false;
@@ -140,21 +145,21 @@ export class SpanNode {
       ...(nonEmpty ? { nonEmpty: true } : {}),
     });
   }
-  noLineTerminatorAfter(): SpanNode {
+  noLineTerminatorAfter(): SpanNode<N> {
     return this.addModifier({ kind: 'noLineTerminatorAfter' });
   }
-  noWhitespaceAfter(): SpanNode {
+  noWhitespaceAfter(): SpanNode<N> {
     return this.addModifier({ kind: 'noWhitespaceAfter' });
   }
-  requireSpaceAfter(): SpanNode {
+  requireSpaceAfter(): SpanNode<N> {
     return this.addModifier({ kind: 'requireSpaceAfter' });
   }
-  indent(): SpanNode {
+  indent(): SpanNode<N> {
     return this.addModifier({ kind: 'indent' });
   }
-  of(roles: ReadonlyArray<string>): SpanNode;
-  of(...roles: ReadonlyArray<string>): SpanNode;
-  of(...roles: ReadonlyArray<string | ReadonlyArray<string>>): SpanNode {
+  of(roles: ReadonlyArray<string>): SpanNode<N>;
+  of(...roles: ReadonlyArray<string>): SpanNode<N>;
+  of(...roles: ReadonlyArray<string | ReadonlyArray<string>>): SpanNode<N> {
     // Array form: `.of(NODE_KINDS)` where the union is declared once at
     // schema level — same semantics as spreading, kinder to read.
     const flat = roles.flatMap((r) => (Array.isArray(r) ? r : [r])) as string[];
@@ -222,14 +227,24 @@ export class SpanNode {
 
 // A Literal is a SpanNode created via literal(text) — unnamed, text set.
 // The __literal brand is type-only (no runtime cost).
-export type Literal = SpanNode & { readonly __literal: true };
+export type Literal = SpanNode<never> & { readonly __literal: true };
 
 // A Span is a named SpanNode created via span(name, text?).
-export type Span = SpanNode;
+export type Span = SpanNode<string>;
 
 // ---------- Parse program ---------------------------------------------------
 
-export type ParseProgram = { readonly __parse: true; readonly items: ReadonlyArray<SpanNode> };
+export type ParseProgram<Names extends string = string> = {
+  readonly __parse: true;
+  readonly items: ReadonlyArray<SpanNode<any>>;
+  // Type-only phantom: the union of named-span capture names in `items`.
+  readonly __names?: Names;
+};
+
+// Union of capture names across a parse-program span tuple. Distributes
+// over the element union; literal()'s `never` vanishes from the union.
+export type SpanNamesOf<T extends ReadonlyArray<SpanNode<any>>> =
+  T[number] extends SpanNode<infer N> ? N : never;
 
 // ---------- Invertible encoding ---------------------------------------------
 
@@ -270,8 +285,8 @@ export type RelationBody = {
 
 // ---------- DSL factory functions ------------------------------------------
 
-export function span(name: string, exampleText?: string): SpanNode {
-  return new SpanNode({
+export function span<N extends string>(name: N, exampleText?: string): SpanNode<N> {
+  return new SpanNode<N>({
     name,
     text: exampleText,
     recursiveRoles: [],
@@ -282,7 +297,7 @@ export function span(name: string, exampleText?: string): SpanNode {
 }
 
 export function literal(text: string): Literal {
-  return new SpanNode({
+  return new SpanNode<never>({
     name: undefined,
     text,
     recursiveRoles: [],
@@ -292,7 +307,9 @@ export function literal(text: string): Literal {
   }) as Literal;
 }
 
-export function parse(items: ReadonlyArray<Span | Literal>): ParseProgram {
+export function parse<T extends ReadonlyArray<SpanNode<any>>>(
+  items: T,
+): ParseProgram<SpanNamesOf<T>> {
   return { __parse: true, items };
 }
 

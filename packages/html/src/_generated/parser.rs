@@ -210,7 +210,13 @@ fn parse_HtmlDocument__alt0(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -234,7 +240,7 @@ fn stringify_HtmlDocument__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("nodeName") { Some(Value::String(s)) if s == "#document" => (), _ => return None }
     match __value.obj_get("mode") { Some(Value::String(s)) if s == "no-quirks" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
-    let children = __value.obj_get("childNodes");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -323,8 +329,8 @@ fn stringify_Doctype__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("publicId") { Some(Value::String(s)) if s == "" => (), _ => return None }
     match __value.obj_get("systemId") { Some(Value::String(s)) if s == "" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
-    let keyword = __value.obj_get("_keyword");
-    let name = __value.obj_get("name");
+    let keyword: Option<&Value> = __value.obj_get("_keyword");
+    let name: Option<&Value> = __value.obj_get("name");
     let __s0: String = if let Some(Value::String(s)) = keyword { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -342,8 +348,8 @@ fn stringify_Doctype__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("publicId") { Some(Value::String(s)) if s == "" => (), _ => return None }
     match __value.obj_get("systemId") { Some(Value::String(s)) if s == "" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
-    let keyword = __value.obj_get("_keyword");
-    let name = __value.obj_get("name");
+    let keyword: Option<&Value> = __value.obj_get("_keyword");
+    let name: Option<&Value> = __value.obj_get("name");
     let __s0: String = if let Some(Value::String(s)) = keyword { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -389,8 +395,18 @@ fn parse_Comment__alt0(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __data_end = state.pos;
-    let __data_ts = __data_start;
-    let __data_te = __data_end;
+    let mut __data_te = __data_end;
+    while __data_te > __data_start {
+        let __tc = state.input[__data_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __data_te -= 1;
+    }
+    let mut __data_ts = __data_start;
+    while __data_ts < __data_te {
+        let __lc = state.input[__data_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __data_ts += 1;
+    }
     let data: String = state.src[__data_ts..__data_te].to_string();
     skip_ws(state);
     if !match_literal(state, "-->") {
@@ -413,7 +429,7 @@ fn parse_Comment(state: &mut State) -> Option<Value> {
 fn stringify_Comment__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("nodeName") { Some(Value::String(s)) if s == "#comment" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
-    let data = __value.obj_get("data");
+    let data: Option<&Value> = __value.obj_get("data");
     let __s0: String = if let Some(Value::String(s)) = data { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<!--");
@@ -461,7 +477,13 @@ fn parse_HtmlElement__alt0(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -551,7 +573,13 @@ fn parse_HtmlElement__alt1(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -602,7 +630,13 @@ fn parse_HtmlElement__alt2(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -646,7 +680,13 @@ fn parse_HtmlElement__alt3(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -697,7 +737,13 @@ fn parse_HtmlElement__alt4(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -734,7 +780,13 @@ fn parse_HtmlElement__alt4(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -781,7 +833,13 @@ fn parse_HtmlElement__alt5(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -818,7 +876,13 @@ fn parse_HtmlElement__alt5(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -867,7 +931,13 @@ fn parse_HtmlElement__alt6(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -904,7 +974,13 @@ fn parse_HtmlElement__alt6(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -951,7 +1027,13 @@ fn parse_HtmlElement__alt7(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -988,7 +1070,13 @@ fn parse_HtmlElement__alt7(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1037,7 +1125,13 @@ fn parse_HtmlElement__alt8(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1074,7 +1168,13 @@ fn parse_HtmlElement__alt8(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1121,7 +1221,13 @@ fn parse_HtmlElement__alt9(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1158,7 +1264,13 @@ fn parse_HtmlElement__alt9(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1207,7 +1319,13 @@ fn parse_HtmlElement__alt10(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1244,7 +1362,13 @@ fn parse_HtmlElement__alt10(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1291,7 +1415,13 @@ fn parse_HtmlElement__alt11(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1328,7 +1458,13 @@ fn parse_HtmlElement__alt11(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1375,7 +1511,13 @@ fn parse_HtmlElement__alt12(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1412,7 +1554,13 @@ fn parse_HtmlElement__alt12(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1459,7 +1607,13 @@ fn parse_HtmlElement__alt13(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1496,7 +1650,13 @@ fn parse_HtmlElement__alt13(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1543,7 +1703,13 @@ fn parse_HtmlElement__alt14(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1580,7 +1746,13 @@ fn parse_HtmlElement__alt14(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1627,7 +1799,13 @@ fn parse_HtmlElement__alt15(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1664,7 +1842,13 @@ fn parse_HtmlElement__alt15(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1705,7 +1889,13 @@ fn parse_HtmlElement__alt16(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_Attribute(state);
         match __item {
-            Some(v) => attrs.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                attrs.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1738,7 +1928,13 @@ fn parse_HtmlElement__alt16(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -1867,9 +2063,9 @@ fn stringify_HtmlElement__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("_kind") { Some(Value::String(s)) if s == "element-rawtext" => (), _ => return None }
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children: Option<&Value> = None;
-    let closeTag = __value.obj_get("_closeTag");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes").and_then(|__v| if let Value::Array(__a) = __v { __a.first() } else { None }).and_then(|__v| __v.obj_get("value"));
+    let closeTag: Option<&Value> = __value.obj_get("_closeTag");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = children { s.clone() } else { String::new() };
     let __s2: String = if let Some(Value::String(s)) = closeTag { s.clone() } else { String::new() };
@@ -1889,7 +2085,7 @@ fn stringify_HtmlElement__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
@@ -1903,7 +2099,7 @@ fn stringify_HtmlElement__alt2(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
@@ -1917,7 +2113,7 @@ fn stringify_HtmlElement__alt3(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
@@ -1931,8 +2127,8 @@ fn stringify_HtmlElement__alt4(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -1949,8 +2145,8 @@ fn stringify_HtmlElement__alt5(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -1967,8 +2163,8 @@ fn stringify_HtmlElement__alt6(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -1985,8 +2181,8 @@ fn stringify_HtmlElement__alt7(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2003,8 +2199,8 @@ fn stringify_HtmlElement__alt8(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2021,8 +2217,8 @@ fn stringify_HtmlElement__alt9(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2039,8 +2235,8 @@ fn stringify_HtmlElement__alt10(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2057,8 +2253,8 @@ fn stringify_HtmlElement__alt11(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2075,8 +2271,8 @@ fn stringify_HtmlElement__alt12(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2093,8 +2289,8 @@ fn stringify_HtmlElement__alt13(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2111,8 +2307,8 @@ fn stringify_HtmlElement__alt14(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2129,8 +2325,8 @@ fn stringify_HtmlElement__alt15(__value: &Value) -> Option<String> {
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_closeTag") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -2146,9 +2342,9 @@ fn stringify_HtmlElement__alt16(__value: &Value) -> Option<String> {
     match __value.obj_get("_kind") { Some(Value::String(s)) if s == "element" => (), _ => return None }
     match __value.obj_get("namespaceURI") { Some(Value::String(s)) if s == "http://www.w3.org/1999/xhtml" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("nodeName");
-    let children = __value.obj_get("childNodes");
-    let closeTag = __value.obj_get("_closeTag");
+    let tag: Option<&Value> = __value.obj_get("nodeName");
+    let children: Option<&Value> = __value.obj_get("childNodes");
+    let closeTag: Option<&Value> = __value.obj_get("_closeTag");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let __s2: String = if let Some(Value::String(s)) = closeTag { s.clone() } else { String::new() };
@@ -2209,7 +2405,7 @@ fn parse_TextNode(state: &mut State) -> Option<Value> {
 fn stringify_TextNode__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("nodeName") { Some(Value::String(s)) if s == "#text" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -2448,8 +2644,8 @@ fn parse_Attribute(state: &mut State) -> Option<Value> {
 
 fn stringify_Attribute__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("_quote") { Some(Value::String(s)) if s == "double" => (), _ => return None }
-    let name = __value.obj_get("name");
-    let value = __value.obj_get("value");
+    let name: Option<&Value> = __value.obj_get("name");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2462,8 +2658,8 @@ fn stringify_Attribute__alt0(__value: &Value) -> Option<String> {
 
 fn stringify_Attribute__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("_quote") { Some(Value::String(s)) if s == "single" => (), _ => return None }
-    let name = __value.obj_get("name");
-    let value = __value.obj_get("value");
+    let name: Option<&Value> = __value.obj_get("name");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2476,8 +2672,8 @@ fn stringify_Attribute__alt1(__value: &Value) -> Option<String> {
 
 fn stringify_Attribute__alt2(__value: &Value) -> Option<String> {
     match __value.obj_get("_quote") { Some(Value::String(s)) if s == "none" => (), _ => return None }
-    let name = __value.obj_get("name");
-    let value = __value.obj_get("value");
+    let name: Option<&Value> = __value.obj_get("name");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2490,7 +2686,7 @@ fn stringify_Attribute__alt2(__value: &Value) -> Option<String> {
 fn stringify_Attribute__alt3(__value: &Value) -> Option<String> {
     match __value.obj_get("value") { Some(Value::String(s)) if s == "" => (), _ => return None }
     match __value.obj_get("_quote") { None | Some(Value::Null) => (), _ => return None }
-    let name = __value.obj_get("name");
+    let name: Option<&Value> = __value.obj_get("name");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);

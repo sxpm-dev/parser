@@ -322,7 +322,7 @@ fn stringify_CronField__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
-    let step = __value.obj_get("step");
+    let step: Option<&Value> = __value.obj_get("step");
     let __s0: String = if let Some(Value::String(s)) = step { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("*/");
@@ -335,7 +335,7 @@ fn stringify_CronField__alt2(__value: &Value) -> Option<String> {
     match __value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -346,8 +346,8 @@ fn stringify_CronField__alt3(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "range" => (), _ => return None }
     match __value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    let start = __value.obj_get("start");
-    let end = __value.obj_get("end");
+    let start: Option<&Value> = __value.obj_get("start");
+    let end: Option<&Value> = __value.obj_get("end");
     let __s0: String = if let Some(Value::String(s)) = start { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = end { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -409,7 +409,13 @@ fn parse_Command__alt0(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_CommandWord(state);
         match __item {
-            Some(v) => words.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                words.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -436,7 +442,7 @@ fn parse_Command(state: &mut State) -> Option<Value> {
 
 fn stringify_Command__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "command" => (), _ => return None }
-    let words = __value.obj_get("words");
+    let words: Option<&Value> = __value.obj_get("words");
     let __s0: String = if let Some(Value::Array(items)) = words { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_CommandWord(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -496,12 +502,12 @@ fn parse_Cron(state: &mut State) -> Option<Value> {
 
 fn stringify_Cron__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "cron" => (), _ => return None }
-    let minute = __value.obj_get("minute");
-    let hour = __value.obj_get("hour");
-    let dayOfMonth = __value.obj_get("dayOfMonth");
-    let month = __value.obj_get("month");
-    let dayOfWeek = __value.obj_get("dayOfWeek");
-    let command = __value.obj_get("command");
+    let minute: Option<&Value> = __value.obj_get("minute");
+    let hour: Option<&Value> = __value.obj_get("hour");
+    let dayOfMonth: Option<&Value> = __value.obj_get("dayOfMonth");
+    let month: Option<&Value> = __value.obj_get("month");
+    let dayOfWeek: Option<&Value> = __value.obj_get("dayOfWeek");
+    let command: Option<&Value> = __value.obj_get("command");
     let __s0: String = if let Some(inner) = minute { stringify_CronField(inner) } else { String::new() };
     let __s1: String = if let Some(inner) = hour { stringify_CronField(inner) } else { String::new() };
     let __s2: String = if let Some(inner) = dayOfMonth { stringify_CronField(inner) } else { String::new() };

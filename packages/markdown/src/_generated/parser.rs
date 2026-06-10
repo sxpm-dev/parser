@@ -206,7 +206,13 @@ fn parse_MarkdownDocument__alt0(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => children.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                children.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -228,7 +234,7 @@ fn parse_MarkdownDocument(state: &mut State) -> Option<Value> {
 
 fn stringify_MarkdownDocument__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "document" => (), _ => return None }
-    let children = __value.obj_get("children");
+    let children: Option<&Value> = __value.obj_get("children");
     let __s0: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_MarkdownLeaf__alt0(item).or_else(|| stringify_MarkdownLeaf__alt1(item)).or_else(|| stringify_MarkdownLeaf__alt2(item)).or_else(|| stringify_MarkdownLeaf__alt3(item)).or_else(|| stringify_MarkdownLeaf__alt4(item)).or_else(|| stringify_MarkdownLeaf__alt5(item)).or_else(|| stringify_MarkdownLeaf__alt6(item)).or_else(|| stringify_MarkdownLeaf__alt7(item)).or_else(|| stringify_MarkdownLeaf__alt8(item)).or_else(|| stringify_MarkdownLeaf__alt9(item)).or_else(|| stringify_MarkdownLeaf__alt10(item)).or_else(|| stringify_MarkdownLeaf__alt11(item)).or_else(|| stringify_MarkdownLeaf__alt12(item)).or_else(|| stringify_MarkdownLeaf__alt13(item)).or_else(|| stringify_MarkdownLeaf__alt14(item)).or_else(|| stringify_MarkdownLeaf__alt15(item)).or_else(|| stringify_MarkdownLeaf__alt16(item)).or_else(|| stringify_MarkdownLeaf__alt17(item)).or_else(|| stringify_MarkdownLeaf__alt18(item)).or_else(|| stringify_MarkdownLeaf__alt19(item)).or_else(|| stringify_MarkdownLeaf__alt20(item)).or_else(|| stringify_MarkdownLeaf__alt21(item)).or_else(|| stringify_MarkdownLeaf__alt22(item)).or_else(|| stringify_MarkdownLeaf__alt23(item)).or_else(|| stringify_MarkdownLeaf__alt24(item)).or_else(|| stringify_MarkdownLeaf__alt25(item)).or_else(|| stringify_MarkdownLeaf__alt26(item)).or_else(|| stringify_MarkdownLeaf__alt27(item)).or_else(|| stringify_MarkdownLeaf__alt28(item)).or_else(|| stringify_MarkdownLeaf__alt29(item)).or_else(|| stringify_MarkdownLeaf__alt30(item)).or_else(|| stringify_MarkdownLeaf__alt31(item)).or_else(|| stringify_MarkdownLeaf__alt32(item)).or_else(|| stringify_MarkdownLeaf__alt33(item)).or_else(|| stringify_MarkdownLeaf__alt34(item)).or_else(|| stringify_MarkdownLeaf__alt35(item)).or_else(|| stringify_MarkdownLeaf__alt36(item)).or_else(|| stringify_MarkdownParagraph__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -1909,6 +1915,12 @@ fn parse_MarkdownLeaf__alt35(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "div" || tag_lc == "span" || tag_lc == "p" || tag_lc == "pre" || tag_lc == "code" || tag_lc == "blockquote" || tag_lc == "a" || tag_lc == "img" || tag_lc == "br" || tag_lc == "hr" || tag_lc == "ul" || tag_lc == "ol" || tag_lc == "li" || tag_lc == "dl" || tag_lc == "dt" || tag_lc == "dd" || tag_lc == "table" || tag_lc == "thead" || tag_lc == "tbody" || tag_lc == "tfoot" || tag_lc == "tr" || tag_lc == "td" || tag_lc == "th" || tag_lc == "caption" || tag_lc == "figure" || tag_lc == "figcaption" || tag_lc == "section" || tag_lc == "article" || tag_lc == "header" || tag_lc == "footer" || tag_lc == "nav" || tag_lc == "aside" || tag_lc == "main" || tag_lc == "address" || tag_lc == "details" || tag_lc == "summary" || tag_lc == "h1" || tag_lc == "h2" || tag_lc == "h3" || tag_lc == "h4" || tag_lc == "h5" || tag_lc == "h6" || tag_lc == "em" || tag_lc == "strong" || tag_lc == "i" || tag_lc == "b" || tag_lc == "u" || tag_lc == "s" || tag_lc == "small" || tag_lc == "sub" || tag_lc == "sup" || tag_lc == "kbd" || tag_lc == "var" || tag_lc == "samp" || tag_lc == "cite" || tag_lc == "q" || tag_lc == "dfn" || tag_lc == "abbr" || tag_lc == "time" || tag_lc == "mark" || tag_lc == "ruby" || tag_lc == "rt" || tag_lc == "rp" || tag_lc == "bdi" || tag_lc == "bdo" || tag_lc == "wbr" || tag_lc == "form" || tag_lc == "input" || tag_lc == "button" || tag_lc == "select" || tag_lc == "option" || tag_lc == "optgroup" || tag_lc == "textarea" || tag_lc == "label" || tag_lc == "fieldset" || tag_lc == "legend" || tag_lc == "datalist" || tag_lc == "output" || tag_lc == "progress" || tag_lc == "meter" || tag_lc == "video" || tag_lc == "audio" || tag_lc == "source" || tag_lc == "track" || tag_lc == "canvas" || tag_lc == "svg" || tag_lc == "math" || tag_lc == "iframe" || tag_lc == "embed" || tag_lc == "object" || tag_lc == "param" || tag_lc == "picture" || tag_lc == "script" || tag_lc == "style" || tag_lc == "noscript" || tag_lc == "template" || tag_lc == "html" || tag_lc == "head" || tag_lc == "body" || tag_lc == "title" || tag_lc == "meta" || tag_lc == "link" || tag_lc == "base") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     if !match_literal(state, ">") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -2204,7 +2216,7 @@ fn stringify_MarkdownLeaf__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h6>");
@@ -2232,7 +2244,7 @@ fn stringify_MarkdownLeaf__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h5>");
@@ -2260,7 +2272,7 @@ fn stringify_MarkdownLeaf__alt2(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h4>");
@@ -2288,7 +2300,7 @@ fn stringify_MarkdownLeaf__alt3(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h3>");
@@ -2316,7 +2328,7 @@ fn stringify_MarkdownLeaf__alt4(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h2>");
@@ -2344,7 +2356,7 @@ fn stringify_MarkdownLeaf__alt5(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h1>");
@@ -2372,7 +2384,7 @@ fn stringify_MarkdownLeaf__alt6(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h1>");
@@ -2400,7 +2412,7 @@ fn stringify_MarkdownLeaf__alt7(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<h2>");
@@ -2503,7 +2515,7 @@ fn stringify_MarkdownLeaf__alt11(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<li><input type=\"checkbox\" checked>");
@@ -2531,7 +2543,7 @@ fn stringify_MarkdownLeaf__alt12(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<li><input type=\"checkbox\">");
@@ -2559,7 +2571,7 @@ fn stringify_MarkdownLeaf__alt13(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<li>");
@@ -2587,7 +2599,7 @@ fn stringify_MarkdownLeaf__alt14(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<li>");
@@ -2615,7 +2627,7 @@ fn stringify_MarkdownLeaf__alt15(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<li>");
@@ -2642,7 +2654,7 @@ fn stringify_MarkdownLeaf__alt16(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<li>");
@@ -2670,7 +2682,7 @@ fn stringify_MarkdownLeaf__alt17(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<blockquote>");
@@ -2697,8 +2709,8 @@ fn stringify_MarkdownLeaf__alt18(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let lang = __value.obj_get("lang");
-    let body = __value.obj_get("text");
+    let lang: Option<&Value> = __value.obj_get("lang");
+    let body: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = lang { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = body { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2729,7 +2741,7 @@ fn stringify_MarkdownLeaf__alt19(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let body = __value.obj_get("text");
+    let body: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = body { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<pre><code>");
@@ -2757,7 +2769,7 @@ fn stringify_MarkdownLeaf__alt20(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<strong>");
@@ -2785,7 +2797,7 @@ fn stringify_MarkdownLeaf__alt21(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<em>");
@@ -2813,7 +2825,7 @@ fn stringify_MarkdownLeaf__alt22(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<s>");
@@ -2841,7 +2853,7 @@ fn stringify_MarkdownLeaf__alt23(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<code>");
@@ -2868,8 +2880,8 @@ fn stringify_MarkdownLeaf__alt24(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let url = __value.obj_get("url");
-    let label = __value.obj_get("label");
+    let url: Option<&Value> = __value.obj_get("url");
+    let label: Option<&Value> = __value.obj_get("label");
     let __s0: String = if let Some(Value::String(s)) = url { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = label { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2899,8 +2911,8 @@ fn stringify_MarkdownLeaf__alt25(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let id = __value.obj_get("id");
-    let label = __value.obj_get("label");
+    let id: Option<&Value> = __value.obj_get("id");
+    let label: Option<&Value> = __value.obj_get("label");
     let __s0: String = if let Some(Value::String(s)) = id { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = label { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2930,8 +2942,8 @@ fn stringify_MarkdownLeaf__alt26(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let url = __value.obj_get("url");
-    let alt = __value.obj_get("alt");
+    let url: Option<&Value> = __value.obj_get("url");
+    let alt: Option<&Value> = __value.obj_get("alt");
     let __s0: String = if let Some(Value::String(s)) = url { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = alt { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2961,8 +2973,8 @@ fn stringify_MarkdownLeaf__alt27(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let id = __value.obj_get("id");
-    let alt = __value.obj_get("alt");
+    let id: Option<&Value> = __value.obj_get("id");
+    let alt: Option<&Value> = __value.obj_get("alt");
     let __s0: String = if let Some(Value::String(s)) = id { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = alt { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -2993,7 +3005,7 @@ fn stringify_MarkdownLeaf__alt28(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let name = __value.obj_get("name");
+    let name: Option<&Value> = __value.obj_get("name");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("&");
@@ -3120,8 +3132,8 @@ fn stringify_MarkdownLeaf__alt33(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let id = __value.obj_get("id");
-    let text = __value.obj_get("text");
+    let id: Option<&Value> = __value.obj_get("id");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = id { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -3152,7 +3164,7 @@ fn stringify_MarkdownLeaf__alt34(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let id = __value.obj_get("id");
+    let id: Option<&Value> = __value.obj_get("id");
     let __s0: String = if let Some(Value::String(s)) = id { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = id { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -3181,9 +3193,9 @@ fn stringify_MarkdownLeaf__alt35(__value: &Value) -> Option<String> {
     match __value.obj_get("variant") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("align") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
-    let tag = __value.obj_get("tag");
-    let body = __value.obj_get("text");
-    let closingTag = __value.obj_get("closingTag");
+    let tag: Option<&Value> = __value.obj_get("tag");
+    let body: Option<&Value> = __value.obj_get("text");
+    let closingTag: Option<&Value> = __value.obj_get("closingTag");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = body { s.clone() } else { String::new() };
     let __s2: String = if let Some(Value::String(s)) = closingTag { s.clone() } else { String::new() };
@@ -3217,7 +3229,7 @@ fn stringify_MarkdownLeaf__alt36(__value: &Value) -> Option<String> {
     match __value.obj_get("cells") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("tag") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("closingTag") { None | Some(Value::Null) => (), _ => return None }
-    let url = __value.obj_get("url");
+    let url: Option<&Value> = __value.obj_get("url");
     let __s0: String = if let Some(Value::String(s)) = url { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = url { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -3314,7 +3326,7 @@ fn parse_MarkdownParagraph(state: &mut State) -> Option<Value> {
 
 fn stringify_MarkdownParagraph__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "paragraph" => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<p>");

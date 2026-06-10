@@ -55,11 +55,25 @@ impl fmt::Display for Value {
     }
 }
 
+// Phase 6 -- recovery diagnostics. Productions marked .recovers({syncAt,
+// drop}) push a Diagnostic on successful match; speculative rollback
+// truncates the vector back to its entry-time length so a discarded
+// recovery alt leaves no spurious entry. The public render() returns
+// (Value, Vec<Diagnostic>) so callers can observe partial parses.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Diagnostic {
+    pub code: String,
+    pub drop: String,
+    pub start: usize,
+    pub end: usize,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> State<'a> {
@@ -69,6 +83,7 @@ impl<'a> State<'a> {
             src,
             pos: 0,
             max_pos: 0,
+            diagnostics: Vec::new(),
         }
     }
 }
@@ -81,6 +96,53 @@ fn skip_ws(state: &mut State) {
         } else {
             break;
         }
+    }
+}
+
+// Phase 6 -- comment-class support. Scans block comments delimited by
+// slash-star and star-slash. Returns true and advances state.pos past
+// the closing delimiter on hit; returns false without advancing on
+// miss. Unterminated comments (no closing delimiter before EOF) consume
+// to EOF and return true -- mirrors the v2 emit's commentSkip behavior
+// so byte-level positions stay in lockstep across backends.
+fn match_block_comment(state: &mut State) -> bool {
+    if state.pos + 1 < state.input.len()
+        && state.input[state.pos] == b'/'
+        && state.input[state.pos + 1] == b'*'
+    {
+        state.pos += 2;
+        while state.pos < state.input.len() {
+            if state.input[state.pos] == b'*'
+                && state.pos + 1 < state.input.len()
+                && state.input[state.pos + 1] == b'/'
+            {
+                state.pos += 2;
+                return true;
+            }
+            state.pos += 1;
+        }
+        return true;
+    }
+    false
+}
+
+fn skip_ws_and_comments(state: &mut State) {
+    loop {
+        let before = state.pos;
+        while state.pos < state.input.len() {
+            let b = state.input[state.pos];
+            if b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' {
+                state.pos += 1;
+            } else {
+                break;
+            }
+        }
+        if !match_block_comment(state) {
+            if state.pos == before { break; }
+            // We consumed only ws this pass; nothing more to do.
+            break;
+        }
+        // We consumed a comment; loop to eat any following ws / comments.
     }
 }
 
@@ -237,50 +299,50 @@ fn parse_FreqValue(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_FreqValue__alt0(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "SECONDLY" { return None; } } else { return None; }
+fn stringify_FreqValue__alt0(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "SECONDLY" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("SECONDLY");
     Some(__out)
 }
 
-fn stringify_FreqValue__alt1(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "MINUTELY" { return None; } } else { return None; }
+fn stringify_FreqValue__alt1(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "MINUTELY" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("MINUTELY");
     Some(__out)
 }
 
-fn stringify_FreqValue__alt2(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "HOURLY" { return None; } } else { return None; }
+fn stringify_FreqValue__alt2(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "HOURLY" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("HOURLY");
     Some(__out)
 }
 
-fn stringify_FreqValue__alt3(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "DAILY" { return None; } } else { return None; }
+fn stringify_FreqValue__alt3(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "DAILY" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("DAILY");
     Some(__out)
 }
 
-fn stringify_FreqValue__alt4(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "WEEKLY" { return None; } } else { return None; }
+fn stringify_FreqValue__alt4(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "WEEKLY" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("WEEKLY");
     Some(__out)
 }
 
-fn stringify_FreqValue__alt5(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "MONTHLY" { return None; } } else { return None; }
+fn stringify_FreqValue__alt5(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "MONTHLY" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("MONTHLY");
     Some(__out)
 }
 
-fn stringify_FreqValue__alt6(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "YEARLY" { return None; } } else { return None; }
+fn stringify_FreqValue__alt6(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "YEARLY" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("YEARLY");
     Some(__out)
@@ -406,50 +468,50 @@ fn parse_Weekday(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Weekday__alt0(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "SU" { return None; } } else { return None; }
+fn stringify_Weekday__alt0(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "SU" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("SU");
     Some(__out)
 }
 
-fn stringify_Weekday__alt1(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "MO" { return None; } } else { return None; }
+fn stringify_Weekday__alt1(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "MO" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("MO");
     Some(__out)
 }
 
-fn stringify_Weekday__alt2(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "TU" { return None; } } else { return None; }
+fn stringify_Weekday__alt2(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "TU" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("TU");
     Some(__out)
 }
 
-fn stringify_Weekday__alt3(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "WE" { return None; } } else { return None; }
+fn stringify_Weekday__alt3(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "WE" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("WE");
     Some(__out)
 }
 
-fn stringify_Weekday__alt4(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "TH" { return None; } } else { return None; }
+fn stringify_Weekday__alt4(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "TH" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("TH");
     Some(__out)
 }
 
-fn stringify_Weekday__alt5(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "FR" { return None; } } else { return None; }
+fn stringify_Weekday__alt5(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "FR" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("FR");
     Some(__out)
 }
 
-fn stringify_Weekday__alt6(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "SA" { return None; } } else { return None; }
+fn stringify_Weekday__alt6(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { if s != "SA" { return None; } } else { return None; }
     let mut __out = String::new();
     __out.push_str("SA");
     Some(__out)
@@ -492,8 +554,8 @@ fn parse_NumValue(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_NumValue__alt0(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { Some(s.clone()) } else { None }
+fn stringify_NumValue__alt0(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { Some(s.clone()) } else { None }
 }
 
 fn stringify_NumValue(value: &Value) -> String {
@@ -516,28 +578,33 @@ fn parse_Part__alt0(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let mut days: Vec<Value> = Vec::new();
+    let mut __sep_consumed = false;
+    let mut __pre_sweep = state.pos;
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
+        __pre_sweep = state.pos;
+        __sep_consumed = false;
         skip_ws(state);
+        while match_literal(state, ",") {
+            __sep_consumed = true;
+            skip_ws(state);
+        }
+        let __iter_snapshot = state.pos;
         let __item = parse_NumValue(state);
         match __item {
-            Some(v) => days.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                days.push(v);
+            }
+            None => {
+                state.pos = __pre_sweep;
+                break;
+            }
         }
-        let __sep_snapshot = state.pos;
-        skip_ws(state);
-        if !match_literal(state, ",") {
-            state.pos = __sep_snapshot;
-            break;
-        }
-        let __peek_snapshot = state.pos;
-        skip_ws(state);
-        let __can_continue = parse_NumValue(state).is_some();
-        state.pos = __peek_snapshot;
-        if !__can_continue {
-            state.pos = __sep_snapshot;
-            break;
-        }
+        if state.pos == __loop_start { break; }
     }
     if days.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -562,28 +629,33 @@ fn parse_Part__alt1(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let mut months: Vec<Value> = Vec::new();
+    let mut __sep_consumed = false;
+    let mut __pre_sweep = state.pos;
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
+        __pre_sweep = state.pos;
+        __sep_consumed = false;
         skip_ws(state);
+        while match_literal(state, ",") {
+            __sep_consumed = true;
+            skip_ws(state);
+        }
+        let __iter_snapshot = state.pos;
         let __item = parse_NumValue(state);
         match __item {
-            Some(v) => months.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                months.push(v);
+            }
+            None => {
+                state.pos = __pre_sweep;
+                break;
+            }
         }
-        let __sep_snapshot = state.pos;
-        skip_ws(state);
-        if !match_literal(state, ",") {
-            state.pos = __sep_snapshot;
-            break;
-        }
-        let __peek_snapshot = state.pos;
-        skip_ws(state);
-        let __can_continue = parse_NumValue(state).is_some();
-        state.pos = __peek_snapshot;
-        if !__can_continue {
-            state.pos = __sep_snapshot;
-            break;
-        }
+        if state.pos == __loop_start { break; }
     }
     if months.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -608,28 +680,33 @@ fn parse_Part__alt2(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let mut minutes: Vec<Value> = Vec::new();
+    let mut __sep_consumed = false;
+    let mut __pre_sweep = state.pos;
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
+        __pre_sweep = state.pos;
+        __sep_consumed = false;
         skip_ws(state);
+        while match_literal(state, ",") {
+            __sep_consumed = true;
+            skip_ws(state);
+        }
+        let __iter_snapshot = state.pos;
         let __item = parse_NumValue(state);
         match __item {
-            Some(v) => minutes.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                minutes.push(v);
+            }
+            None => {
+                state.pos = __pre_sweep;
+                break;
+            }
         }
-        let __sep_snapshot = state.pos;
-        skip_ws(state);
-        if !match_literal(state, ",") {
-            state.pos = __sep_snapshot;
-            break;
-        }
-        let __peek_snapshot = state.pos;
-        skip_ws(state);
-        let __can_continue = parse_NumValue(state).is_some();
-        state.pos = __peek_snapshot;
-        if !__can_continue {
-            state.pos = __sep_snapshot;
-            break;
-        }
+        if state.pos == __loop_start { break; }
     }
     if minutes.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -654,28 +731,33 @@ fn parse_Part__alt3(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let mut hours: Vec<Value> = Vec::new();
+    let mut __sep_consumed = false;
+    let mut __pre_sweep = state.pos;
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
+        __pre_sweep = state.pos;
+        __sep_consumed = false;
         skip_ws(state);
+        while match_literal(state, ",") {
+            __sep_consumed = true;
+            skip_ws(state);
+        }
+        let __iter_snapshot = state.pos;
         let __item = parse_NumValue(state);
         match __item {
-            Some(v) => hours.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                hours.push(v);
+            }
+            None => {
+                state.pos = __pre_sweep;
+                break;
+            }
         }
-        let __sep_snapshot = state.pos;
-        skip_ws(state);
-        if !match_literal(state, ",") {
-            state.pos = __sep_snapshot;
-            break;
-        }
-        let __peek_snapshot = state.pos;
-        skip_ws(state);
-        let __can_continue = parse_NumValue(state).is_some();
-        state.pos = __peek_snapshot;
-        if !__can_continue {
-            state.pos = __sep_snapshot;
-            break;
-        }
+        if state.pos == __loop_start { break; }
     }
     if hours.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -700,28 +782,33 @@ fn parse_Part__alt4(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let mut days: Vec<Value> = Vec::new();
+    let mut __sep_consumed = false;
+    let mut __pre_sweep = state.pos;
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
+        __pre_sweep = state.pos;
+        __sep_consumed = false;
         skip_ws(state);
+        while match_literal(state, ",") {
+            __sep_consumed = true;
+            skip_ws(state);
+        }
+        let __iter_snapshot = state.pos;
         let __item = parse_Weekday(state);
         match __item {
-            Some(v) => days.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                days.push(v);
+            }
+            None => {
+                state.pos = __pre_sweep;
+                break;
+            }
         }
-        let __sep_snapshot = state.pos;
-        skip_ws(state);
-        if !match_literal(state, ",") {
-            state.pos = __sep_snapshot;
-            break;
-        }
-        let __peek_snapshot = state.pos;
-        skip_ws(state);
-        let __can_continue = parse_Weekday(state).is_some();
-        state.pos = __peek_snapshot;
-        if !__can_continue {
-            state.pos = __sep_snapshot;
-            break;
-        }
+        if state.pos == __loop_start { break; }
     }
     if days.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -914,13 +1001,13 @@ fn parse_Part(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Part__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "bymonthday" => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    let days = value.obj_get("days");
+fn stringify_Part__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "bymonthday" => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    let days: Option<&Value> = __value.obj_get("days");
     let __s0: String = if let Some(Value::Array(items)) = days { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_NumValue(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("BYMONTHDAY=");
@@ -928,13 +1015,13 @@ fn stringify_Part__alt0(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt1(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "bymonth" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    let months = value.obj_get("months");
+fn stringify_Part__alt1(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "bymonth" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    let months: Option<&Value> = __value.obj_get("months");
     let __s0: String = if let Some(Value::Array(items)) = months { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_NumValue(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("BYMONTH=");
@@ -942,13 +1029,13 @@ fn stringify_Part__alt1(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt2(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "byminute" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    let minutes = value.obj_get("minutes");
+fn stringify_Part__alt2(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "byminute" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    let minutes: Option<&Value> = __value.obj_get("minutes");
     let __s0: String = if let Some(Value::Array(items)) = minutes { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_NumValue(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("BYMINUTE=");
@@ -956,13 +1043,13 @@ fn stringify_Part__alt2(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt3(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "byhour" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    let hours = value.obj_get("hours");
+fn stringify_Part__alt3(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "byhour" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    let hours: Option<&Value> = __value.obj_get("hours");
     let __s0: String = if let Some(Value::Array(items)) = hours { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_NumValue(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("BYHOUR=");
@@ -970,13 +1057,13 @@ fn stringify_Part__alt3(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt4(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "byday" => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    let days = value.obj_get("days");
+fn stringify_Part__alt4(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "byday" => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    let days: Option<&Value> = __value.obj_get("days");
     let __s0: String = if let Some(Value::Array(items)) = days { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_Weekday(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("BYDAY=");
@@ -984,13 +1071,13 @@ fn stringify_Part__alt4(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt5(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "freq" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_Part__alt5(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "freq" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(inner) = value { stringify_FreqValue(inner) } else { String::new() };
     let mut __out = String::new();
     __out.push_str("FREQ=");
@@ -998,13 +1085,13 @@ fn stringify_Part__alt5(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt6(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "count" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_Part__alt6(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "count" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("COUNT=");
@@ -1012,13 +1099,13 @@ fn stringify_Part__alt6(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt7(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "interval" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_Part__alt7(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "interval" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("INTERVAL=");
@@ -1026,13 +1113,13 @@ fn stringify_Part__alt7(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt8(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "until" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_Part__alt8(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "until" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("UNTIL=");
@@ -1040,13 +1127,13 @@ fn stringify_Part__alt8(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Part__alt9(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "wkst" => (), _ => return None }
-    match value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_Part__alt9(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "wkst" => (), _ => return None }
+    match __value.obj_get("days") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("months") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("minutes") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("hours") { None | Some(Value::Null) => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(inner) = value { stringify_Weekday(inner) } else { String::new() };
     let mut __out = String::new();
     __out.push_str("WKST=");
@@ -1071,28 +1158,33 @@ fn stringify_Part(value: &Value) -> String {
 fn parse_Rule__alt0(state: &mut State) -> Option<Value> {
     let entry_pos = state.pos;
     let mut parts: Vec<Value> = Vec::new();
+    let mut __sep_consumed = false;
+    let mut __pre_sweep = state.pos;
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
+        __pre_sweep = state.pos;
+        __sep_consumed = false;
         skip_ws(state);
+        while match_literal(state, ";") {
+            __sep_consumed = true;
+            skip_ws(state);
+        }
+        let __iter_snapshot = state.pos;
         let __item = parse_Part(state);
         match __item {
-            Some(v) => parts.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                parts.push(v);
+            }
+            None => {
+                state.pos = __pre_sweep;
+                break;
+            }
         }
-        let __sep_snapshot = state.pos;
-        skip_ws(state);
-        if !match_literal(state, ";") {
-            state.pos = __sep_snapshot;
-            break;
-        }
-        let __peek_snapshot = state.pos;
-        skip_ws(state);
-        let __can_continue = parse_Part(state).is_some();
-        state.pos = __peek_snapshot;
-        if !__can_continue {
-            state.pos = __sep_snapshot;
-            break;
-        }
+        if state.pos == __loop_start { break; }
     }
     if parts.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1111,9 +1203,9 @@ fn parse_Rule(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Rule__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "rule" => (), _ => return None }
-    let parts = value.obj_get("parts");
+fn stringify_Rule__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "rule" => (), _ => return None }
+    let parts: Option<&Value> = __value.obj_get("parts");
     let __s0: String = if let Some(Value::Array(items)) = parts { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(";"); } __t.push_str(&stringify_Part(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -1134,6 +1226,16 @@ pub fn render(input: &str) -> Result<Value, String> {
         return Err(syntax_error(&state));
     }
     Ok(result)
+}
+pub fn render_with_diagnostics(input: &str) -> Result<(Value, Vec<Diagnostic>), String> {
+    let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_Rule(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok((result, state.diagnostics))
 }
 
 pub fn stringify(value: &Value) -> String {

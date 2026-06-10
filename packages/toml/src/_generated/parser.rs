@@ -55,11 +55,25 @@ impl fmt::Display for Value {
     }
 }
 
+// Phase 6 -- recovery diagnostics. Productions marked .recovers({syncAt,
+// drop}) push a Diagnostic on successful match; speculative rollback
+// truncates the vector back to its entry-time length so a discarded
+// recovery alt leaves no spurious entry. The public render() returns
+// (Value, Vec<Diagnostic>) so callers can observe partial parses.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Diagnostic {
+    pub code: String,
+    pub drop: String,
+    pub start: usize,
+    pub end: usize,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> State<'a> {
@@ -69,6 +83,7 @@ impl<'a> State<'a> {
             src,
             pos: 0,
             max_pos: 0,
+            diagnostics: Vec::new(),
         }
     }
 }
@@ -81,6 +96,53 @@ fn skip_ws(state: &mut State) {
         } else {
             break;
         }
+    }
+}
+
+// Phase 6 -- comment-class support. Scans block comments delimited by
+// slash-star and star-slash. Returns true and advances state.pos past
+// the closing delimiter on hit; returns false without advancing on
+// miss. Unterminated comments (no closing delimiter before EOF) consume
+// to EOF and return true -- mirrors the v2 emit's commentSkip behavior
+// so byte-level positions stay in lockstep across backends.
+fn match_block_comment(state: &mut State) -> bool {
+    if state.pos + 1 < state.input.len()
+        && state.input[state.pos] == b'/'
+        && state.input[state.pos + 1] == b'*'
+    {
+        state.pos += 2;
+        while state.pos < state.input.len() {
+            if state.input[state.pos] == b'*'
+                && state.pos + 1 < state.input.len()
+                && state.input[state.pos + 1] == b'/'
+            {
+                state.pos += 2;
+                return true;
+            }
+            state.pos += 1;
+        }
+        return true;
+    }
+    false
+}
+
+fn skip_ws_and_comments(state: &mut State) {
+    loop {
+        let before = state.pos;
+        while state.pos < state.input.len() {
+            let b = state.input[state.pos];
+            if b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' {
+                state.pos += 1;
+            } else {
+                break;
+            }
+        }
+        if !match_block_comment(state) {
+            if state.pos == before { break; }
+            // We consumed only ws this pass; nothing more to do.
+            break;
+        }
+        // We consumed a comment; loop to eat any following ws / comments.
     }
 }
 
@@ -215,34 +277,34 @@ fn parse_Value(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Value__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "string" => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_Value__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "string" => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
     Some(__out)
 }
 
-fn stringify_Value__alt1(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "boolean" => (), _ => return None }
-    match value.obj_get("value") { Some(Value::Bool(b)) if *b == true => (), _ => return None }
+fn stringify_Value__alt1(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "boolean" => (), _ => return None }
+    match __value.obj_get("value") { Some(Value::Bool(b)) if *b == true => (), _ => return None }
     let mut __out = String::new();
     __out.push_str("true");
     Some(__out)
 }
 
-fn stringify_Value__alt2(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "boolean" => (), _ => return None }
-    match value.obj_get("value") { Some(Value::Bool(b)) if *b == false => (), _ => return None }
+fn stringify_Value__alt2(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "boolean" => (), _ => return None }
+    match __value.obj_get("value") { Some(Value::Bool(b)) if *b == false => (), _ => return None }
     let mut __out = String::new();
     __out.push_str("false");
     Some(__out)
 }
 
-fn stringify_Value__alt3(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "integer" => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_Value__alt3(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "integer" => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -294,10 +356,10 @@ fn parse_Pair(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Pair__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "pair" => (), _ => return None }
-    let key = value.obj_get("key");
-    let value = value.obj_get("value");
+fn stringify_Pair__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "pair" => (), _ => return None }
+    let key: Option<&Value> = __value.obj_get("key");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = key { s.clone() } else { String::new() };
     let __s1: String = if let Some(inner) = value { stringify_Value(inner) } else { String::new() };
     let mut __out = String::new();
@@ -341,13 +403,24 @@ fn parse_Table__alt0(state: &mut State) -> Option<Value> {
     skip_ws(state);
     let mut pairs: Vec<Value> = Vec::new();
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
         skip_ws(state);
+        let __iter_snapshot = state.pos;
         let __item = parse_Pair(state);
         match __item {
-            Some(v) => pairs.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                pairs.push(v);
+            }
+            None => {
+                state.pos = __loop_start;
+                break;
+            }
         }
+        if state.pos == __loop_start { break; }
     }
     Some(Value::Object(vec![("type".to_string(), Value::String("table".to_string())), ("name".to_string(), Value::String(name.clone())), ("pairs".to_string(), Value::Array(pairs.clone()))]))
 }
@@ -361,10 +434,10 @@ fn parse_Table(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Table__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "table" => (), _ => return None }
-    let name = value.obj_get("name");
-    let pairs = value.obj_get("pairs");
+fn stringify_Table__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "table" => (), _ => return None }
+    let name: Option<&Value> = __value.obj_get("name");
+    let pairs: Option<&Value> = __value.obj_get("pairs");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = pairs { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Pair(item)); } __t } else { String::new() };
     let mut __out = String::new();
@@ -384,22 +457,31 @@ fn parse_Document__alt0(state: &mut State) -> Option<Value> {
     let entry_pos = state.pos;
     let mut items: Vec<Value> = Vec::new();
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
         skip_ws(state);
+        let __iter_snapshot = state.pos;
         let __item: Option<Value> = 'role: loop {
             state.pos = __iter_snapshot;
-            skip_ws(state);
             if let Some(v) = parse_Pair(state) { break 'role Some(v); }
             state.pos = __iter_snapshot;
-            skip_ws(state);
             if let Some(v) = parse_Table(state) { break 'role Some(v); }
             state.pos = __iter_snapshot;
             break 'role None;
         };
         match __item {
-            Some(v) => items.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                items.push(v);
+            }
+            None => {
+                state.pos = __loop_start;
+                break;
+            }
         }
+        if state.pos == __loop_start { break; }
     }
     Some(Value::Object(vec![("type".to_string(), Value::String("document".to_string())), ("items".to_string(), Value::Array(items.clone()))]))
 }
@@ -413,10 +495,10 @@ fn parse_Document(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Document__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "document" => (), _ => return None }
-    let items = value.obj_get("items");
-    let __s0: String = if let Some(Value::Array(items)) = items { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Pair(item)); } __t } else { String::new() };
+fn stringify_Document__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "document" => (), _ => return None }
+    let items: Option<&Value> = __value.obj_get("items");
+    let __s0: String = if let Some(Value::Array(items)) = items { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Pair__alt0(item).or_else(|| stringify_Table__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
     Some(__out)
@@ -436,6 +518,16 @@ pub fn render(input: &str) -> Result<Value, String> {
         return Err(syntax_error(&state));
     }
     Ok(result)
+}
+pub fn render_with_diagnostics(input: &str) -> Result<(Value, Vec<Diagnostic>), String> {
+    let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_Document(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok((result, state.diagnostics))
 }
 
 pub fn stringify(value: &Value) -> String {

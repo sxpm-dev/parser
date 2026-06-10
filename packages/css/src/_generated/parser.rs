@@ -234,7 +234,7 @@ fn parse_Comment(state: &mut State) -> Option<Value> {
 
 fn stringify_Comment__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "comment" => (), _ => return None }
-    let text = __value.obj_get("text");
+    let text: Option<&Value> = __value.obj_get("text");
     let __s0: String = if let Some(Value::String(s)) = text { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("/* ");
@@ -604,9 +604,9 @@ fn parse_Declaration(state: &mut State) -> Option<Value> {
 fn stringify_Declaration__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "decl" => (), _ => return None }
     match __value.obj_get("important") { Some(Value::Bool(b)) if *b == true => (), _ => return None }
-    let prop = __value.obj_get("prop");
-    let value = __value.obj_get("value");
-    let important = __value.obj_get("_important");
+    let prop: Option<&Value> = __value.obj_get("prop");
+    let value: Option<&Value> = __value.obj_get("value");
+    let important: Option<&Value> = __value.obj_get("_important");
     let __s0: String = if let Some(Value::String(s)) = prop { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let __s2: String = if let Some(Value::String(s)) = important { s.clone() } else { String::new() };
@@ -624,8 +624,8 @@ fn stringify_Declaration__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "decl" => (), _ => return None }
     match __value.obj_get("important") { None | Some(Value::Null) => (), _ => return None }
     match __value.obj_get("_important") { None | Some(Value::Null) => (), _ => return None }
-    let prop = __value.obj_get("prop");
-    let value = __value.obj_get("value");
+    let prop: Option<&Value> = __value.obj_get("prop");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = prop { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -717,6 +717,16 @@ fn parse_Rule__alt0(state: &mut State) -> Option<Value> {
         __buf.push_str(&state.src[__cursor..__selector_te]);
         __buf
     };
+    if selector.ends_with(":") || selector.ends_with(",") || selector.ends_with(">") || selector.ends_with("+") || selector.ends_with("~") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    if selector.is_empty() {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws_and_comments(state);
     if !match_literal(state, "{") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -750,7 +760,13 @@ fn parse_Rule__alt0(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => nodes.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                nodes.push(v);
+            }
             None => {
                 state.pos = __pre_sweep;
                 break;
@@ -778,8 +794,8 @@ fn parse_Rule(state: &mut State) -> Option<Value> {
 
 fn stringify_Rule__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "rule" => (), _ => return None }
-    let selector = __value.obj_get("selector");
-    let nodes = __value.obj_get("nodes");
+    let selector: Option<&Value> = __value.obj_get("selector");
+    let nodes: Option<&Value> = __value.obj_get("nodes");
     let __s0: String = if let Some(Value::String(s)) = selector { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = nodes { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(";"); } __t.push_str(&stringify_Comment__alt0(item).or_else(|| stringify_AtRule__alt0(item)).or_else(|| stringify_AtRule__alt1(item)).or_else(|| stringify_Rule__alt0(item)).or_else(|| stringify_Declaration__alt0(item)).or_else(|| stringify_Declaration__alt1(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
@@ -922,7 +938,13 @@ fn parse_AtRule__alt0(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => nodes.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                nodes.push(v);
+            }
             None => {
                 state.pos = __pre_sweep;
                 break;
@@ -1054,9 +1076,9 @@ fn parse_AtRule(state: &mut State) -> Option<Value> {
 
 fn stringify_AtRule__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "atrule" => (), _ => return None }
-    let name = __value.obj_get("name");
-    let params = __value.obj_get("params");
-    let nodes = __value.obj_get("nodes");
+    let name: Option<&Value> = __value.obj_get("name");
+    let params: Option<&Value> = __value.obj_get("params");
+    let nodes: Option<&Value> = __value.obj_get("nodes");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = params { s.clone() } else { String::new() };
     let __s2: String = if let Some(Value::Array(items)) = nodes { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(";"); } __t.push_str(&stringify_Comment__alt0(item).or_else(|| stringify_AtRule__alt0(item)).or_else(|| stringify_AtRule__alt1(item)).or_else(|| stringify_Rule__alt0(item)).or_else(|| stringify_Declaration__alt0(item)).or_else(|| stringify_Declaration__alt1(item)).unwrap_or_default()); } __t } else { String::new() };
@@ -1074,8 +1096,8 @@ fn stringify_AtRule__alt0(__value: &Value) -> Option<String> {
 fn stringify_AtRule__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "atrule" => (), _ => return None }
     match __value.obj_get("nodes") { None | Some(Value::Null) => (), _ => return None }
-    let name = __value.obj_get("name");
-    let params = __value.obj_get("params");
+    let name: Option<&Value> = __value.obj_get("name");
+    let params: Option<&Value> = __value.obj_get("params");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = params { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -1121,7 +1143,13 @@ fn parse_Stylesheet__alt0(state: &mut State) -> Option<Value> {
             break 'role None;
         };
         match __item {
-            Some(v) => nodes.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                nodes.push(v);
+            }
             None => {
                 state.pos = __pre_sweep;
                 break;
@@ -1143,7 +1171,7 @@ fn parse_Stylesheet(state: &mut State) -> Option<Value> {
 
 fn stringify_Stylesheet__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "root" => (), _ => return None }
-    let nodes = __value.obj_get("nodes");
+    let nodes: Option<&Value> = __value.obj_get("nodes");
     let __s0: String = if let Some(Value::Array(items)) = nodes { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(";"); } __t.push_str(&stringify_Comment__alt0(item).or_else(|| stringify_AtRule__alt0(item)).or_else(|| stringify_AtRule__alt1(item)).or_else(|| stringify_Rule__alt0(item)).or_else(|| stringify_Declaration__alt0(item)).or_else(|| stringify_Declaration__alt1(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);

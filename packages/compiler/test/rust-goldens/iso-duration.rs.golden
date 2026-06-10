@@ -308,7 +308,7 @@ fn parse_DateUnit(state: &mut State) -> Option<Value> {
 
 fn stringify_DateUnit__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "years" => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -318,7 +318,7 @@ fn stringify_DateUnit__alt0(__value: &Value) -> Option<String> {
 
 fn stringify_DateUnit__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "months" => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -328,7 +328,7 @@ fn stringify_DateUnit__alt1(__value: &Value) -> Option<String> {
 
 fn stringify_DateUnit__alt2(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "weeks" => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -338,7 +338,7 @@ fn stringify_DateUnit__alt2(__value: &Value) -> Option<String> {
 
 fn stringify_DateUnit__alt3(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "days" => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -444,7 +444,7 @@ fn parse_TimeUnit(state: &mut State) -> Option<Value> {
 
 fn stringify_TimeUnit__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "hours" => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -454,7 +454,7 @@ fn stringify_TimeUnit__alt0(__value: &Value) -> Option<String> {
 
 fn stringify_TimeUnit__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "minutes" => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -464,7 +464,7 @@ fn stringify_TimeUnit__alt1(__value: &Value) -> Option<String> {
 
 fn stringify_TimeUnit__alt2(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "seconds" => (), _ => return None }
-    let value = __value.obj_get("value");
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -494,7 +494,13 @@ fn parse_Duration__alt0(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_DateUnit(state);
         match __item {
-            Some(v) => date.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                date.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -525,7 +531,13 @@ fn parse_Duration__alt1(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_DateUnit(state);
         match __item {
-            Some(v) => date.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                date.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -547,7 +559,13 @@ fn parse_Duration__alt1(state: &mut State) -> Option<Value> {
         let __iter_snapshot = state.pos;
         let __item = parse_TimeUnit(state);
         match __item {
-            Some(v) => time.push(v),
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __loop_start;
+                    break;
+                }
+                time.push(v);
+            }
             None => {
                 state.pos = __loop_start;
                 break;
@@ -580,7 +598,7 @@ fn parse_Duration(state: &mut State) -> Option<Value> {
 fn stringify_Duration__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "duration" => (), _ => return None }
     match __value.obj_get("time") { None | Some(Value::Null) => (), _ => return None }
-    let date = __value.obj_get("date");
+    let date: Option<&Value> = __value.obj_get("date");
     let __s0: String = if let Some(Value::Array(items)) = date { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_DateUnit(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("P");
@@ -590,8 +608,8 @@ fn stringify_Duration__alt0(__value: &Value) -> Option<String> {
 
 fn stringify_Duration__alt1(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "duration" => (), _ => return None }
-    let date = __value.obj_get("date");
-    let time = __value.obj_get("time");
+    let date: Option<&Value> = __value.obj_get("date");
+    let time: Option<&Value> = __value.obj_get("time");
     let __s0: String = if let Some(Value::Array(items)) = date { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_DateUnit(item)); } __t } else { String::new() };
     let __s1: String = if let Some(Value::Array(items)) = time { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_TimeUnit(item)); } __t } else { String::new() };
     let mut __out = String::new();

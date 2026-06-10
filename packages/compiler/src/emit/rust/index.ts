@@ -1215,7 +1215,24 @@ function emitRepeatsRecursiveSpan(
     body.push(`        };`);
   }
   body.push(`        match __item {`);
-  body.push(`            Some(v) => ${captureName}.push(v),`);
+  // Zero-advance push guard. Mirrors bcode's "JUMP_IF_OFF_EQ moved before
+  // CAPTURE_VALUE_APPEND" fix (roadmap seventh pass). A child production
+  // that "succeeds" with zero bytes consumed (e.g. HTML TextNode's
+  // rawUntil('<') at EOF) would otherwise append a content-empty captures
+  // payload to the list and surface as a spurious trailing
+  // `{nodeName:'#text',value:''}`. Treat zero-advance as "no item", rewind,
+  // and exit.
+  body.push(`            Some(v) => {`);
+  body.push(`                if state.pos == __iter_snapshot {`);
+  if (sep !== undefined && sep !== '') {
+    body.push(`                    state.pos = __pre_sweep;`);
+  } else {
+    body.push(`                    state.pos = __loop_start;`);
+  }
+  body.push(`                    break;`);
+  body.push(`                }`);
+  body.push(`                ${captureName}.push(v);`);
+  body.push(`            }`);
   body.push(`            None => {`);
   // No item — rewind to before the sweep so the parent's next span sees
   // any unconsumed trivia.
@@ -1964,10 +1981,10 @@ function emitStringifyAltFn(
     if (!span.name) continue;
     if (extracted.has(span.name)) continue;
     extracted.add(span.name);
-    const fieldKey = findFieldForCapture(obj, span.name);
-    if (fieldKey === null) continue;
+    const path = findAstPathForCapture(obj, span.name, []);
+    if (path === null) continue;
     const v = rustIdent(span.name);
-    lines.push(`    let ${v} = __value.obj_get(${rustString(fieldKey)});`);
+    lines.push(`    let ${v}: Option<&Value> = ${emitAstAccessExpr(path)};`);
   }
   lines.push(`    let mut __out = String::new();`);
   let firstEmit = true;
@@ -2019,15 +2036,15 @@ function emitTemplateStringifyBody(
     if (slot.kind !== 'capture') continue;
     if (bound.has(slot.ref)) continue;
     bound.add(slot.ref);
-    const fieldKey = findFieldForCapture(astBody, slot.ref);
+    const path = findAstPathForCapture(astBody, slot.ref, []);
     // No corresponding ast field — fall back to None below (stringify will
     // silently skip the slot, matching the TS backend's `?? ''` pattern for
     // unused refs).
     const v = rustIdent(slot.ref);
-    if (fieldKey === null) {
+    if (path === null) {
       lines.push(`    let ${v}: Option<&Value> = None;`);
     } else {
-      lines.push(`    let ${v} = __value.obj_get(${rustString(fieldKey)});`);
+      lines.push(`    let ${v}: Option<&Value> = ${emitAstAccessExpr(path)};`);
     }
   }
   // Materialize each slot into a positional String local (`__s0`, `__s1`,
@@ -2438,6 +2455,58 @@ function findFieldForCapture(obj: Record<string, RenderBody>, captureName: strin
     }
   }
   return null;
+}
+
+// Path step for nested AST capture access: either an object field key or an
+// index into a one-element array literal. Used to teach the rust stringify
+// emit how to extract `$.children` from `childNodes: [{ value: $.children }]`
+// — the HTML rawtext element shape.
+type AstAccessStep = { kind: 'obj'; key: string } | { kind: 'arr0' };
+
+function findAstPathForCapture(
+  body: RenderBody,
+  captureName: string,
+  steps: ReadonlyArray<AstAccessStep>,
+): ReadonlyArray<AstAccessStep> | null {
+  if (body === null || typeof body !== 'object') return null;
+  if (isStructureRef(body)) {
+    if (body.__ref === 'span-value' && body.name === captureName) return steps;
+    return null;
+  }
+  if (Array.isArray(body)) {
+    // Schemas use a one-element array literal to wrap a synthetic child node
+    // (e.g. HTML's `childNodes: [{ nodeName: '#text', value: $.children, ... }]`).
+    // Recurse into element 0. Multi-element arrays are not currently used to
+    // host captures.
+    if (body.length === 1) {
+      return findAstPathForCapture(body[0]!, captureName, [...steps, { kind: 'arr0' }]);
+    }
+    return null;
+  }
+  if (isTemplate(body)) return null;
+  for (const [k, v] of Object.entries(body as Record<string, RenderBody>)) {
+    const inner = findAstPathForCapture(v, captureName, [...steps, { kind: 'obj', key: k }]);
+    if (inner !== null) return inner;
+  }
+  return null;
+}
+
+function emitAstAccessExpr(steps: ReadonlyArray<AstAccessStep>): string {
+  if (steps.length === 0) return 'Some(__value)';
+  let expr = '';
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i]!;
+    if (i === 0) {
+      expr = step.kind === 'obj'
+        ? `__value.obj_get(${rustString(step.key)})`
+        : `(if let Value::Array(__a) = __value { __a.first() } else { None })`;
+      continue;
+    }
+    expr = step.kind === 'obj'
+      ? `${expr}.and_then(|__v| __v.obj_get(${rustString(step.key)}))`
+      : `${expr}.and_then(|__v| if let Value::Array(__a) = __v { __a.first() } else { None })`;
+  }
+  return expr;
 }
 
 function emitStringifyDispatcher(nodeType: string, altCount: number): string {

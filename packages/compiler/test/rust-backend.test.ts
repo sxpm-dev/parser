@@ -410,7 +410,8 @@ test('rust backend (6.3): .repeats({sep}) collects Vec<Value>', () => {
   assert.match(code, /let mut items: Vec<Value> = Vec::new\(\);/);
   assert.match(code, /let __item = parse_Item\(state\);/);
   assert.match(code, /match __item \{/);
-  assert.match(code, /Some\(v\) => items\.push\(v\),/);
+  assert.match(code, /Some\(v\) => \{/);
+  assert.match(code, /items\.push\(v\);/);
   // The repeats loop uses a `while match_literal(state, ",") { ... }` block
   // (zero-or-more separators between items, matching v2 semantics). The old
   // `if !match_literal(...) { break }` form was wrong — it required a sep to
@@ -470,8 +471,10 @@ test('rust backend (6.4): per-production stringify fn + dispatcher + public entr
   // strengthening pass — equality on every scalar field, absence on
   // sibling-only fields).
   assert.match(code, /match __value\.obj_get\("type"\) \{ Some\(Value::String\(s\)\) if s == "x" => \(\), _ => return None \}/);
-  // Capture extraction.
-  assert.match(code, /let name = __value\.obj_get\("name"\);/);
+  // Capture extraction (typed as `Option<&Value>` because nested AST paths
+  // may chain `.and_then(...)` calls — the type annotation keeps the
+  // simple obj_get case and the chained case unified).
+  assert.match(code, /let name: Option<&Value> = __value\.obj_get\("name"\);/);
   // String emission.
   assert.match(code, /if let Some\(Value::String\(s\)\) = name \{ __out\.push_str\(s\); \}/);
 });

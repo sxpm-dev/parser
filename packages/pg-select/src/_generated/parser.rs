@@ -55,11 +55,25 @@ impl fmt::Display for Value {
     }
 }
 
+// Phase 6 -- recovery diagnostics. Productions marked .recovers({syncAt,
+// drop}) push a Diagnostic on successful match; speculative rollback
+// truncates the vector back to its entry-time length so a discarded
+// recovery alt leaves no spurious entry. The public render() returns
+// (Value, Vec<Diagnostic>) so callers can observe partial parses.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Diagnostic {
+    pub code: String,
+    pub drop: String,
+    pub start: usize,
+    pub end: usize,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> State<'a> {
@@ -69,6 +83,7 @@ impl<'a> State<'a> {
             src,
             pos: 0,
             max_pos: 0,
+            diagnostics: Vec::new(),
         }
     }
 }
@@ -81,6 +96,53 @@ fn skip_ws(state: &mut State) {
         } else {
             break;
         }
+    }
+}
+
+// Phase 6 -- comment-class support. Scans block comments delimited by
+// slash-star and star-slash. Returns true and advances state.pos past
+// the closing delimiter on hit; returns false without advancing on
+// miss. Unterminated comments (no closing delimiter before EOF) consume
+// to EOF and return true -- mirrors the v2 emit's commentSkip behavior
+// so byte-level positions stay in lockstep across backends.
+fn match_block_comment(state: &mut State) -> bool {
+    if state.pos + 1 < state.input.len()
+        && state.input[state.pos] == b'/'
+        && state.input[state.pos + 1] == b'*'
+    {
+        state.pos += 2;
+        while state.pos < state.input.len() {
+            if state.input[state.pos] == b'*'
+                && state.pos + 1 < state.input.len()
+                && state.input[state.pos + 1] == b'/'
+            {
+                state.pos += 2;
+                return true;
+            }
+            state.pos += 1;
+        }
+        return true;
+    }
+    false
+}
+
+fn skip_ws_and_comments(state: &mut State) {
+    loop {
+        let before = state.pos;
+        while state.pos < state.input.len() {
+            let b = state.input[state.pos];
+            if b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' {
+                state.pos += 1;
+            } else {
+                break;
+            }
+        }
+        if !match_block_comment(state) {
+            if state.pos == before { break; }
+            // We consumed only ws this pass; nothing more to do.
+            break;
+        }
+        // We consumed a comment; loop to eat any following ws / comments.
     }
 }
 
@@ -169,17 +231,17 @@ fn parse_ColumnRef(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_ColumnRef__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "wildcard" => (), _ => return None }
-    match value.obj_get("name") { None | Some(Value::Null) => (), _ => return None }
+fn stringify_ColumnRef__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "wildcard" => (), _ => return None }
+    match __value.obj_get("name") { None | Some(Value::Null) => (), _ => return None }
     let mut __out = String::new();
     __out.push_str("*");
     Some(__out)
 }
 
-fn stringify_ColumnRef__alt1(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "column" => (), _ => return None }
-    let name = value.obj_get("name");
+fn stringify_ColumnRef__alt1(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "column" => (), _ => return None }
+    let name: Option<&Value> = __value.obj_get("name");
     let __s0: String = if let Some(Value::String(s)) = name { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -249,18 +311,18 @@ fn parse_LiteralValue(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_LiteralValue__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "number" => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_LiteralValue__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "number" => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
     Some(__out)
 }
 
-fn stringify_LiteralValue__alt1(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "string" => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_LiteralValue__alt1(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "string" => (), _ => return None }
+    let value: Option<&Value> = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -311,11 +373,11 @@ fn parse_Predicate(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Predicate__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "predicate" => (), _ => return None }
-    let col = value.obj_get("col");
-    let op = value.obj_get("op");
-    let val = value.obj_get("val");
+fn stringify_Predicate__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "predicate" => (), _ => return None }
+    let col: Option<&Value> = __value.obj_get("col");
+    let op: Option<&Value> = __value.obj_get("op");
+    let val: Option<&Value> = __value.obj_get("val");
     let __s0: String = if let Some(inner) = col { stringify_ColumnRef(inner) } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = op { s.clone() } else { String::new() };
     let __s2: String = if let Some(inner) = val { stringify_LiteralValue(inner) } else { String::new() };
@@ -419,28 +481,37 @@ fn parse_Select(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let mut columns: Vec<Value> = Vec::new();
+    let mut __sep_consumed = false;
+    let mut __pre_sweep = state.pos;
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
+        __pre_sweep = state.pos;
+        __sep_consumed = false;
         skip_ws(state);
+        while match_literal(state, ",") {
+            __sep_consumed = true;
+            skip_ws(state);
+        }
+        if state.pos < state.input.len() {
+            let __sb = state.input[state.pos];
+            if __sb == 70 && (state.input[state.pos..].starts_with("FROM".as_bytes())) { break; }
+        }
+        let __iter_snapshot = state.pos;
         let __item = parse_ColumnRef(state);
         match __item {
-            Some(v) => columns.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            Some(v) => {
+                if state.pos == __iter_snapshot {
+                    state.pos = __pre_sweep;
+                    break;
+                }
+                columns.push(v);
+            }
+            None => {
+                state.pos = __pre_sweep;
+                break;
+            }
         }
-        let __sep_snapshot = state.pos;
-        skip_ws(state);
-        if !match_literal(state, ",") {
-            state.pos = __sep_snapshot;
-            break;
-        }
-        let __peek_snapshot = state.pos;
-        skip_ws(state);
-        let __can_continue = parse_ColumnRef(state).is_some();
-        state.pos = __peek_snapshot;
-        if !__can_continue {
-            state.pos = __sep_snapshot;
-            break;
-        }
+        if state.pos == __loop_start { break; }
     }
     if columns.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -487,12 +558,12 @@ fn parse_Select(state: &mut State) -> Option<Value> {
     parse_Select__alt0(state, entry_pos, columns, table)
 }
 
-fn stringify_Select__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
-    match value.obj_get("where") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("limit") { None | Some(Value::Null) => (), _ => return None }
-    let columns = value.obj_get("columns");
-    let table = value.obj_get("table");
+fn stringify_Select__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
+    match __value.obj_get("where") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("limit") { None | Some(Value::Null) => (), _ => return None }
+    let columns: Option<&Value> = __value.obj_get("columns");
+    let table: Option<&Value> = __value.obj_get("table");
     let __s0: String = if let Some(Value::Array(items)) = columns { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_ColumnRef(item)); } __t } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = table { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -503,12 +574,12 @@ fn stringify_Select__alt0(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Select__alt1(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
-    match value.obj_get("limit") { None | Some(Value::Null) => (), _ => return None }
-    let columns = value.obj_get("columns");
-    let table = value.obj_get("table");
-    let r#where = value.obj_get("where");
+fn stringify_Select__alt1(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
+    match __value.obj_get("limit") { None | Some(Value::Null) => (), _ => return None }
+    let columns: Option<&Value> = __value.obj_get("columns");
+    let table: Option<&Value> = __value.obj_get("table");
+    let r#where: Option<&Value> = __value.obj_get("where");
     let __s0: String = if let Some(Value::Array(items)) = columns { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_ColumnRef(item)); } __t } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = table { s.clone() } else { String::new() };
     let __s2: String = if let Some(inner) = r#where { stringify_Predicate(inner) } else { String::new() };
@@ -522,12 +593,12 @@ fn stringify_Select__alt1(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Select__alt2(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
-    match value.obj_get("where") { None | Some(Value::Null) => (), _ => return None }
-    let columns = value.obj_get("columns");
-    let table = value.obj_get("table");
-    let limit = value.obj_get("limit");
+fn stringify_Select__alt2(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
+    match __value.obj_get("where") { None | Some(Value::Null) => (), _ => return None }
+    let columns: Option<&Value> = __value.obj_get("columns");
+    let table: Option<&Value> = __value.obj_get("table");
+    let limit: Option<&Value> = __value.obj_get("limit");
     let __s0: String = if let Some(Value::Array(items)) = columns { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_ColumnRef(item)); } __t } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = table { s.clone() } else { String::new() };
     let __s2: String = if let Some(Value::String(s)) = limit { s.clone() } else { String::new() };
@@ -541,12 +612,12 @@ fn stringify_Select__alt2(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_Select__alt3(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
-    let columns = value.obj_get("columns");
-    let table = value.obj_get("table");
-    let r#where = value.obj_get("where");
-    let limit = value.obj_get("limit");
+fn stringify_Select__alt3(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "select" => (), _ => return None }
+    let columns: Option<&Value> = __value.obj_get("columns");
+    let table: Option<&Value> = __value.obj_get("table");
+    let r#where: Option<&Value> = __value.obj_get("where");
+    let limit: Option<&Value> = __value.obj_get("limit");
     let __s0: String = if let Some(Value::Array(items)) = columns { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(","); } __t.push_str(&stringify_ColumnRef(item)); } __t } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = table { s.clone() } else { String::new() };
     let __s2: String = if let Some(inner) = r#where { stringify_Predicate(inner) } else { String::new() };
@@ -580,6 +651,16 @@ pub fn render(input: &str) -> Result<Value, String> {
         return Err(syntax_error(&state));
     }
     Ok(result)
+}
+pub fn render_with_diagnostics(input: &str) -> Result<(Value, Vec<Diagnostic>), String> {
+    let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_Select(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok((result, state.diagnostics))
 }
 
 pub fn stringify(value: &Value) -> String {

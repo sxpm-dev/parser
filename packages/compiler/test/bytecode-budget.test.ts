@@ -78,11 +78,12 @@ const bcodeArtifactPath = resolve(here, '../../cron/src/_generated/parser.bcode.
 // awareness, CAPTURE_TRIMMED_SLICE, CAPTURE_COMMENT_INTERIOR,
 // CAPTURE_UNTIL_EXCISE_COMMENTS, CAPTURE_INIT_ARRAY, scanClass kinds
 // HEX/STRING/COMMENT, CONSUME_LITERAL_OPTIONAL, ASSERT_TOP_*,
-// JUMP_IF_OFF_EQ, ASSERT_CAPTURE_IN_LOWERED_SET, hex digit predicate).
-// Bumped to 64 KB to accommodate the broader schema set; tighten back
+// JUMP_IF_OFF_EQ, ASSERT_CAPTURE_IN_LOWERED_SET, hex digit predicate,
+// ASSERT_CAPTURE_NOT_ENDS_WITH, SCAN_UNTIL leading-comment-trim +
+// url-raw skip + backslash escape arm). Bumped to 68 KB; tighten back
 // toward 50 KB once bytecode->JS specialization lands and the runtime's
 // generic dispatch shrinks.
-const SIZE_BUDGET_BYTES = 64 * 1024;
+const SIZE_BUDGET_BYTES = 68 * 1024;
 // Plan target: 2x. Empirical reality: ~15-25x steady-state (see header
 // comment for why). 50x sets a regression ceiling — a 2x slowdown from
 // the current floor would trigger this, but normal CI variance won't.

@@ -592,6 +592,13 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       const balanced = (flags & 1) !== 0;
       const skipStrings = (flags & 2) !== 0;
       const skipComments = (flags & 4) !== 0;
+      // bit 3 (8): treat `url(...)` (case-insensitive) at depth-0 as
+      // opaque — gobble everything to the matching `)`, including bare
+      // tokens that look like comments (`/*`) or stops. Mirrors v2's
+      // `useUrlRaw` arm. Emitted when the schema uses .ident().css()
+      // spans (i.e. inferred classes include an ident class with the
+      // css refinement) AND the scan is balanced.
+      const useUrlRaw = (flags & 8) !== 0;
       // Reset comment-ranges scratch for THIS scan. The capture op
       // consumes them; subsequent SCAN_UNTILs start fresh.
       if (skipComments) {
@@ -636,6 +643,50 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
             if (input.startsWith(stops[i]!, state.off)) break scan;
           }
           if (balanced && (c === 0x29 || c === 0x5d || c === 0x7d)) break;
+        }
+        // CSS url(...) raw-mode skip (only at depth=0). Recognize `url(`
+        // (case-insensitive) and consume up to the matching `)`. The
+        // url() body may contain comment-like tokens or stops that
+        // would otherwise hijack the scan (e.g. `url(a/*)` would be
+        // mis-read as an unterminated comment without this). Strings
+        // inside url() honor backslash-escape so `url("a\")")`
+        // round-trips. Mirrors v2 emit/v2/span.ts L1328-1356.
+        if (useUrlRaw && depth === 0 && (c === 0x75 || c === 0x55)
+          && state.off + 3 < len
+          && (input.charCodeAt(state.off + 1) | 0x20) === 0x72
+          && (input.charCodeAt(state.off + 2) | 0x20) === 0x6c
+          && input.charCodeAt(state.off + 3) === 0x28) {
+          state.off += 4;
+          while (state.off < len) {
+            const uc = input.charCodeAt(state.off);
+            if (uc === 0x29) { state.off++; break; }
+            if (uc === 0x5c && state.off + 1 < len) { state.off += 2; continue; }
+            if (uc === 0x22 || uc === 0x27) {
+              const uq = uc;
+              state.off++;
+              while (state.off < len) {
+                const usc = input.charCodeAt(state.off);
+                if (usc === 0x5c && state.off + 1 < len) { state.off += 2; continue; }
+                if (usc === uq) { state.off++; break; }
+                if (usc === 0x0a || usc === 0x0d) break;
+                state.off++;
+              }
+              continue;
+            }
+            state.off++;
+          }
+          continue;
+        }
+        // CSS-style backslash escape — consume `\` + next byte as an
+        // opaque pair. Mirrors v2 emit/v2/span.ts L1371-1377 (the
+        // balanced .until() escape-arm). Without this `\;`, `\"`,
+        // `\{`, etc. inside a value or selector break alt-discrimination
+        // because the unescaped stop fires early. Only emitted in
+        // balanced mode (matches v2 — unbalanced scans don't see
+        // bracket structure either).
+        if (balanced && c === 0x5c && state.off + 1 < len) {
+          state.off += 2;
+          continue;
         }
         if (balanced) {
           if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;

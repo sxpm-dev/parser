@@ -497,13 +497,21 @@ function emitUntilSpan(
   const startSlot = nextSlot;
   const endSlot = nextSlot + 1;
   const tokens = new Set<string>();
-  for (const t of state.schema.classes) tokens.add(t.class);
+  let cssIdent = false;
+  for (const t of state.schema.classes) {
+    tokens.add(t.class);
+    if (t.class === 'ident' && t.refinements.some((r) => r.name === 'css')) {
+      cssIdent = true;
+    }
+  }
   const skipStrings = tokens.has('string');
   const skipComments = tokens.has('comment');
+  const useUrlRaw = cssIdent && modifier.balanced;
   let flags = 0;
   if (modifier.balanced) flags |= 1;
   if (skipStrings) flags |= 2;
   if (skipComments) flags |= 4;
+  if (useUrlRaw) flags |= 8;
 
   writeOp(state, Op.SAVE_OFF);
   writeU8(state, startSlot);

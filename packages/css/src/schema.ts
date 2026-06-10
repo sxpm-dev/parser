@@ -1,4 +1,4 @@
-import { $, defineSchema, defineValidation, dynKey, literal, merge, parse, relation, span, tpl } from "@parser2/parser";
+import { defineSchema, defineValidation, dynKey, literal, merge, parse, relation, span, tpl } from "@parser2/parser";
 import type { ValidationDef } from "@parser2/parser";
 import colorSchema from "./validators/color.ts";
 import lengthPercentageSchema from "./validators/length-percentage.ts";
@@ -186,10 +186,10 @@ const cssSchema = defineSchema({
     // exclusively in the template now.
     relation('Comment', {
       input: '/* foo */',
-      encodings: {
-        parse: parse([
+      parse: parse([
           span('text', '/* foo */').comment(),
         ]),
+      targets: ($) => ({
         ast: {
           type: "comment",
           text: $.text,
@@ -200,7 +200,7 @@ const cssSchema = defineSchema({
         // (its source still round-trips through the `source` target).
         json: null,
         source: tpl`/* ${$.text} */`,
-      },
+      }),
     }),
 
     // ---- Declaration with !important ----------------------------------
@@ -213,8 +213,7 @@ const cssSchema = defineSchema({
     // `!`, will not match this variant and fall through to the plain form.
     relation('Declaration', {
       input: 'color: red !important;',
-      encodings: {
-        parse: parse([
+      parse: parse([
           span('prop', 'color').until([':', ';', '}']),
           literal(':'),
           span('value', 'red').until([';', '}', '!']),
@@ -227,6 +226,7 @@ const cssSchema = defineSchema({
           span('important', 'important').ident().css(),
           literal(';').optional(),
         ]),
+      targets: ($) => ({
         // `important: true` is a literal discriminator the inverse
         // dispatcher matches on (vs the regular Declaration#1 form which
         // has no `important` field). `_important` carries the case-
@@ -245,7 +245,7 @@ const cssSchema = defineSchema({
         // trip an !important declaration through 'source' to preserve it.
         json: null,
         source: tpl`${$.prop}: ${$.value} !${$.important};`,
-      },
+      }),
     }),
 
     // ---- Declaration --------------------------------------------------
@@ -253,13 +253,13 @@ const cssSchema = defineSchema({
     // the declaration's source range includes it, matching PostCSS.
     relation('Declaration', {
       input: 'color: red;',
-      encodings: {
-        parse: parse([
+      parse: parse([
           span('prop', 'color').until([':', ';', '}']),
           literal(':'),
           span('value', 'red').until([';', '}']),
           literal(';').optional(),
         ]),
+      targets: ($) => ({
         ast: {
           type: "decl",
           prop: $.prop,
@@ -271,7 +271,7 @@ const cssSchema = defineSchema({
         // children, this yields { selector: { prop: value, ... } }.
         json: dynKey($.prop, $.value),
         source: tpl`${$.prop}: ${$.value};`,
-      },
+      }),
     }),
 
     // ---- Rule (selector + body) ---------------------------------------
@@ -289,8 +289,7 @@ const cssSchema = defineSchema({
     // block, then needs a `{` next, sees `;`, fails, and Declaration wins.
     relation('Rule', {
       input: '.foo:hover { color: red }',
-      encodings: {
-        parse: parse([
+      parse: parse([
           span('selector', '.foo:hover').until(['{', ';'], {
             rejectSuffix: [':', ',', '>', '+', '~'],
             nonEmpty: true,
@@ -305,6 +304,7 @@ const cssSchema = defineSchema({
             .repeats({ sep: ';', trailing: 'allowed' }),
           literal('}'),
         ]),
+      targets: ($) => ({
         ast: {
           type: "rule",
           selector: $.selector,
@@ -315,7 +315,7 @@ const cssSchema = defineSchema({
         // value type: Decl's value is a string, Rule's value is an object.
         json: dynKey($.selector, merge($.nodes)),
         source: tpl`${$.selector} {${$.nodes}}`,
-      },
+      }),
     }),
 
     // ---- AtRule, block form (has { ... }) -----------------------------
@@ -325,8 +325,7 @@ const cssSchema = defineSchema({
     // leaving the body to be mis-parsed as a separate Rule.
     relation('AtRule', {
       input: '@media screen { color: red }',
-      encodings: {
-        parse: parse([
+      parse: parse([
           literal('@'),
           span('name', 'media').ident().css(),
           span('params', 'screen').until([';', '{']),
@@ -338,6 +337,7 @@ const cssSchema = defineSchema({
             .repeats({ sep: ';', trailing: 'allowed' }),
           literal('}'),
         ]),
+      targets: ($) => ({
         ast: {
           type: "atrule",
           name: $.name,
@@ -349,7 +349,7 @@ const cssSchema = defineSchema({
         // template-key support (deferred).
         json: null,
         source: tpl`@${$.name} ${$.params} {${$.nodes}}`,
-      },
+      }),
     }),
 
     // ---- AtRule, statement form (optional trailing ;) ------------------
@@ -358,8 +358,7 @@ const cssSchema = defineSchema({
     // at the close of an enclosing block (e.g. `a { @import "x" }`).
     relation('AtRule', {
       input: '@charset "UTF-8";',
-      encodings: {
-        parse: parse([
+      parse: parse([
           literal('@'),
           span('name', 'charset').ident().css(),
           span('params', '"UTF-8"').until([';', '{', '}']),
@@ -369,6 +368,7 @@ const cssSchema = defineSchema({
           // rebuild to find it.
           literal(';').optional(),
         ]),
+      targets: ($) => ({
         ast: {
           type: "atrule",
           name: $.name,
@@ -380,7 +380,7 @@ const cssSchema = defineSchema({
         // "UTF-8";` has it) — value-stable (the trailing `;` round-trips
         // through itself) but not byte-stable for the semicolon-less form.
         source: tpl`@${$.name} ${$.params};`,
-      },
+      }),
     }),
 
     // ---- Stylesheet (root) --------------------------------------------
@@ -390,11 +390,11 @@ const cssSchema = defineSchema({
     // block.
     relation('Stylesheet', {
       input: '.foo { color: red }',
-      encodings: {
-        parse: parse([
+      parse: parse([
           span('nodes', '.foo { color: red }').of(NODE)
             .repeats({ min: 0, sep: ';', trailing: 'allowed' }),
         ]),
+      targets: ($) => ({
         ast: {
           type: "root",
           nodes: $.nodes,
@@ -405,7 +405,7 @@ const cssSchema = defineSchema({
         // merge()'s null-entry rule.
         json: merge($.nodes),
         source: tpl`${$.nodes}`,
-      },
+      }),
     }),
   ],
 });

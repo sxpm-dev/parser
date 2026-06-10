@@ -568,6 +568,17 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.JUMP_IF_OFF_EQ: {
+      const slot = readU8(state);
+      const rel = readI32(state);
+      const frame = frames[frames.length - 1]!;
+      const saved = frame.slots[slot];
+      if (saved !== undefined && state.off === saved) {
+        state.pc += rel;
+      }
+      return { kind: 'continue' };
+    }
+
     case Op.JUMP_IF_NULL: {
       const rel = readI32(state);
       const top = state.valueStack[state.valueStack.length - 1];
@@ -749,6 +760,49 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       const expected = state.stringPool[idx]!;
       const top = state.valueStack[state.valueStack.length - 1];
       if (top !== expected) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+      state.valueStack.pop();
+      return { kind: 'continue' };
+    }
+
+    case Op.ASSERT_TOP_BOOL_EQ: {
+      const expected = readU8(state) !== 0;
+      const top = state.valueStack[state.valueStack.length - 1];
+      if (top !== expected) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+      state.valueStack.pop();
+      return { kind: 'continue' };
+    }
+
+    case Op.ASSERT_TOP_NUMBER_EQ: {
+      const idx = readU32(state);
+      const expected = state.numberPool[idx]!;
+      const top = state.valueStack[state.valueStack.length - 1];
+      if (top !== expected) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+      state.valueStack.pop();
+      return { kind: 'continue' };
+    }
+
+    case Op.ASSERT_TOP_NULL: {
+      const top = state.valueStack[state.valueStack.length - 1];
+      if (top !== null && top !== undefined) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+      state.valueStack.pop();
+      return { kind: 'continue' };
+    }
+
+    case Op.ASSERT_TOP_NOT_NULL: {
+      const top = state.valueStack[state.valueStack.length - 1];
+      if (top === null || top === undefined) {
         if (failProduction(state, frames)) return { kind: 'return', value: null };
         return { kind: 'continue' };
       }

@@ -91,6 +91,14 @@ export enum Op {
   JUMP_IF_PEEK_BYTE = 0x51,
   // operand: i32 relative offset → if top-of-stack is null, jump.
   JUMP_IF_NULL = 0x52,
+  // operands: u8 slot, i32 relative offset → if state.off equals
+  // frame.slots[slot], jump. Used by the repeats infinite-loop guard:
+  // when a repeated child production "succeeds" without advancing
+  // state.off (e.g. a TextNode whose rawUntil captured zero bytes
+  // because the next char is already a stop), the parent loop must
+  // exit instead of spinning forever. Mirrors v2's
+  // `if (off === __loopStart) break;` guard.
+  JUMP_IF_OFF_EQ = 0x53,
 
   // --- Captures construction ----------------------------------------------
   // operand: u32 stringPool index (production routing key) → push {} with
@@ -163,6 +171,26 @@ export enum Op {
   // current stringify frame (RETURN_NULL). On match, pop the asserted
   // value off the stack. Used by stringify discriminators.
   ASSERT_TOP_STRING_EQ = 0x8b,
+  // operand: u8 (0 or 1) → top of value stack must be a boolean equal
+  // to the given bit. On mismatch, fail the current stringify frame.
+  // On match, pop the asserted value off the stack. Mirrors
+  // ASSERT_TOP_STRING_EQ but for boolean literal discriminators
+  // (e.g. CSS Declaration#0's `important: true`).
+  ASSERT_TOP_BOOL_EQ = 0x8d,
+  // operand: u32 numberPool index → top of value stack must be a number
+  // equal to numberPool[idx]. Same semantics as ASSERT_TOP_BOOL_EQ.
+  ASSERT_TOP_NUMBER_EQ = 0x8e,
+  // No operands → top of value stack must be null or undefined. Same
+  // semantics as the other asserts. Used for `field: null` literal
+  // discriminators.
+  ASSERT_TOP_NULL = 0x8f,
+  // No operands → top of value stack must be NEITHER null nor undefined.
+  // Used by the must-be-present pass that distinguishes sibling
+  // object-IR alts whose literal-field maps are identical (e.g. CSS
+  // AtRule#0 has `nodes` ref, AtRule#1 doesn't — AtRule#0 must reject
+  // when `nodes` is absent or the dispatcher always picks the wider
+  // alt). Pops the asserted value off the stack on success.
+  ASSERT_TOP_NOT_NULL = 0x91,
   // No operands — pop top of value stack. Used to discard values after
   // assertions / discriminator probes.
   POP = 0x8c,
@@ -253,6 +281,7 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.JUMP]: [4],
   [Op.JUMP_IF_PEEK_BYTE]: [1, 4],
   [Op.JUMP_IF_NULL]: [4],
+  [Op.JUMP_IF_OFF_EQ]: [1, 4],
 
   [Op.PUSH_NEW_CAPTURES]: [4],
   [Op.PUSH_LITERAL_FIELD]: [4, 4],
@@ -274,6 +303,10 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.RENDER_RETURN]: [],
   [Op.PEEK_FIELD]: [4],
   [Op.ASSERT_TOP_STRING_EQ]: [4],
+  [Op.ASSERT_TOP_BOOL_EQ]: [1],
+  [Op.ASSERT_TOP_NUMBER_EQ]: [4],
+  [Op.ASSERT_TOP_NULL]: [],
+  [Op.ASSERT_TOP_NOT_NULL]: [],
   [Op.POP]: [],
 
   // numSegs + numCaps + targetIdx fixed prefix; variable tail computed

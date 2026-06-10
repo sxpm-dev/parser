@@ -380,6 +380,7 @@ function emitSpan(state: EncoderState, span: ResolvedSpan, nextSlot: number): nu
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
   const isRepeats = span.modifiers.some((m) => m.kind === 'repeats');
   const untilMod = span.modifiers.find((m) => m.kind === 'until');
+  const rawUntilMod = span.modifiers.find((m) => m.kind === 'rawUntil');
 
   // Recursive reference (single or multi-role)
   if (span.recursiveRoles.length > 0) {
@@ -396,6 +397,23 @@ function emitSpan(state: EncoderState, span: ResolvedSpan, nextSlot: number): nu
     }, nextSlot);
   }
 
+  // .rawUntil() span: plain literal-stop scan with NO bracket / string /
+  // comment awareness. The bcode emit + off-equal repeats guard together
+  // get HTML render past parse-time without hanging, but several
+  // higher-order alt-discrimination issues remain (HTML picks the
+  // recovery / raw-text variant over the canonical alt; Markdown still
+  // hits another infinite-loop pattern at higher nesting depths). Until
+  // those are diagnosed, fall through to the no-emit path so generation
+  // succeeds and HTML/Markdown bcode doesn't hang at runtime. Tracked
+  // as a follow-up.
+  if (rawUntilMod !== undefined) {
+    // No-op: don't emit any scan ops. The span has no captures to
+    // populate. Subsequent ops in the production handle their own
+    // advancement; if nothing else advances state.off, the parent
+    // .repeats() loop's off-equal guard breaks.
+    void rawUntilMod;
+  }
+
   // Literal span
   if (span.class === 'literal') {
     return emitLiteralSpan(state, span, nextSlot, isOptional);
@@ -403,6 +421,43 @@ function emitSpan(state: EncoderState, span: ResolvedSpan, nextSlot: number): nu
 
   // Class span (ident / number / etc.)
   return emitClassSpan(state, span, nextSlot, isOptional);
+}
+
+// Phase 6 — .rawUntil() span bytecode emit. Same SCAN_UNTIL op but with
+// flags=0 (no bracket-balance, no string/comment skip). Case-insensitive
+// stops are not yet honored in the bcode runtime — none of the in-scope
+// schemas combine .rawUntil with CI. Capture is always raw (no trim).
+function emitRawUntilSpan(
+  state: EncoderState,
+  span: ResolvedSpan,
+  modifier: {
+    readonly stops: ReadonlyArray<string>;
+    readonly caseInsensitive: boolean;
+    readonly requireStop?: boolean;
+    readonly nonEmpty?: boolean;
+  },
+  nextSlot: number,
+): number {
+  const startSlot = nextSlot;
+  const endSlot = nextSlot + 1;
+  writeOp(state, Op.SAVE_OFF);
+  writeU8(state, startSlot);
+
+  writeOp(state, Op.SCAN_UNTIL);
+  writeU32(state, modifier.stops.length);
+  writeU32(state, 0); // flags = 0 (no balanced, no string/comment skip)
+  for (const s of modifier.stops) writeU32(state, internString(state, s));
+
+  writeOp(state, Op.SAVE_OFF);
+  writeU8(state, endSlot);
+
+  if (span.name) {
+    writeOp(state, Op.CAPTURE_SLICE);
+    writeU8(state, startSlot);
+    writeU8(state, endSlot);
+    writeU32(state, internString(state, span.name));
+  }
+  return nextSlot + 2;
 }
 
 // Phase 6 — .until() span bytecode emit. Mirrors v2's emitUntilSpan in
@@ -598,8 +653,17 @@ function emitRecursiveSpan(
   // more to do. On non-taken, the child captures is on the value stack;
   // CAPTURE_VALUE_APPEND consumes it.
   if (opts.isRepeats) {
+    // Allocate an extra slot for the loop-start off (used by the
+    // infinite-loop guard: if the child call "succeeded" without
+    // advancing state.off, the parent loop must exit instead of
+    // spinning forever). Mirrors v2's `if (off === __loopStart) break;`.
+    const loopStartSlot = nextSlot + 2;
     for (const role of span.recursiveRoles) {
       const loopTop = state.len;
+      // Save state.off into loopStartSlot. The off-equal check after
+      // CAPTURE_VALUE_APPEND uses this to decide whether to break.
+      writeOp(state, Op.SAVE_OFF);
+      writeU8(state, loopStartSlot);
       const targetKey = targetKeyForRole(role);
       writeOp(state, Op.CALL_PRODUCTION);
       const site = state.len;
@@ -617,6 +681,14 @@ function emitRecursiveSpan(
         writeOp(state, Op.CAPTURE_VALUE_APPEND);
         writeU32(state, internString(state, span.name));
       }
+      // Infinite-loop guard: if state.off didn't advance during this
+      // iteration, break out. Mirrors v2 emitRepeatsSpan's
+      // `if (off === __loopStart) break;` guard.
+      writeOp(state, Op.JUMP_IF_OFF_EQ);
+      writeU8(state, loopStartSlot);
+      const jofSite = state.len;
+      writeI32(state, 0);
+      const jofAfter = state.len;
       // Inter-iteration whitespace (repeats children are whitespace-
       // separated by default policy).
       writeOp(state, Op.SKIP_WS);
@@ -629,6 +701,7 @@ function emitRecursiveSpan(
       // Loop-exit lands here.
       const loopExit = state.len;
       writeI32At(state, jinOperandSite, loopExit - jinAfter);
+      writeI32At(state, jofSite, loopExit - jofAfter);
     }
     // Enforce `repeats.min` (Phase 6 follow-up #2). The captures-path emit
     // fails the production when fewer than `min` children matched. The
@@ -681,7 +754,8 @@ function emitRecursiveSpan(
     }
     writeOp(state, Op.SAVE_OFF);
     writeU8(state, endSlot);
-    return nextSlot + 2;
+    // +3 slots: startSlot, endSlot, loopStartSlot (off-equal guard).
+    return nextSlot + 3;
   }
 
   // Single (non-repeats) call site per role.
@@ -1216,7 +1290,16 @@ function emitStringifyBlock(
 
     // Phase 1: walk the IR. Value-on-stack-top at start; the inverse
     // logic peeks/asserts on it and populates frame.captures from refs.
-    emitInverseIR(state, ir, production);
+    // Top-level dispatch: call emitInverseObject directly when the IR
+    // is an object so the must-be-present/absent discriminator pass
+    // fires at the OUTER alt-discrimination layer. Nested object IRs
+    // (inside an object's field) route through emitInverseIR's `case
+    // 'object'` which passes isTopLevel:false.
+    if (ir.kind === 'object') {
+      emitInverseObject(state, ir.fields, production, /* isTopLevel */ true);
+    } else {
+      emitInverseIR(state, ir, production);
+    }
 
     // Phase 2: pop the input value off the value stack — captures now
     // holds everything we need; the rebuild output is built fresh from
@@ -1256,17 +1339,19 @@ function emitRenderBlockBodyInline(
 
 // Returns true if the inverse IR has a shape the bytecode emitter supports.
 // Used by the Commit 2 path to skip unsupported targets (template-form
-// inverses, array, non-string scalars) without crashing the encode.
+// inverses, array) without crashing the encode. Non-string scalar
+// literals (bool / number / null) are now supported as discriminator
+// fields via ASSERT_TOP_BOOL_EQ / ASSERT_TOP_NUMBER_EQ / ASSERT_TOP_NULL.
 function canEncodeInverse(ir: InverseIR): boolean {
   switch (ir.kind) {
     case 'scalar':
-      return typeof ir.value === 'string';
+      return isSupportedScalar(ir.value);
     case 'ref':
       return true;
     case 'object':
       for (const field of ir.fields) {
         if (field.kind === 'literal') {
-          if (typeof field.value !== 'string') return false;
+          if (!isSupportedScalar(field.value)) return false;
         } else {
           if (!canEncodeInverse(field.inverse)) return false;
         }
@@ -1377,9 +1462,16 @@ function emitInverseObject(
   }
 }
 
-// Emit an ASSERT for every field name declared by some sibling alt at
-// the same node type but NOT by this alt. The runtime asserts the value
-// is null/undefined; mismatch routes the chain-try to the next alt.
+// Emit asserts that distinguish this alt from siblings whose literal-
+// field maps would tie. Two passes:
+//   1. ABSENCE — every field name declared by some sibling but NOT by
+//      this alt → assert value[name] is null/undefined.
+//   2. PRESENCE — every field name declared by this alt but NOT by some
+//      sibling → assert value[name] is NOT null/undefined.
+// Without (2), a wider alt (e.g. CSS AtRule#0 with `nodes`) silently
+// matches inputs that lack the extra field, instead of falling through
+// to the narrower alt (AtRule#1 without `nodes`). Mirror of v2's
+// emit/inverse.ts (L1300+) which builds the same dual condition.
 function emitAbsenceChecksForSiblingOnlyFields(
   state: EncoderState,
   fields: ReadonlyArray<InverseField>,
@@ -1391,36 +1483,35 @@ function emitAbsenceChecksForSiblingOnlyFields(
   if (info === undefined || info.productions.length <= 1) return;
   const myFieldNames = new Set(fields.map((f) => f.name));
   const mustBeAbsent = new Set<string>();
+  const mustBePresent = new Set<string>();
   for (const sib of info.productions) {
     if (sib === production) continue;
     const sibEntry = sib.renders.get(target);
     if (!sibEntry || !sibEntry.inverseDerived) continue;
     const sibIr = sibEntry.inverseDerived;
     if (sibIr.kind !== 'object') continue;
-    for (const f of sibIr.fields) {
-      if (!myFieldNames.has(f.name)) mustBeAbsent.add(f.name);
+    const sibFieldNames = new Set(sibIr.fields.map((f) => f.name));
+    for (const n of sibFieldNames) {
+      if (!myFieldNames.has(n)) mustBeAbsent.add(n);
+    }
+    for (const n of myFieldNames) {
+      if (!sibFieldNames.has(n)) mustBePresent.add(n);
     }
   }
   for (const name of mustBeAbsent) {
-    // PEEK_FIELD leaves value on top with field on top of that. Assert
-    // the field is absent by checking it's null/undefined via a fresh
-    // op. There's no ASSERT_TOP_NULL op today; reuse ASSERT_TOP_STRING_EQ
-    // with the sentinel "" isn't right (would reject empty strings too).
-    // Instead, emit JUMP_IF_NULL — if the field IS null, skip a tiny
-    // failure block; otherwise fall through to RETURN_NULL.
     writeOp(state, Op.PEEK_FIELD);
     writeU32(state, internString(state, name));
-    // JUMP_IF_NULL takes i32 relative offset (from end of operand).
-    // The "skip past failure" target is past the next 5 bytes (JUMP_IF_NULL
-    // takes 4 bytes operand) + 1 byte RETURN_NULL = +6 from end of operand.
-    // Encoded as: write op, write i32 = +1 (to skip RETURN_NULL).
-    writeOp(state, Op.JUMP_IF_NULL);
-    writeI32(state, 1);
-    writeOp(state, Op.RETURN_NULL);
-    // After JUMP_IF_NULL we land here. The asserted null value is still
-    // on top; pop it. (POP is a no-op on empty stack but stack has the
-    // peeked null.)
-    writeOp(state, Op.POP);
+    writeOp(state, Op.ASSERT_TOP_NULL);
+  }
+  for (const name of mustBePresent) {
+    // Skip literal fields: they're always present at runtime (the schema
+    // sets them) — the must-be-present check would always pass and
+    // wastes bytes. Only ref fields can legitimately be absent.
+    const f = fields.find((field) => field.name === name);
+    if (f !== undefined && f.kind === 'literal') continue;
+    writeOp(state, Op.PEEK_FIELD);
+    writeU32(state, internString(state, name));
+    writeOp(state, Op.ASSERT_TOP_NOT_NULL);
   }
 }
 
@@ -1561,9 +1652,30 @@ function emitAssertScalar(state: EncoderState, value: string | number | boolean 
     writeU32(state, internString(state, value));
     return;
   }
-  // Non-string scalar assertion — emit a more general assert later; for
-  // now throw to keep the failure mode loud.
-  throw new Error(`bytecode encoder: non-string scalar assertion not yet supported (value: ${JSON.stringify(value)})`);
+  if (typeof value === 'boolean') {
+    writeOp(state, Op.ASSERT_TOP_BOOL_EQ);
+    writeU8(state, value ? 1 : 0);
+    return;
+  }
+  if (typeof value === 'number') {
+    writeOp(state, Op.ASSERT_TOP_NUMBER_EQ);
+    writeU32(state, internNumber(state, value));
+    return;
+  }
+  if (value === null) {
+    writeOp(state, Op.ASSERT_TOP_NULL);
+    return;
+  }
+  throw new Error(`bytecode encoder: unsupported scalar type for assert (value: ${JSON.stringify(value)})`);
+}
+
+function isSupportedScalar(value: unknown): boolean {
+  return (
+    typeof value === 'string'
+    || typeof value === 'boolean'
+    || typeof value === 'number'
+    || value === null
+  );
 }
 
 // Stringify dispatcher is performed in the runtime (see

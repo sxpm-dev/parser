@@ -515,8 +515,12 @@ function emitUntilSpan(
   writeU8(state, endSlot);
 
   if (span.name) {
-    const captureOp = modifier.trim ? Op.CAPTURE_TRIMMED_SLICE : Op.CAPTURE_SLICE;
-    writeOp(state, captureOp);
+    // .until() ALWAYS trims (mirrors v2's L1209+: "the emitter ignores
+    // modifier.trim — every emitted .until() rewinds `off` to the last
+    // non-ws byte"). Matches v1 across all packages and produces
+    // HTML `<!-- hello -->` data='hello' (not 'hello ').
+    void modifier.trim;
+    writeOp(state, Op.CAPTURE_TRIMMED_SLICE);
     writeU8(state, startSlot);
     writeU8(state, endSlot);
     writeU32(state, internString(state, span.name));

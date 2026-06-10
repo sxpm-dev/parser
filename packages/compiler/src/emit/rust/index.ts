@@ -1383,10 +1383,11 @@ function emitUntilSpan(
   }
   if (span.name !== undefined) {
     const v = rustIdent(span.name);
-    // Trim end: when modifier.trim is set, rewind end_var past trailing
-    // whitespace BEFORE excising comments (so comment-end-adjacency
-    // checks see the trim boundary, not the raw scan end).
-    if (modifier.trim) {
+    // .until() ALWAYS trims (mirrors v2's L1209+: "the emitter ignores
+    // modifier.trim — every emitted .until() rewinds `off` to the last
+    // non-ws byte"). Match for cross-backend parity.
+    void modifier.trim;
+    if (true) {
       body.push(`    let mut __${v}_te = ${endVar};`);
       body.push(`    while __${v}_te > ${startVar} {`);
       body.push(`        let __tc = state.input[__${v}_te - 1];`);

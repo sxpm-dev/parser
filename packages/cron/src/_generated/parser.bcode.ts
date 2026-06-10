@@ -33,7 +33,18 @@ export function __parse(input: string, options?: { mode?: string }): unknown {
     throw new Error("bytecode-backend parser: missing root production offset for '" + __DECODED.rootProductionKey + "'");
   }
   const captures = runParse(state, rootOffset);
-  if (captures === null || state.off !== input.length) {
+  if (captures === null) {
+    throw syntaxErrorAt(input, state.maxOff > state.off ? state.maxOff : state.off);
+  }
+  // Trailing-whitespace skip before the EOF check. Mirrors v2's
+  // __parse trailing skip — fixtures with trailing \n / spaces /
+  // tabs would otherwise fail the EOF check at state.off=len-1.
+  while (state.off < input.length) {
+    const c = input.charCodeAt(state.off);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { state.off++; continue; }
+    break;
+  }
+  if (state.off !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.off ? state.maxOff : state.off);
   }
   return captures;

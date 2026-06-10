@@ -1249,7 +1249,14 @@ function emitRepeatsRecursiveSpan(
 function emitUntilSpan(
   lines: string[],
   span: ResolvedSpan,
-  modifier: { stops: ReadonlyArray<string>; balanced: boolean; trim: boolean },
+  modifier: {
+    readonly stops: ReadonlyArray<string>;
+    readonly balanced: boolean;
+    readonly trim: boolean;
+    readonly rejectSuffix?: ReadonlyArray<string>;
+    readonly requireStop?: boolean;
+    readonly nonEmpty?: boolean;
+  },
   schema: InferredSchema,
 ): void {
   const startVar = `__${rustIdent(span.name ?? 'anon')}_start`;
@@ -1333,6 +1340,19 @@ function emitUntilSpan(
   body.push(`        state.pos += 1;`);
   body.push(`    }`);
   body.push(`    let ${endVar} = state.pos;`);
+  // requireStop: post-loop, pre-capture. If the scan exited via EOF
+  // (off === len) or via an unmatched bracket in balanced mode
+  // (__depth !== 0), the production fails. Mirrors v2 (span.ts L1413+).
+  if (modifier.requireStop) {
+    const guard = balanced
+      ? `${endVar} >= state.input.len() || __depth != 0`
+      : `${endVar} >= state.input.len()`;
+    body.push(`    if ${guard} {`);
+    body.push(`        if state.pos > state.max_pos { state.max_pos = state.pos; }`);
+    body.push(`        state.pos = entry_pos;`);
+    body.push(`        return None;`);
+    body.push(`    }`);
+  }
   if (span.name !== undefined) {
     const v = rustIdent(span.name);
     // Trim end: when modifier.trim is set, rewind end_var past trailing
@@ -1379,6 +1399,26 @@ function emitUntilSpan(
       body.push(`    };`);
     } else {
       body.push(`    let ${v}: String = state.src[__${v}_ts..__${v}_te].to_string();`);
+    }
+    // rejectSuffix: fail when the captured value ends with any of the
+    // listed suffix literals. Mirrors v2 (span.ts L1479+).
+    if (modifier.rejectSuffix && modifier.rejectSuffix.length > 0) {
+      const checks = modifier.rejectSuffix
+        .map((s) => `${v}.ends_with(${rustString(s)})`)
+        .join(' || ');
+      body.push(`    if ${checks} {`);
+      body.push(`        if state.pos > state.max_pos { state.max_pos = state.pos; }`);
+      body.push(`        state.pos = entry_pos;`);
+      body.push(`        return None;`);
+      body.push(`    }`);
+    }
+    // nonEmpty: fail when the captured slice is zero-length.
+    if (modifier.nonEmpty) {
+      body.push(`    if ${v}.is_empty() {`);
+      body.push(`        if state.pos > state.max_pos { state.max_pos = state.pos; }`);
+      body.push(`        state.pos = entry_pos;`);
+      body.push(`        return None;`);
+      body.push(`    }`);
     }
   }
   lines.push(body.join('\n'));

@@ -1495,6 +1495,113 @@ const rows: ReadonlyArray<ParityRow> = [
     // (same family as $.raw / $.gap / $.endsWith).
     expected: { interp: 'gap', v2: 'gap' },
   },
+
+  // --- Fourth pass (2026-06-10) --------------------------------------------
+
+  {
+    name: 'modifier:repeats-min-fail',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        punctuators: { comma: ',' },
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('name', 'x').ident()]),
+              ast: { type: 'item', name: $.name },
+            },
+          }),
+          relation('List', {
+            input: 'x,y',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ sep: ',', min: 2 }),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    // min:2 — input with only 1 item rejects. Confirms the min-floor
+    // check fires identically on both backends.
+    input: 'a',
+    expectedAst: null,
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'refinement:number-int-rejects-decimal',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '42',
+            encodings: {
+              src: parse([span('v', '42').number().int()]),
+              ast: { type: 'n', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // .int() narrows the scanner: only [0-9]+. Decimal `3.14` is rejected
+    // because `.` isn't a continuation char. Confirms the refinement
+    // tightens the scanner on both backends.
+    input: '3.14',
+    expectedAst: null,
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'refinement:ident-html-attrs',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'data-foo',
+            encodings: {
+              src: parse([span('v', 'data-foo').ident().html()]),
+              ast: { type: 'attr', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // HTML attr names admit hyphens but not the wider CSS escape set.
+    input: 'aria-label',
+    expectedAst: { type: 'attr', v: 'aria-label' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:until-balanced-nested-brackets',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '(a,b);',
+            encodings: {
+              src: parse([
+                span('args', '(a,b)').until([';']),
+                literal(';'),
+              ]),
+              ast: { type: 'expr', args: $.args },
+            },
+          }),
+        ],
+      }),
+    // Default balanced=true. The `;` inside `(...)` doesn't end the
+    // capture; only the `;` at depth 0 does.
+    input: '(x; y);',
+    expectedAst: { type: 'expr', args: '(x; y)' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
 ];
 
 // ---------------------------------------------------------------------------

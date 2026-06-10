@@ -135,12 +135,22 @@ export function buildPrefixShareOption(
   const valueParams = new Map<string, string>();
   const startOffParams = new Map<string, string>();
   const endOffParams = new Map<string, string>();
+  // Phase 4 raws gap b — iws params for named .repeats() prefix spans.
+  // The tail body uses bindings.iwsExpr to emit `<name>_iws: <expr>` into
+  // its captures payload. When the dispatcher pre-parses the span, its
+  // iws local is `__<name>_iws`; the tail sees that local as parameter
+  // `<name>_iws`. Without this, raws-mode round-trip on pg-select
+  // `SELECT a , b FROM t` lost the inter-comma whitespace.
+  const iwsParams = new Map<string, string>();
   for (let i = 0; i < skipCount; i++) {
     const span = production.spans[i]!;
     if (!span.name) continue;
     valueParams.set(span.name, span.name);
     startOffParams.set(span.name, `${span.name}__start`);
     endOffParams.set(span.name, `${span.name}__end`);
+    if (hasModifier(span, 'repeats')) {
+      iwsParams.set(span.name, `${span.name}_iws`);
+    }
   }
   const wsCaptureMode: 'always' | 'raws-only' =
     schema.whitespace === 'preserve' ? 'always' : 'raws-only';
@@ -149,6 +159,7 @@ export function buildPrefixShareOption(
     valueParams,
     startOffParams,
     endOffParams,
+    iwsParams,
     wsCaptureMode,
   } as const;
 }
@@ -367,6 +378,26 @@ export function emitPrefixShareDispatcher(
   // order emitted by emitProduction (production.ts) when its prefix opt
   // carries wsCaptureMode.
   tailArgList.push('__ws', '__litPres');
+  // Phase 4 raws gap b — forward the per-iteration ws array for every
+  // named .repeats() prefix span (emitSpan populated bindings.iwsExpr
+  // when it ran). Order MUST match emitProduction's iwsParamList build
+  // (production.ts).
+  for (let i = 0; i < share.prefixLen; i++) {
+    const s = prefixProd.spans[i]!;
+    if (!s.name) continue;
+    if (!hasModifier(s, 'repeats')) continue;
+    const iwsLocal = bindings.iwsExpr.get(s.name);
+    if (!iwsLocal) {
+      // Defensive: emitRepeatsSpan should have populated iwsExpr when
+      // ctx.wsCaptureMode !== 'none'. If it didn't, the captures payload
+      // would lose the iws entry. Throw so a future schema regression
+      // surfaces immediately.
+      throw new Error(
+        `emitPrefixShareDispatcher: emitSpan did not bind iws for prefix .repeats span '${s.name}' in '${info.name}'`,
+      );
+    }
+    tailArgList.push(iwsLocal);
+  }
   const tailArgs = tailArgList.join(', ');
 
   // Group alts by suffix head. Within a group, longest-suffix (most spans)

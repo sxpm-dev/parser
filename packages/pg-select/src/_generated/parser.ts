@@ -436,21 +436,21 @@ function parsePredicate(state: State): unknown {
   return { __production: "Predicate#0", col: col, op: op, val: val };
 }
 
-function parseSelect__alt0(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null): unknown {
+function parseSelect__alt0(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null, columns_iws: string[] | null): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Select#0", __ws: __ws, __litPres: __litPres, columns: columns, table: table };
+    const __captures: any = { __production: "Select#0", __ws: __ws, __litPres: __litPres, columns_iws: columns_iws, columns: columns, table: table };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
   return { __production: "Select#0", columns: columns, table: table };
 }
 
-function parseSelect__alt1(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null): unknown {
+function parseSelect__alt1(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null, columns_iws: string[] | null): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -471,14 +471,14 @@ function parseSelect__alt1(state: State, entryOff: number, columns: string, tabl
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Select#1", __ws: __ws, __litPres: __litPres, columns: columns, table: table, where: where };
+    const __captures: any = { __production: "Select#1", __ws: __ws, __litPres: __litPres, columns_iws: columns_iws, columns: columns, table: table, where: where };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
   return { __production: "Select#1", columns: columns, table: table, where: where };
 }
 
-function parseSelect__alt2(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null): unknown {
+function parseSelect__alt2(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null, columns_iws: string[] | null): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -500,14 +500,14 @@ function parseSelect__alt2(state: State, entryOff: number, columns: string, tabl
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Select#2", __ws: __ws, __litPres: __litPres, columns: columns, table: table, limit: limit };
+    const __captures: any = { __production: "Select#2", __ws: __ws, __litPres: __litPres, columns_iws: columns_iws, columns: columns, table: table, limit: limit };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
   return { __production: "Select#2", columns: columns, table: table, limit: limit };
 }
 
-function parseSelect__alt3(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null): unknown {
+function parseSelect__alt3(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number, __ws: string[] | null, __litPres: boolean[] | null, columns_iws: string[] | null): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -543,7 +543,7 @@ function parseSelect__alt3(state: State, entryOff: number, columns: string, tabl
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Select#3", __ws: __ws, __litPres: __litPres, columns: columns, table: table, where: where, limit: limit };
+    const __captures: any = { __production: "Select#3", __ws: __ws, __litPres: __litPres, columns_iws: columns_iws, columns: columns, table: table, where: where, limit: limit };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -623,14 +623,14 @@ function parseSelect(state: State): unknown {
     break;
   }
   if (input.startsWith("WHERE", __peekOff)) {
-    state.pos = __postPos; { const r = parseSelect__alt3(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres); if (r !== null) return r; }
-    state.pos = __postPos; { const r = parseSelect__alt1(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres); if (r !== null) return r; }
+    state.pos = __postPos; { const r = parseSelect__alt3(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres, __columns_iws); if (r !== null) return r; }
+    state.pos = __postPos; { const r = parseSelect__alt1(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres, __columns_iws); if (r !== null) return r; }
   }
   if (input.startsWith("LIMIT", __peekOff)) {
-    state.pos = __postPos; { const r = parseSelect__alt2(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres); if (r !== null) return r; }
+    state.pos = __postPos; { const r = parseSelect__alt2(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres, __columns_iws); if (r !== null) return r; }
   }
   state.pos = __postPos;
-  return parseSelect__alt0(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres);
+  return parseSelect__alt0(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end, __ws, __litPres, __columns_iws);
 }
 
 const __defaultTarget: string | undefined = "ast";

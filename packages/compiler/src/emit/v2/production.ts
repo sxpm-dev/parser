@@ -54,6 +54,14 @@ export type EmitProductionOptions = {
     readonly startOffParams: ReadonlyMap<string, string>;
     /** Captured-name → parameter expression for source-end offsets. */
     readonly endOffParams: ReadonlyMap<string, string>;
+    /** Captured-name → parameter expression for the per-iteration ws
+     *  array (`<name>_iws`) that a named .repeats() span in the prefix
+     *  produced. The dispatcher emits its own `__<name>_iws` local, then
+     *  forwards it to the tail by name so the tail's emitCapturesExpr
+     *  reads it from bindings.iwsExpr and serializes it into the captures
+     *  payload alongside __ws / __litPres. Empty when no prefix span is
+     *  a named .repeats(). Phase 4 raws gap b. */
+    readonly iwsParams?: ReadonlyMap<string, string>;
     /** When defined, the dispatcher has already emitted (and partially
      *  populated) `__ws` and `__litPres` arrays for the inter-prefix-span
      *  gaps and is passing them in as additional parameters. The tail body
@@ -91,6 +99,9 @@ export function emitProduction(
     for (const [name, paramExpr] of prefix.valueParams) bindings.valueExpr.set(name, paramExpr);
     for (const [name, paramExpr] of prefix.startOffParams) bindings.startOffExpr.set(name, paramExpr);
     for (const [name, paramExpr] of prefix.endOffParams) bindings.endOffExpr.set(name, paramExpr);
+    if (prefix.iwsParams) {
+      for (const [name, paramExpr] of prefix.iwsParams) bindings.iwsExpr.set(name, paramExpr);
+    }
   }
   // Derive scan-kernel feature flags from the schema's declared token classes
   // and ident refinement. These teach .until() captures how to handle strings
@@ -408,6 +419,17 @@ return ${fastCaptures};`;
       ? ', __ws: string[], __litPres: boolean[]'
       : ', __ws: string[] | null, __litPres: boolean[] | null'
     : '';
+  // Phase 4 raws gap b — iws params for named .repeats() prefix spans. The
+  // dispatcher forwards `__<name>_iws` (the local it built during prefix
+  // emit) as parameter `<name>_iws`; the tail receives it and the captures
+  // payload's iws-emit reads it from bindings.iwsExpr (pre-populated above
+  // from prefix.iwsParams). Type matches the dispatcher-side declaration:
+  // eager `string[]` for preserve schemas, lazy `string[] | null` for
+  // standard/raws-only schemas.
+  const iwsParamType = inheritedWsMode === 'always' ? 'string[]' : 'string[] | null';
+  const iwsParamList = prefix?.iwsParams
+    ? [...prefix.iwsParams.keys()].map((name) => `, ${name}_iws: ${iwsParamType}`).join('')
+    : '';
   const extraParams = prefix
     ? [
         ', entryOff: number',
@@ -415,6 +437,7 @@ return ${fastCaptures};`;
         ...[...prefix.startOffParams.keys()].map((name) => `, ${startOffParamName(name)}: number`),
         ...[...prefix.endOffParams.keys()].map((name) => `, ${endOffParamName(name)}: number`),
         wsArrayParams,
+        iwsParamList,
       ].join('')
     : '';
   let body = indent(lines.filter((l) => l !== '').join('\n'), 1);

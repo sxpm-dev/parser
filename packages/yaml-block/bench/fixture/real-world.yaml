@@ -1,0 +1,29 @@
+name: parser2-yaml-block
+version: 0.1.0
+description: Block-style YAML scalars + mappings + sequences for bench scaling
+build:
+  target: wasm32-unknown-unknown
+  optimization: release
+features:
+  - parsing
+  - stringify
+  - round-trip
+  - diagnostics
+metadata:
+  authors:
+    - alice@example.com
+    - bob@example.com
+  tags:
+    - parser
+    - bench
+    - real-world
+  links:
+    repo: https://example.com/parser2
+    docs: https://example.com/parser2/docs
+settings:
+  timeouts:
+    connect: 5
+    read: 30
+    write: 30
+  retries: 3
+  backoff: exponential

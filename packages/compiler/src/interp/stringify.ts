@@ -189,6 +189,23 @@ function dispatchNode(
     }
   }
 
+  // Bare-ref bodies for non-string values (number / boolean). When the
+  // ref's source span is `.number().coerce()` the captured value lands
+  // here as a JS number; the ref inverter calls `String(value)` so the
+  // round-trip canonicalises. Mirrors the string-shape ref dispatch at
+  // line 170-174 — without this, B1's interp-side coerce change leaves
+  // JSON's checkRoundTrip with no production match for the AST value
+  // `42` against JsonValue's source target.
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    for (const b of refs) {
+      try {
+        return invertProduction(schema, b.production, b.ir, target, value, indentCol);
+      } catch {
+        // Fall through to the next ref.
+      }
+    }
+  }
+
   throw new Error(
     `stringify: no production matches for target '${target}' in node '${nodeType}' (value: ${safeStringify(value)})`,
   );

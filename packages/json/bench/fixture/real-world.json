@@ -1,0 +1,10 @@
+{"id":1,"name":"Alice","email":"alice@example.com","active":true,"created_at":"2026-01-15T12:00:00Z","tags":["admin","beta","ops"],"meta":{"login_count":42,"last_ip":"203.0.113.5","prefs":{"theme":"dark","tz":"UTC"}}}
+{"id":2,"name":"Bob","email":"bob@example.com","active":false,"created_at":"2026-02-03T08:30:00Z","tags":[],"meta":{"login_count":0,"last_ip":null,"prefs":null}}
+{"id":3,"name":"Carol","email":null,"active":true,"created_at":"2026-03-21T14:11:11Z","tags":["guest"],"meta":{"login_count":7,"prefs":{"theme":"light","lang":"fr"}}}
+{"event":"page_view","ts":1727900000,"props":{"path":"/docs","ref":"home","ms":42}}
+{"event":"click","ts":1727900012,"props":{"el":"#cta","x":120,"y":80}}
+{"event":"error","ts":1727900099,"props":{"code":500,"msg":"upstream timeout","retries":3,"context":{"service":"billing"}}}
+{"items":[{"sku":"A1","qty":2,"price":9.99},{"sku":"B2","qty":1,"price":24.0}],"total":43.98}
+{"empty_obj":{},"empty_arr":[],"strings":["plain","with\"quote","with\\backslash","with\nnewline"]}
+{"unicode":"éèê","numbers":[0,-0,1.5,-1.5,1e10,1.5e-10]}
+{"deeply":{"nested":{"value":{"is":{"here":true}}}}}

@@ -614,6 +614,24 @@ function emitClassSpan(
     writeU8(state, endSlot);
     writeU32(state, internString(state, span.name));
   }
+  // .oneOf([...]) refinement enforcement (matches v2 case-insensitive).
+  // Emitted only for named ident spans — the assertion reads
+  // captures[name] which requires the CAPTURE_SLICE to have run. For
+  // anonymous spans the value isn't stored; skip the check (no
+  // schema in scope uses .oneOf on an anonymous ident). The set is
+  // pre-lowered at encode time so the runtime only lowercases the
+  // captured value.
+  const oneOfRef = span.refinements.find((r) => r.name === 'oneOf');
+  if (span.name && oneOfRef !== undefined) {
+    const values = oneOfRef.args?.[0];
+    if (Array.isArray(values) && values.every((v) => typeof v === 'string')) {
+      const lowered = (values as string[]).map((v) => v.toLowerCase());
+      writeOp(state, Op.ASSERT_CAPTURE_IN_LOWERED_SET);
+      writeU32(state, internString(state, span.name));
+      writeU32(state, lowered.length);
+      for (const v of lowered) writeU32(state, internString(state, v));
+    }
+  }
   return nextSlot + 2;
 }
 

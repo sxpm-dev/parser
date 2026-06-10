@@ -198,6 +198,14 @@ export enum Op {
   // when `nodes` is absent or the dispatcher always picks the wider
   // alt). Pops the asserted value off the stack on success.
   ASSERT_TOP_NOT_NULL = 0x91,
+  // operands: u32 captureNameIdx, u32 count, count × u32 lowered-string
+  // pool indices. Reads frame.captures[name] (must be a string),
+  // lowercases it, and checks membership against the pre-lowered set.
+  // On mismatch fails the current production (RETURN_NULL). Emitted
+  // after CAPTURE_SLICE for an ident span carrying `.oneOf([...])`.
+  // Mirrors v2's case-insensitive oneOf check (toLowerCase on both
+  // sides). The set values are pre-lowered at encode time.
+  ASSERT_CAPTURE_IN_LOWERED_SET = 0x92,
   // No operands — pop top of value stack. Used to discard values after
   // assertions / discriminator probes.
   POP = 0x8c,
@@ -315,6 +323,10 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.ASSERT_TOP_NUMBER_EQ]: [4],
   [Op.ASSERT_TOP_NULL]: [],
   [Op.ASSERT_TOP_NOT_NULL]: [],
+  // Variable-length: fixed prefix u32 captureNameIdx + u32 count, then
+  // count × u32 string indices. OPERAND_SIZES records only the fixed
+  // prefix; the runtime + encoder both read `count` extra u32s.
+  [Op.ASSERT_CAPTURE_IN_LOWERED_SET]: [4, 4],
   [Op.POP]: [],
 
   // numSegs + numCaps + targetIdx fixed prefix; variable tail computed

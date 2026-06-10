@@ -819,6 +819,24 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.ASSERT_CAPTURE_IN_LOWERED_SET: {
+      const nameIdx = readU32(state);
+      const count = readU32(state);
+      const allowed: string[] = new Array(count);
+      for (let i = 0; i < count; i++) {
+        allowed[i] = state.stringPool[readU32(state)]!;
+      }
+      const name = state.stringPool[nameIdx]!;
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) throw new Error(`bytecode runtime: ASSERT_CAPTURE_IN_LOWERED_SET before captures init`);
+      const value = frame.captures[name];
+      const ok = typeof value === 'string' && allowed.indexOf(value.toLowerCase()) >= 0;
+      if (!ok) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+      }
+      return { kind: 'continue' };
+    }
+
     case Op.POP: {
       if (state.valueStack.length > 0) state.valueStack.pop();
       return { kind: 'continue' };

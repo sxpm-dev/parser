@@ -283,6 +283,12 @@ fn parse_Doctype(state: &mut State) -> Option<Value> {
     }
     let __keyword_end = state.pos;
     let keyword: String = state.src[__keyword_start..__keyword_end].to_string();
+    let keyword_lc = keyword.to_lowercase();
+    if !(keyword_lc == "doctype") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let __name_start = state.pos;
     if state.pos >= state.input.len() || !(is_ident_start(state.input[state.pos])) {
@@ -441,6 +447,12 @@ fn parse_HtmlElement__alt0(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "script" || tag_lc == "style" || tag_lc == "textarea" || tag_lc == "title") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -490,6 +502,12 @@ fn parse_HtmlElement__alt0(state: &mut State) -> Option<Value> {
     }
     let __closeTag_end = state.pos;
     let closeTag: String = state.src[__closeTag_start..__closeTag_end].to_string();
+    let closeTag_lc = closeTag.to_lowercase();
+    if !(closeTag_lc == "script" || closeTag_lc == "style" || closeTag_lc == "textarea" || closeTag_lc == "title") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     if !match_literal(state, ">") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -519,6 +537,12 @@ fn parse_HtmlElement__alt1(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "area" || tag_lc == "base" || tag_lc == "br" || tag_lc == "col" || tag_lc == "embed" || tag_lc == "hr" || tag_lc == "img" || tag_lc == "input" || tag_lc == "link" || tag_lc == "meta" || tag_lc == "param" || tag_lc == "source" || tag_lc == "track" || tag_lc == "wbr") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -564,6 +588,12 @@ fn parse_HtmlElement__alt2(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "area" || tag_lc == "base" || tag_lc == "br" || tag_lc == "col" || tag_lc == "embed" || tag_lc == "hr" || tag_lc == "img" || tag_lc == "input" || tag_lc == "link" || tag_lc == "meta" || tag_lc == "param" || tag_lc == "source" || tag_lc == "track" || tag_lc == "wbr") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -653,6 +683,12 @@ fn parse_HtmlElement__alt4(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "li") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -731,6 +767,12 @@ fn parse_HtmlElement__alt5(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "dt" || tag_lc == "dd") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -811,6 +853,12 @@ fn parse_HtmlElement__alt6(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "tr") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -889,6 +937,12 @@ fn parse_HtmlElement__alt7(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "td" || tag_lc == "th") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -969,6 +1023,12 @@ fn parse_HtmlElement__alt8(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "p") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -1047,6 +1107,12 @@ fn parse_HtmlElement__alt9(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "option" || tag_lc == "optgroup") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -1127,6 +1193,12 @@ fn parse_HtmlElement__alt10(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "html") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -1205,6 +1277,12 @@ fn parse_HtmlElement__alt11(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "head") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -1283,6 +1361,12 @@ fn parse_HtmlElement__alt12(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "tbody") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -1361,6 +1445,12 @@ fn parse_HtmlElement__alt13(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "thead") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -1439,6 +1529,12 @@ fn parse_HtmlElement__alt14(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "tfoot") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {
@@ -1517,6 +1613,12 @@ fn parse_HtmlElement__alt15(state: &mut State) -> Option<Value> {
     }
     let __tag_end = state.pos;
     let tag: String = state.src[__tag_start..__tag_end].to_string();
+    let tag_lc = tag.to_lowercase();
+    if !(tag_lc == "body") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
     skip_ws(state);
     let mut attrs: Vec<Value> = Vec::new();
     loop {

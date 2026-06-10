@@ -875,7 +875,35 @@ function emitClassSpan(
   if (span.name !== undefined) {
     const v = rustIdent(span.name);
     lines.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
+    // .oneOf([...]) enforcement (case-insensitive, mirrors v2).
+    // Without this, HTML's element-rawtext alt (which requires
+    // tag.oneOf(RAW_TEXT_TAGS)) silently accepts arbitrary tags
+    // like `<p>` and the dispatcher picks the wrong shape.
+    emitRustOneOfCheck(lines, span, v);
   }
+}
+
+// Emit the .oneOf([...]) post-scan check for a captured ident.
+// Lower-case both sides and assert membership in the pre-lowered set.
+// Mirrors v2's check (emit/v2/span.ts L1135+). No-op when the span
+// has no .oneOf or oneOf has zero values.
+function emitRustOneOfCheck(lines: string[], span: ResolvedSpan, captureVar: string): void {
+  const ref = span.refinements.find((r) => r.name === 'oneOf');
+  if (ref === undefined) return;
+  const values = ref.args?.[0];
+  if (!Array.isArray(values) || !values.every((v) => typeof v === 'string')) return;
+  const lowered = [...new Set((values as string[]).map((v) => v.toLowerCase()))];
+  if (lowered.length === 0) return;
+  // Pre-bind the lowered captured value once; then a chain of `||` comparisons.
+  const arr = lowered.map((v) => `${captureVar}_lc == ${rustString(v)}`).join(' || ');
+  lines.push(`    let ${captureVar}_lc = ${captureVar}.to_lowercase();`);
+  lines.push(
+    `    if !(${arr}) {\n` +
+      `        if state.pos > state.max_pos { state.max_pos = state.pos; }\n` +
+      `        state.pos = entry_pos;\n` +
+      `        return None;\n` +
+      `    }`,
+  );
 }
 
 function emitQuotedStringSpan(lines: string[], span: ResolvedSpan, quote: string): string | void {

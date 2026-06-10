@@ -198,6 +198,9 @@ function emitStructuredFusion(schema: InferredSchema): { source: string; targets
   // Roles that need a per-role dispatcher emitted (because some recursive
   // span references them and they're structurally fusable for this target).
   const roleDispatchersByTarget = new Map<string, Set<string>>();
+  // Module-level helper fns (until-viability guards) emitted by role-dispatch
+  // snippets, deduped by name across all productions/targets.
+  const helperSink = new Map<string, string>();
 
   for (const target of allTargets) {
     const cache = new Map<string, boolean>();
@@ -208,6 +211,7 @@ function emitStructuredFusion(schema: InferredSchema): { source: string; targets
           nodeName: info.name,
           prodIdx: i,
           target,
+          helperSink,
         });
         if (src === null) continue;
         fns.push(src);
@@ -300,6 +304,8 @@ ${probes.join('\n')}
 }`);
     }
   }
+
+  for (const helper of helperSink.values()) fns.push(helper);
 
   const sortedTargets = [...tableEntries.keys()].sort();
   const tables = sortedTargets.map((target) => {

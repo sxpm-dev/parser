@@ -7042,7 +7042,7 @@ function __fusedRenderStructured_Rule_0_ast(state: State): unknown {
       } else if (__c0 === 64) {
         __cand = __fusedRenderStructuredDispatch_AtRule_ast(state);
       } else {
-        __cand = __fusedRenderStructuredDispatch_Rule_ast(state);
+        __cand = (__untilTerminator_6f87a52b(input, off, len) === 123) ? __fusedRenderStructuredDispatch_Rule_ast(state) : null;
         if (__cand === null) __cand = __fusedRenderStructuredDispatch_Declaration_ast(state);
       }
     }
@@ -7229,7 +7229,7 @@ function __fusedRenderStructured_AtRule_0_ast(state: State): unknown {
       } else if (__c0 === 64) {
         __cand = __fusedRenderStructuredDispatch_AtRule_ast(state);
       } else {
-        __cand = __fusedRenderStructuredDispatch_Rule_ast(state);
+        __cand = (__untilTerminator_6f87a52b(input, off, len) === 123) ? __fusedRenderStructuredDispatch_Rule_ast(state) : null;
         if (__cand === null) __cand = __fusedRenderStructuredDispatch_Declaration_ast(state);
       }
     }
@@ -7425,7 +7425,7 @@ function __fusedRenderStructured_Stylesheet_0_ast(state: State): unknown {
       } else if (__c0 === 64) {
         __cand = __fusedRenderStructuredDispatch_AtRule_ast(state);
       } else {
-        __cand = __fusedRenderStructuredDispatch_Rule_ast(state);
+        __cand = (__untilTerminator_6f87a52b(input, off, len) === 123) ? __fusedRenderStructuredDispatch_Rule_ast(state) : null;
         if (__cand === null) __cand = __fusedRenderStructuredDispatch_Declaration_ast(state);
       }
     }
@@ -7899,6 +7899,67 @@ function __fusedRenderStructuredDispatch_Declaration_ast(state: State): unknown 
 function __fusedRenderStructuredDispatch_Rule_ast(state: State): unknown {
   const r0 = __fusedRenderStructured_Rule_0_ast(state); if (r0 !== null) return r0;
   return null;
+}
+
+function __untilTerminator_6f87a52b(input: string, off: number, len: number): number {
+  let __depth = 0;
+  const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__depth === 0 && (__c === 59 || __c === 123)) return __c;
+    if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; off++; continue; }
+    if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+      if (__depth === 0) return __c;
+      __depth--; off++; continue;
+    }
+    if (__c === 0x22 || __c === 0x27) {
+      const __q = __c;
+      off++;
+      while (off < len) {
+        const __sc = input.charCodeAt(off);
+        if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__sc === __q) { off++; break; }
+        if (__sc === 0x0a || __sc === 0x0d) break;
+        off++;
+      }
+      continue;
+    }
+    if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+      && off + 3 < len
+      && (input.charCodeAt(off + 1) | 32) === 0x72
+      && (input.charCodeAt(off + 2) | 32) === 0x6c
+      && input.charCodeAt(off + 3) === 0x28) {
+      off += 4;
+      while (off < len) {
+        const __uc = input.charCodeAt(off);
+        if (__uc === 0x29) { off++; break; }
+        if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__uc === 0x22 || __uc === 0x27) {
+          const __uq = __uc;
+          off++;
+          while (off < len) {
+            const __usc = input.charCodeAt(off);
+            if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__usc === __uq) { off++; break; }
+            if (__usc === 0x0a || __usc === 0x0d) break;
+            off++;
+          }
+          continue;
+        }
+        off++;
+      }
+      continue;
+    }
+    if (__c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+      let __ce = off + 2;
+      while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+      if (__ce < len) { off = __ce + 2; continue; }
+    }
+    if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
+    if (__depth === 0 && __KB[__c] === 0) return __c;
+    off++;
+  }
+  return -1;
 }
 
 const __fusedRenderStructuredTable_ast: Record<string, (state: State) => unknown> = {

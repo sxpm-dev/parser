@@ -25,6 +25,7 @@ import { computeReferencedSpanPresence, computeReferencedSpanValues } from '../c
 import { detectSharedDispatch } from './shared-dispatch.ts';
 import { detectUntilDivergence, type UntilDivergence } from './detect-until-divergence.ts';
 import { guardEnvFromSchema, untilGuardSpec } from './until-guard.ts';
+import { recordExplain } from './explain.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { computeRoleFirstBytes } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, type SpanBindings, type SpanContext } from './span.ts';
@@ -219,6 +220,11 @@ export function emitFusedUntilDivergencePair(
     }
   }
 
+  recordExplain({
+    node: info.name,
+    kind: 'fusion-merged',
+    detail: `until-divergence merged dispatcher for target '${target}' (extra stop '${d.extraStop}', single scan serves both alts)`,
+  });
   const longEntry = long.renders.get(target)!;
   const shortEntry = short.renders.get(target)!;
   const scanSpan = long.spans[d.scanIdx]!;
@@ -569,6 +575,11 @@ function emitFusedStructuredRoleDispatch(
       const guard =
         i < rolesInGroup.length - 1 ? untilGuardSpec(r.role, guardEnvFromSchema(schema)) : null;
       if (guard !== null) {
+        recordExplain({
+          node: r.role,
+          kind: 'union-guard',
+          detail: `probe gated by until-viability pre-scan ${guard.helperName} (terminator must be '${String.fromCharCode(guard.litCode)}') in '${target}' body unions`,
+        });
         const cond = `${guard.helperName}(input, off, len) === ${guard.litCode}`;
         return i === 0
           ? `  __cand = (${cond}) ? ${c} : null;`

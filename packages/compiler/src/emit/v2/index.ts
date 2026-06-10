@@ -30,6 +30,7 @@ import {
 } from './fusion-structured.ts';
 import { emitFusedRender, fusedRenderFnName } from './fusion.ts';
 import { beginGuardHelpers, drainGuardHelpers } from './until-guard.ts';
+import { recordExplain } from './explain.ts';
 import { emitProduction } from './production.ts';
 import { emitPrattNode } from './pratt.ts';
 import { V2_RUNTIME } from './runtime.ts';
@@ -153,6 +154,7 @@ function emitFusion(schema: InferredSchema): { source: string; targets: Readonly
           target,
         });
         if (src === null) continue;
+        recordExplain({ node: info.name, kind: 'fusion', detail: `structured-fused parse+build for target '${target}' (production #${i})` });
         fns.push(src);
         const key = productionKey(info.name, i);
         const fn = fusedRenderFnName(schema, info.name, i, target);
@@ -220,6 +222,7 @@ function emitStructuredFusion(schema: InferredSchema): { source: string; targets
           target,
         });
         if (src === null) continue;
+        recordExplain({ node: info.name, kind: 'fusion', detail: `structured-fused parse+build for target '${target}' (production #${i})` });
         fns.push(src);
         const key = productionKey(info.name, i);
         const list = tableEntries.get(target) ?? [];

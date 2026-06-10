@@ -3,6 +3,7 @@ import { dirname, isAbsolute, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { SchemaDef, ValidationDef } from '@parser2/parser';
 import { generateParser } from './index.ts';
+import { beginExplain, drainExplain, formatExplain } from './emit/v2/explain.ts';
 import type { Backend } from './emit/backend.ts';
 import { TS_BACKEND } from './emit/ts.ts';
 import { BYTECODE_BACKEND } from './emit/bytecode/index.ts';
@@ -30,6 +31,7 @@ const argv = process.argv.slice(2);
 const positional: string[] = [];
 const requested: Backend[] = [];
 const requestedNames = new Set<string>();
+let explain = false;
 
 for (let i = 0; i < argv.length; i++) {
   const arg = argv[i]!;
@@ -39,6 +41,8 @@ for (let i = 0; i < argv.length; i++) {
     addBackend(RUST_BACKEND);
   } else if (arg === '--bcode' || arg === '--bytecode') {
     addBackend(BYTECODE_BACKEND);
+  } else if (arg === '--explain') {
+    explain = true;
   } else if (arg === '--backend') {
     const name = argv[++i];
     if (name === undefined || name.startsWith('--')) {
@@ -84,10 +88,20 @@ async function main(path: string, backends: ReadonlyArray<Backend>): Promise<voi
   const outDir = resolve(dirname(path), '_generated');
   mkdirSync(outDir, { recursive: true });
   for (const backend of backends) {
+    if (explain) beginExplain();
     const code = generateParser(schema, validation, { packageName, backend });
     const outFile = resolve(outDir, `parser${backend.fileExtension}`);
     writeFileSync(outFile, code);
     console.log(`generated ${relative(outFile)}`);
+    if (explain) {
+      const report = drainExplain();
+      if (report.length > 0) {
+        console.log(`\n--explain (${backend.name} backend) — codegen decisions:`);
+        console.log(formatExplain(report));
+      } else {
+        console.log(`\n--explain (${backend.name} backend): no recorded decisions (single-production nodes, no optimizations applied)`);
+      }
+    }
   }
 }
 

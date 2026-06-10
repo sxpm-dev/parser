@@ -17,6 +17,7 @@ import { detectSharedDispatch, emitSharedDispatcher } from './shared-dispatch.ts
 import { detectPrefixShare, emitPrefixShareDispatcher } from './prefix-share-dispatch.ts';
 import { findModifier, hasModifier } from './span.ts';
 import { guardEnvFromSchema, untilAltViabilitySpec } from './until-guard.ts';
+import { recordExplain } from './explain.ts';
 
 type FirstToken =
   | { kind: 'literal'; text: string }
@@ -39,6 +40,7 @@ export function emitDispatcher(
   // afterward in declaration order, preserving the existing semantics.
   const shared = detectSharedDispatch(info);
   if (shared !== null) {
+    recordExplain({ node: info.name, kind: 'dispatch', detail: `shared-dispatch (oneOf discriminator at span ${shared.discriminatorIdx})` });
     const altFnNames = prods.map((_p, idx) => `${fnName}__alt${idx}`);
     const leadingLiteral = prods[0]!.spans[0]!.text!;
     const discriminatorSpan = prods[0]!.spans[shared.discriminatorIdx]!;
@@ -53,13 +55,17 @@ export function emitDispatcher(
   // can switch on the tag value directly).
   const prefixShare = detectPrefixShare(info);
   if (prefixShare !== null) {
+    recordExplain({ node: info.name, kind: 'dispatch', detail: `prefix-share (shared ${prefixShare.prefixLen}-span prefix, literal-headed suffixes)` });
     const altFnNames = prods.map((_p, idx) => `${fnName}__alt${idx}`);
     return emitPrefixShareDispatcher(info, schema, fnName, altFnNames, prefixShare);
   }
 
   // Try byte-prefix dispatch first.
   const bytePrefix = tryEmitBytePrefix(info, prods, tokens, fnName);
-  if (bytePrefix !== null) return bytePrefix;
+  if (bytePrefix !== null) {
+    recordExplain({ node: info.name, kind: 'dispatch', detail: 'byte-prefix (first-byte discriminated alts)' });
+    return bytePrefix;
+  }
 
   // Fall back to sentinel speculation chain.
   return emitSpeculationChain(info, prods, fnName, schema);
@@ -236,12 +242,14 @@ function emitSpeculationChain(
   // the whole alt attempt (and its captures/raws allocations) is skipped.
   // The last alt stays ungated, preserving failure semantics and maxOff.
   const env = guardEnvFromSchema(schema);
+  recordExplain({ node: _info.name, kind: 'dispatch', detail: `speculation chain, alt order [${order.join(', ')}]` });
   const lines: string[] = [];
   for (let i = 0; i < order.length - 1; i++) {
     const idx = order[i]!;
     const later = order.slice(i + 1).map((j) => prods[j]!);
     const viable = untilAltViabilitySpec(prods[idx]!, later, env);
     if (viable !== null) {
+      recordExplain({ node: _info.name, kind: 'dispatch-gate', detail: `alt ${idx} gated by multi-segment until-viability pre-scan (${viable.helperName})` });
       lines.push(`  if (${viable.helperName}(state.input, state.pos, state.len)) { const r = ${fnName}__alt${idx}(state); if (r !== null) return r; }`);
     } else {
       lines.push(`  { const r = ${fnName}__alt${idx}(state); if (r !== null) return r; }`);

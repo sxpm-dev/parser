@@ -53,6 +53,7 @@ import { indent } from '../strings.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import type { SpanContext } from './span.ts';
 import { guardEnvFromSpanContext, untilGuardSpec } from './until-guard.ts';
+import { recordExplain } from './explain.ts';
 
 export type RoleLadderOptions = {
   // Name of the JS local that receives the parsed value (or stays null when
@@ -495,6 +496,11 @@ function emitGuardedFallthroughGroup(
     const call = `${ctx.symbolPrefix}parse${roles[i]!}(state)`;
     const guard = i < roles.length - 1 ? untilGuardSpec(roles[i]!, env) : null;
     if (guard !== null) {
+      recordExplain({
+        node: roles[i]!,
+        kind: 'union-guard',
+        detail: `captures-path probe gated by until-viability pre-scan ${guard.helperName} (terminator must be '${String.fromCharCode(guard.litCode)}')`,
+      });
       const cond = `${guard.helperName}(input, off, len) === ${guard.litCode}`;
       lines.push(
         i === 0

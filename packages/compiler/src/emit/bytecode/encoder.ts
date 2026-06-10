@@ -783,6 +783,24 @@ function emitRecursiveSpan(
     writeOp(state, Op.SAVE_OFF);
     writeU8(state, loopStartSlot);
 
+    // Top-of-iteration sep sweep: skip ws, then consume any number of
+    // separator literals (each followed by ws). Mirrors v2's
+    // emitRepeatsSpan sepBlock — without this bcode leaves `;` between
+    // / after items unconsumed and the parent's EOF check fires on
+    // inputs like `a{b:cc};` or `a {;;\n  ...}` (leading seps).
+    // `trailing: 'forbidden'` semantics are NOT enforced here; the only
+    // in-scope schemas using sep declare `trailing: 'allowed'` or rely
+    // on the default. Add a sepConsumed-tracked rewind if a future
+    // schema needs strict trailing rejection.
+    const repeatsModForSep = span.modifiers.find((m) => m.kind === 'repeats');
+    const sepStr = repeatsModForSep && 'sep' in repeatsModForSep && typeof repeatsModForSep.sep === 'string'
+      ? repeatsModForSep.sep
+      : undefined;
+    if (sepStr !== undefined && sepStr.length > 0) {
+      writeOp(state, Op.SEP_SWEEP);
+      writeU32(state, internString(state, sepStr));
+    }
+
     const successJumpSites: number[] = [];
     let prevJinSite = -1;
     let prevJinAfter = -1;

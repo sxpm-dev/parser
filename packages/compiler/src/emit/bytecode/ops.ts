@@ -231,6 +231,17 @@ export enum Op {
   // `--x: { ... }` would otherwise match Rule with selector "--x:"
   // before the colon-rejecting check kicks in.
   ASSERT_CAPTURE_NOT_ENDS_WITH = 0x93,
+  // operands: u32 sepStringIdx. Skip ws, then in a loop: while
+  // input.startsWith(sep, off), consume the sep and skip ws again.
+  // Mirrors v2's `.repeats({sep})` top-of-iteration sweep. Without this
+  // op the bcode loop only consumes inter-item whitespace; any
+  // schema-level `;` between (or trailing) items leaves the parser at
+  // the separator and the EOF check fires. Emitted at the top of each
+  // .repeats() loop iteration when the modifier carries an explicit
+  // sep string. `trailing: 'allowed'` is the only trailing policy this
+  // op honors — `'forbidden'` / `'required'` would need a rewind /
+  // sepConsumed flag that's not modeled in bcode yet.
+  SEP_SWEEP = 0x94,
   // No operands — pop top of value stack. Used to discard values after
   // assertions / discriminator probes.
   POP = 0x8c,
@@ -357,6 +368,7 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   // Same shape: u32 captureNameIdx + u32 count, then count × u32 suffix
   // string indices.
   [Op.ASSERT_CAPTURE_NOT_ENDS_WITH]: [4, 4],
+  [Op.SEP_SWEEP]: [4],
   [Op.POP]: [],
 
   // numSegs + numCaps + targetIdx fixed prefix; variable tail computed

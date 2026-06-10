@@ -1021,6 +1021,29 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.SEP_SWEEP: {
+      const sepIdx = readU32(state);
+      const sep = state.stringPool[sepIdx]!;
+      const input = state.input;
+      const len = input.length;
+      // Initial ws-skip.
+      while (state.off < len) {
+        const c = input.charCodeAt(state.off);
+        if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { state.off++; continue; }
+        break;
+      }
+      // Zero-or-more (sep + ws). Mirrors v2's `while (input.startsWith(sep)) { off += sep.length; skipWs(); }`.
+      while (state.off < len && input.startsWith(sep, state.off)) {
+        state.off += sep.length;
+        while (state.off < len) {
+          const c = input.charCodeAt(state.off);
+          if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { state.off++; continue; }
+          break;
+        }
+      }
+      return { kind: 'continue' };
+    }
+
     case Op.ASSERT_CAPTURE_NOT_ENDS_WITH: {
       const nameIdx = readU32(state);
       const count = readU32(state);

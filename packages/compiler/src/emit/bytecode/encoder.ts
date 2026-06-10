@@ -736,53 +736,91 @@ function emitRecursiveSpan(
     // matches '<!' and (because bcode doesn't enforce .oneOf()
     // refinements yet) accepts arbitrary ident as the DOCTYPE keyword,
     // routing into the recovery alt. Mirrors v2's emitRoleLadder which
-    // sorts by longestLiteralPrefix descending. Comment (literal `<!--`
-    // length 4) now wins over Doctype (literal `<!` length 2).
+    // sorts by longestLiteralPrefix descending.
     const sortedRoles = sortRolesByLongestPrefix(state, span.recursiveRoles);
+    // ONE loop with all roles tried per iteration. Layout:
+    //   [loop-top]
+    //   SAVE_OFF loopStartSlot
+    //   for each role:
+    //     CALL_PRODUCTION role
+    //     JUMP_IF_NULL +<next-role-or-exit>
+    //     JUMP_IF_OFF_EQ +<pop-exit>      (consumed, no advance — done)
+    //     (matched & advanced) → fall through
+    //     CAPTURE_VALUE_APPEND
+    //     JUMP +<post-roles>              (skip remaining role attempts)
+    //   [next-role-or-exit hits exit when no role matched]
+    //   [post-roles]
+    //   SKIP_WS
+    //   JUMP loop-top
+    //   [pop-exit]
+    //   POP
+    //   [exit]
+    const loopTop = state.len;
+    writeOp(state, Op.SAVE_OFF);
+    writeU8(state, loopStartSlot);
+
+    const successJumpSites: number[] = [];
+    let prevJinSite = -1;
+    let prevJinAfter = -1;
+    const popJumpSites: number[] = [];
+    const popJumpAfters: number[] = [];
     for (const role of sortedRoles) {
-      const loopTop = state.len;
-      // Save state.off into loopStartSlot. The off-equal check after
-      // CAPTURE_VALUE_APPEND uses this to decide whether to break.
-      writeOp(state, Op.SAVE_OFF);
-      writeU8(state, loopStartSlot);
+      // Land here when prior role's JUMP_IF_NULL fired.
+      if (prevJinSite >= 0) {
+        const here = state.len;
+        writeI32At(state, prevJinSite, here - prevJinAfter);
+      }
       const targetKey = targetKeyForRole(role);
       writeOp(state, Op.CALL_PRODUCTION);
-      const site = state.len;
-      writeU32(state, 0xffffffff); // placeholder; patched at end of encode
-      state.pendingCalls.push({ site, targetKey });
+      const callSite = state.len;
+      writeU32(state, 0xffffffff);
+      state.pendingCalls.push({ site: callSite, targetKey });
 
-      // JUMP_IF_NULL <forward to loop-exit> — placeholder patched after we
-      // emit the back-jump.
       writeOp(state, Op.JUMP_IF_NULL);
-      const jinOperandSite = state.len;
+      prevJinSite = state.len;
       writeI32(state, 0);
-      const jinAfter = state.len;
+      prevJinAfter = state.len;
+
+      writeOp(state, Op.JUMP_IF_OFF_EQ);
+      writeU8(state, loopStartSlot);
+      popJumpSites.push(state.len);
+      writeI32(state, 0);
+      popJumpAfters.push(state.len);
 
       if (span.name) {
         writeOp(state, Op.CAPTURE_VALUE_APPEND);
         writeU32(state, internString(state, span.name));
       }
-      // Infinite-loop guard: if state.off didn't advance during this
-      // iteration, break out. Mirrors v2 emitRepeatsSpan's
-      // `if (off === __loopStart) break;` guard.
-      writeOp(state, Op.JUMP_IF_OFF_EQ);
-      writeU8(state, loopStartSlot);
-      const jofSite = state.len;
-      writeI32(state, 0);
-      const jofAfter = state.len;
-      // Inter-iteration whitespace (repeats children are whitespace-
-      // separated by default policy).
-      writeOp(state, Op.SKIP_WS);
-
-      // JUMP back to loopTop.
       writeOp(state, Op.JUMP);
-      const jbAfter = state.len + 4;
-      writeI32(state, loopTop - jbAfter);
+      successJumpSites.push(state.len);
+      writeI32(state, 0);
+    }
+    // Last role's JUMP_IF_NULL lands at "no role matched" → exit.
+    // We'll fill its operand once exit is known.
+    const lastJinSite = prevJinSite;
+    const lastJinAfter = prevJinAfter;
 
-      // Loop-exit lands here.
-      const loopExit = state.len;
-      writeI32At(state, jinOperandSite, loopExit - jinAfter);
-      writeI32At(state, jofSite, loopExit - jofAfter);
+    // post-roles label (success path lands here)
+    const postRoles = state.len;
+    for (const site of successJumpSites) {
+      writeI32At(state, site, postRoles - (site + 4));
+    }
+    writeOp(state, Op.SKIP_WS);
+    writeOp(state, Op.JUMP);
+    const jbAfter = state.len + 4;
+    writeI32(state, loopTop - jbAfter);
+
+    // pop-exit label
+    const popExit = state.len;
+    for (let i = 0; i < popJumpSites.length; i++) {
+      writeI32At(state, popJumpSites[i]!, popExit - popJumpAfters[i]!);
+    }
+    writeOp(state, Op.POP);
+
+    // exit label (last role's no-match falls here)
+    const loopExit = state.len;
+    if (lastJinSite >= 0) {
+      writeI32At(state, lastJinSite, loopExit - lastJinAfter);
     }
     // Enforce `repeats.min` (Phase 6 follow-up #2). The captures-path emit
     // fails the production when fewer than `min` children matched. The

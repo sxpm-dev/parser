@@ -218,8 +218,11 @@ test('rust backend (6.2): .until() emits a balanced-bracket scan + trim capture'
   assert.match(code, /let mut __depth: i32 = 0;/);
   assert.match(code, /__depth \+= 1;/);
   assert.match(code, /__depth -= 1;/);
-  // Trim'd capture binding.
-  assert.match(code, /let prop: String = state\.src\[__prop_start\.\.__prop_end\]\.trim\(\)\.to_string\(\);/);
+  // Trim'd capture binding. The trim is now done in-emit (so comment-
+  // adjacency excision sees the trim boundary) — the capture reads from
+  // the trimmed range [__prop_ts, __prop_te) instead of
+  // state.src[start..end].trim().
+  assert.match(code, /let prop: String = state\.src\[__prop_ts\.\.__prop_te\]\.to_string\(\);/);
 });
 
 test('rust backend (6.2): .until() with multi-stop array', () => {

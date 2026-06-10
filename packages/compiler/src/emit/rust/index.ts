@@ -626,7 +626,7 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
         `rust backend (Phase 6.2): .until() + .optional() combo not yet supported`,
       );
     }
-    emitUntilSpan(lines, span, untilMod as { stops: ReadonlyArray<string>; balanced: boolean; trim: boolean });
+    emitUntilSpan(lines, span, untilMod as { stops: ReadonlyArray<string>; balanced: boolean; trim: boolean }, schema);
     return;
   }
   if (rawUntilMod !== undefined) {
@@ -1250,21 +1250,62 @@ function emitUntilSpan(
   lines: string[],
   span: ResolvedSpan,
   modifier: { stops: ReadonlyArray<string>; balanced: boolean; trim: boolean },
+  schema: InferredSchema,
 ): void {
   const startVar = `__${rustIdent(span.name ?? 'anon')}_start`;
   const endVar = `__${rustIdent(span.name ?? 'anon')}_end`;
-  const stopArrayItems = modifier.stops.map((s) => rustString(s)).join(', ');
-  const stopArray = `[${stopArrayItems}]`;
   const balanced = modifier.balanced;
+  // Phase 6 — interior-token awareness inside .until(). When the schema
+  // declares `string` as a token class, quoted regions are skipped as
+  // opaque units (so `};` inside a quoted CSS string doesn't end the
+  // value capture). Same for `comment`: `/* ... */` is consumed without
+  // letting an internal `{` perturb the depth counter or a `;` end the
+  // capture early. Mirrors v2 emitUntilSpan in emit/v2/span.ts.
+  const hasString = schema.classes.some((c) => c.class === 'string');
+  const hasComment = schema.classes.some((c) => c.class === 'comment');
   const body: string[] = [];
   body.push(`    let ${startVar} = state.pos;`);
   if (balanced) body.push(`    let mut __depth: i32 = 0;`);
-  body.push(`    let __stops: &[&[u8]] = &${stopArray.replace(/"([^"]*)"/g, '$1.as_bytes()').replace(/\[/, '[&').replace(/, /g, ', ')};`);
-  // The replace above is fragile; build the literal explicitly instead.
-  body.pop();
   body.push(`    let __stops: &[&[u8]] = &[${modifier.stops.map((s) => `${rustString(s)}.as_bytes()`).join(', ')}];`);
+  if (hasComment) {
+    // Record each /* ... */ range so the capture builder can excise
+    // ws-adjacent comments at end-of-scan (matches v2's behavior for
+    // CSS selectors / values).
+    body.push(`    let mut __comments: Vec<(usize, usize)> = Vec::new();`);
+  }
   body.push(`    while state.pos < state.input.len() {`);
   body.push(`        let c = state.input[state.pos];`);
+  if (hasString) {
+    // Skip "..." / '...' as an opaque unit; backslash-escape aware,
+    // newline terminates an unterminated string.
+    body.push(`        if c == b'"' || c == b'\\'' {`);
+    body.push(`            let __q = c;`);
+    body.push(`            state.pos += 1;`);
+    body.push(`            while state.pos < state.input.len() {`);
+    body.push(`                let __sc = state.input[state.pos];`);
+    body.push(`                if __sc == b'\\\\' && state.pos + 1 < state.input.len() { state.pos += 2; continue; }`);
+    body.push(`                if __sc == __q { state.pos += 1; break; }`);
+    body.push(`                if __sc == b'\\n' || __sc == b'\\r' { break; }`);
+    body.push(`                state.pos += 1;`);
+    body.push(`            }`);
+    body.push(`            continue;`);
+    body.push(`        }`);
+  }
+  if (hasComment) {
+    // Skip /* ... */ as an opaque unit; unterminated comment consumes to EOF.
+    // Track the range so the capture builder can excise it when adjacent
+    // to whitespace.
+    body.push(`        if c == b'/' && state.pos + 1 < state.input.len() && state.input[state.pos + 1] == b'*' {`);
+    body.push(`            let __cs = state.pos;`);
+    body.push(`            state.pos += 2;`);
+    body.push(`            while state.pos < state.input.len() {`);
+    body.push(`                if state.input[state.pos] == b'*' && state.pos + 1 < state.input.len() && state.input[state.pos + 1] == b'/' { state.pos += 2; break; }`);
+    body.push(`                state.pos += 1;`);
+    body.push(`            }`);
+    body.push(`            __comments.push((__cs, state.pos));`);
+    body.push(`            continue;`);
+    body.push(`        }`);
+  }
   if (balanced) {
     body.push(`        if __depth == 0 {`);
     body.push(`            let mut __stopped = false;`);
@@ -1294,10 +1335,50 @@ function emitUntilSpan(
   body.push(`    let ${endVar} = state.pos;`);
   if (span.name !== undefined) {
     const v = rustIdent(span.name);
+    // Trim end: when modifier.trim is set, rewind end_var past trailing
+    // whitespace BEFORE excising comments (so comment-end-adjacency
+    // checks see the trim boundary, not the raw scan end).
     if (modifier.trim) {
-      body.push(`    let ${v}: String = state.src[${startVar}..${endVar}].trim().to_string();`);
+      body.push(`    let mut __${v}_te = ${endVar};`);
+      body.push(`    while __${v}_te > ${startVar} {`);
+      body.push(`        let __tc = state.input[__${v}_te - 1];`);
+      body.push(`        if __tc != b' ' && __tc != b'\\t' && __tc != b'\\n' && __tc != b'\\r' { break; }`);
+      body.push(`        __${v}_te -= 1;`);
+      body.push(`    }`);
+      body.push(`    let mut __${v}_ts = ${startVar};`);
+      body.push(`    while __${v}_ts < __${v}_te {`);
+      body.push(`        let __lc = state.input[__${v}_ts];`);
+      body.push(`        if __lc != b' ' && __lc != b'\\t' && __lc != b'\\n' && __lc != b'\\r' { break; }`);
+      body.push(`        __${v}_ts += 1;`);
+      body.push(`    }`);
     } else {
-      body.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
+      body.push(`    let __${v}_ts = ${startVar};`);
+      body.push(`    let __${v}_te = ${endVar};`);
+    }
+    if (hasComment) {
+      // Excise ws-adjacent comments (matches v2's logic in
+      // emit/v2/span.ts:1445+). A comment with ws on either side gets
+      // dropped; a comment with non-ws on both sides is preserved
+      // (e.g. `a/**/b` stays as-is).
+      body.push(`    let ${v}: String = if __comments.is_empty() { state.src[__${v}_ts..__${v}_te].to_string() } else {`);
+      body.push(`        let mut __buf = String::new();`);
+      body.push(`        let mut __cursor = __${v}_ts;`);
+      body.push(`        for &(__cs, __ce) in __comments.iter() {`);
+      body.push(`            if __ce > __${v}_te { break; }`);
+      body.push(`            if __cs < __${v}_ts { continue; }`);
+      body.push(`            let __before = if __cs > 0 { state.input[__cs - 1] } else { 0xFF };`);
+      body.push(`            let __after = if __ce < state.input.len() { state.input[__ce] } else { 0xFF };`);
+      body.push(`            let __is_ws_before = __before == b' ' || __before == b'\\t' || __before == b'\\n' || __before == b'\\r';`);
+      body.push(`            let __is_ws_after = __after == b' ' || __after == b'\\t' || __after == b'\\n' || __after == b'\\r';`);
+      body.push(`            if !(__is_ws_before || __is_ws_after) { continue; }`);
+      body.push(`            __buf.push_str(&state.src[__cursor..__cs]);`);
+      body.push(`            __cursor = __ce;`);
+      body.push(`        }`);
+      body.push(`        __buf.push_str(&state.src[__cursor..__${v}_te]);`);
+      body.push(`        __buf`);
+      body.push(`    };`);
+    } else {
+      body.push(`    let ${v}: String = state.src[__${v}_ts..__${v}_te].to_string();`);
     }
   }
   lines.push(body.join('\n'));
@@ -1798,7 +1879,7 @@ function emitStringifyAltFn(
   // for toml `key= value`, pg-select `SELECT *FROM`, rrule `FREQ= DAILY`).
   const sourceTpl = findSourceTemplate(production);
   if (sourceTpl !== null) {
-    return emitTemplateStringifyBody(fnName, obj, production, sourceTpl, discrimLines);
+    return emitTemplateStringifyBody(fnName, obj, production, sourceTpl, discrimLines, schema);
   }
 
   const lines: string[] = [];
@@ -1822,7 +1903,7 @@ function emitStringifyAltFn(
   lines.push(`    let mut __out = String::new();`);
   let firstEmit = true;
   for (const span of production.spans) {
-    const piece = emitStringifyForSpan(span);
+    const piece = emitStringifyForSpan(span, schema);
     if (piece === null) {
       // Optional unnamed span with no presence info — skip emission
       // entirely so we don't insert spurious text.
@@ -1855,6 +1936,7 @@ function emitTemplateStringifyBody(
   production: Production,
   tpl: import('@parser2/parser').Template,
   discrimLines: ReadonlyArray<string>,
+  schema: InferredSchema,
 ): string {
   const lines: string[] = [];
   // See emitStringifyAltFn note: parameter is `__value` so schema span
@@ -1891,7 +1973,7 @@ function emitTemplateStringifyBody(
       ? production.spans.find((s) => s.name === slot.ref)
       : undefined;
     const expr = slot.kind === 'capture' && span !== undefined
-      ? buildSlotExpr(span, slot.ref)
+      ? buildSlotExpr(span, slot.ref, schema)
       : 'String::new()';
     lines.push(`    let __s${i}: String = ${expr};`);
   }
@@ -1927,7 +2009,7 @@ function emitTemplateStringifyBody(
 // String contribution of one template slot. Used by
 // emitTemplateStringifyBody to pre-materialize each slot into a `__sN`
 // local so subsequent inter-slot literal gating can ask `__sN.is_empty()`.
-function buildSlotExpr(span: ResolvedSpan, captureName: string): string {
+function buildSlotExpr(span: ResolvedSpan, captureName: string, schema: InferredSchema): string {
   const v = rustIdent(captureName);
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
   const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
@@ -1935,10 +2017,9 @@ function buildSlotExpr(span: ResolvedSpan, captureName: string): string {
 
   if (repeatsMod !== undefined) {
     const sep = (repeatsMod as RepeatsModifier).sep ?? ' ';
-    const role = isRecursive ? rustIdent(span.recursiveRoles[0]!) : null;
-    const inner = role === null
-      ? `if let Value::String(s) = item { __t.push_str(s); }`
-      : `__t.push_str(&stringify_${role}(item));`;
+    const inner = isRecursive
+      ? `__t.push_str(&${buildMultiRoleStringifyExpr(span.recursiveRoles, schema, 'item')});`
+      : `if let Value::String(s) = item { __t.push_str(s); }`;
     return `if let Some(Value::Array(items)) = ${v} { ` +
       `let mut __t = String::new(); ` +
       `for (i, item) in items.iter().enumerate() { ` +
@@ -1947,17 +2028,51 @@ function buildSlotExpr(span: ResolvedSpan, captureName: string): string {
       `} else { String::new() }`;
   }
   if (isRecursive) {
-    const role = rustIdent(span.recursiveRoles[0]!);
+    const dispatch = buildMultiRoleStringifyExpr(span.recursiveRoles, schema, 'inner');
     if (isOptional) {
       return `if let Some(inner) = ${v} { ` +
-        `if !matches!(inner, Value::Null) { stringify_${role}(inner) } else { String::new() } ` +
+        `if !matches!(inner, Value::Null) { ${dispatch} } else { String::new() } ` +
         `} else { String::new() }`;
     }
-    return `if let Some(inner) = ${v} { stringify_${role}(inner) } else { String::new() }`;
+    return `if let Some(inner) = ${v} { ${dispatch} } else { String::new() }`;
   }
   // Class capture (string-valued in the ast). Optional and required share
   // the same expression — Option<&Value> + matching pattern handles both.
   return `if let Some(Value::String(s)) = ${v} { s.clone() } else { String::new() }`;
+}
+
+// Phase 6 — multi-role recursive stringify dispatch. For single-role spans
+// just calls stringify_<Role>(v). For multi-role, chain-tries every alt
+// across every role's per-alt fns; each alt carries its own type-field
+// discriminator so wrong-typed entries fall through. Mirrors v2's
+// dispatcher pattern and the bytecode encoder's synthetic
+// `<role1>|<role2>|...:<target>` key. The chain is built per-call site
+// (small N — typically 2-4 roles with 1-2 alts each), inlined to avoid
+// per-schema dispatcher fns.
+function buildMultiRoleStringifyExpr(
+  roles: ReadonlyArray<string>,
+  schema: InferredSchema,
+  valueExpr: string,
+): string {
+  if (roles.length === 1) {
+    return `stringify_${rustIdent(roles[0]!)}(${valueExpr})`;
+  }
+  const altCalls: string[] = [];
+  for (const role of roles) {
+    const info = schema.nodeTypes.get(role);
+    if (!info) continue;
+    for (let i = 0; i < info.productions.length; i++) {
+      altCalls.push(`stringify_${rustIdent(role)}__alt${i}(${valueExpr})`);
+    }
+  }
+  if (altCalls.length === 0) return `String::new()`;
+  // Build `Some(altCalls[0])` chained with `.or_else(|| altCalls[i])` for
+  // i > 0. Each call returns Option<String>; first non-None wins.
+  let chain = altCalls[0]!;
+  for (let i = 1; i < altCalls.length; i++) {
+    chain = `${chain}.or_else(|| ${altCalls[i]})`;
+  }
+  return `${chain}.unwrap_or_default()`;
 }
 
 // Compute the Rust expression that must be true for parts[i] to be
@@ -2099,7 +2214,7 @@ function emitRefStringifyAlt(
 
 type StringifyPiece = { readonly lines: ReadonlyArray<string>; readonly needsSpaceBefore: boolean };
 
-function emitStringifyForSpan(span: ResolvedSpan): StringifyPiece | null {
+function emitStringifyForSpan(span: ResolvedSpan, schema: InferredSchema): StringifyPiece | null {
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
   const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
   const isRecursive = span.recursiveRoles.length > 0;
@@ -2118,9 +2233,7 @@ function emitStringifyForSpan(span: ResolvedSpan): StringifyPiece | null {
     if (roles.length === 0) {
       return { lines: [`/* unsupported: repeats on non-recursive */`], needsSpaceBefore: false };
     }
-    const dispatcher = roles.length === 1
-      ? `stringify_${rustIdent(roles[0]!)}(item)`
-      : `(${roles.map((r) => `stringify_${rustIdent(r)}__alt0(item).unwrap_or_default()`).join(' + &')})`;
+    const dispatcher = buildMultiRoleStringifyExpr(roles, schema, 'item');
     const lines = [
       `if let Some(Value::Array(items)) = ${v} {`,
       `    for (i, item) in items.iter().enumerate() {`,
@@ -2132,20 +2245,19 @@ function emitStringifyForSpan(span: ResolvedSpan): StringifyPiece | null {
     return { lines, needsSpaceBefore: true };
   }
   if (isRecursive && v !== null) {
-    const role = span.recursiveRoles[0]!;
-    const stringifier = `stringify_${rustIdent(role)}`;
+    const dispatch = buildMultiRoleStringifyExpr(span.recursiveRoles, schema, 'inner');
     if (isOptional) {
       return {
         lines: [
           `if let Some(inner) = ${v} {`,
-          `    if !matches!(inner, Value::Null) { __out.push_str(&${stringifier}(inner)); }`,
+          `    if !matches!(inner, Value::Null) { __out.push_str(&${dispatch}); }`,
           `}`,
         ],
         needsSpaceBefore: true,
       };
     }
     return {
-      lines: [`if let Some(inner) = ${v} { __out.push_str(&${stringifier}(inner)); }`],
+      lines: [`if let Some(inner) = ${v} { __out.push_str(&${dispatch}); }`],
       needsSpaceBefore: true,
     };
   }

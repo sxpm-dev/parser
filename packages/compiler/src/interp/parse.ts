@@ -1279,8 +1279,12 @@ function parseRepeatsSpan(
     // inter-item whitespace. dispatchRoles' internal skipWs advances
     // state.pos but does it AFTER beforeAttempt is read. Mirrors the
     // ws-skip emitted by emit/v2/span.ts for the sep-less captureIws
-    // case.
-    if (sep === undefined && captureIws) {
+    // case. Also fires for stopBefore: without the ws-skip, the
+    // stopBefore literal check runs at the post-item whitespace
+    // boundary and misses the stop literal that follows it. Mirrors
+    // v2 emit/v2/span.ts L782:
+    //   `if (sep === undefined && (stopBeforeCheck || captureIws))`.
+    if (sep === undefined && (captureIws || (stopBefore && stopBefore.length > 0))) {
       skipWs(state);
     }
     if (stopBefore && stopBefore.length > 0) {

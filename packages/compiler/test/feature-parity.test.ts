@@ -2036,9 +2036,9 @@ const rows: ReadonlyArray<ParityRow> = [
       }),
     // stopBefore tells .repeats() to exit when the upcoming source
     // matches any of the stop literals — `END` here. Items are space-
-    // separated, no explicit sep. GAP on interp: stopBefore not
-    // fully implemented for sep-less repeats in the interpreter
-    // (modifier:repeats-stopBefore with sep already covered).
+    // separated, no explicit sep. Closed: interp's parseRepeatsSpan
+    // now mirrors v2 by skipping inter-item ws before the stopBefore
+    // check (was previously missing for sep-less repeats).
     input: 'a b c END',
     expectedAst: {
       type: 'list',
@@ -2048,7 +2048,7 @@ const rows: ReadonlyArray<ParityRow> = [
         { type: 'item', name: 'c' },
       ],
     },
-    expected: { interp: 'gap', v2: 'impl' },
+    expected: { interp: 'impl', v2: 'impl' },
   },
 
   {

@@ -427,6 +427,15 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.CAPTURE_INIT_ARRAY: {
+      const nameIdx = readU32(state);
+      const name = state.stringPool[nameIdx]!;
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) throw new Error(`bytecode runtime: CAPTURE_INIT_ARRAY before frame captures init`);
+      frame.captures[name] = [];
+      return { kind: 'continue' };
+    }
+
     case Op.SCAN_CLASS: {
       const kind = readU8(state);
       readU32(state);

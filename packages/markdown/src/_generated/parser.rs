@@ -229,7 +229,7 @@ fn parse_MarkdownDocument(state: &mut State) -> Option<Value> {
 fn stringify_MarkdownDocument__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("type") { Some(Value::String(s)) if s == "document" => (), _ => return None }
     let children = __value.obj_get("children");
-    let __s0: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_MarkdownLeaf(item)); } __t } else { String::new() };
+    let __s0: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_MarkdownLeaf__alt0(item).or_else(|| stringify_MarkdownLeaf__alt1(item)).or_else(|| stringify_MarkdownLeaf__alt2(item)).or_else(|| stringify_MarkdownLeaf__alt3(item)).or_else(|| stringify_MarkdownLeaf__alt4(item)).or_else(|| stringify_MarkdownLeaf__alt5(item)).or_else(|| stringify_MarkdownLeaf__alt6(item)).or_else(|| stringify_MarkdownLeaf__alt7(item)).or_else(|| stringify_MarkdownLeaf__alt8(item)).or_else(|| stringify_MarkdownLeaf__alt9(item)).or_else(|| stringify_MarkdownLeaf__alt10(item)).or_else(|| stringify_MarkdownLeaf__alt11(item)).or_else(|| stringify_MarkdownLeaf__alt12(item)).or_else(|| stringify_MarkdownLeaf__alt13(item)).or_else(|| stringify_MarkdownLeaf__alt14(item)).or_else(|| stringify_MarkdownLeaf__alt15(item)).or_else(|| stringify_MarkdownLeaf__alt16(item)).or_else(|| stringify_MarkdownLeaf__alt17(item)).or_else(|| stringify_MarkdownLeaf__alt18(item)).or_else(|| stringify_MarkdownLeaf__alt19(item)).or_else(|| stringify_MarkdownLeaf__alt20(item)).or_else(|| stringify_MarkdownLeaf__alt21(item)).or_else(|| stringify_MarkdownLeaf__alt22(item)).or_else(|| stringify_MarkdownLeaf__alt23(item)).or_else(|| stringify_MarkdownLeaf__alt24(item)).or_else(|| stringify_MarkdownLeaf__alt25(item)).or_else(|| stringify_MarkdownLeaf__alt26(item)).or_else(|| stringify_MarkdownLeaf__alt27(item)).or_else(|| stringify_MarkdownLeaf__alt28(item)).or_else(|| stringify_MarkdownLeaf__alt29(item)).or_else(|| stringify_MarkdownLeaf__alt30(item)).or_else(|| stringify_MarkdownLeaf__alt31(item)).or_else(|| stringify_MarkdownLeaf__alt32(item)).or_else(|| stringify_MarkdownLeaf__alt33(item)).or_else(|| stringify_MarkdownLeaf__alt34(item)).or_else(|| stringify_MarkdownLeaf__alt35(item)).or_else(|| stringify_MarkdownLeaf__alt36(item)).or_else(|| stringify_MarkdownParagraph__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
     Some(__out)
@@ -263,7 +263,19 @@ fn parse_MarkdownLeaf__alt0(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(6_f64)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -290,7 +302,19 @@ fn parse_MarkdownLeaf__alt1(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(5_f64)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -317,7 +341,19 @@ fn parse_MarkdownLeaf__alt2(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(4_f64)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -344,7 +380,19 @@ fn parse_MarkdownLeaf__alt3(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(3_f64)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -371,7 +419,19 @@ fn parse_MarkdownLeaf__alt4(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(2_f64)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -398,7 +458,19 @@ fn parse_MarkdownLeaf__alt5(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(1_f64)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -419,7 +491,19 @@ fn parse_MarkdownLeaf__alt6(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     skip_ws(state);
     if !match_literal(state, "===") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -446,7 +530,19 @@ fn parse_MarkdownLeaf__alt7(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     skip_ws(state);
     if !match_literal(state, "---") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -509,7 +605,19 @@ fn parse_MarkdownLeaf__alt11(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("task-list-item".to_string())), ("checked".to_string(), Value::Bool(true)), ("marker".to_string(), Value::String("x".to_string())), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -536,7 +644,19 @@ fn parse_MarkdownLeaf__alt12(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("task-list-item".to_string())), ("checked".to_string(), Value::Bool(false)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -563,7 +683,19 @@ fn parse_MarkdownLeaf__alt13(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("marker".to_string(), Value::String("+".to_string())), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -590,7 +722,19 @@ fn parse_MarkdownLeaf__alt14(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("marker".to_string(), Value::String("*".to_string())), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -617,7 +761,19 @@ fn parse_MarkdownLeaf__alt15(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -657,7 +813,19 @@ fn parse_MarkdownLeaf__alt16(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(true)), ("index".to_string(), Value::String(index.clone())), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -684,7 +852,19 @@ fn parse_MarkdownLeaf__alt17(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("blockquote".to_string())), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -724,7 +904,19 @@ fn parse_MarkdownLeaf__alt18(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __body_end = state.pos;
-    let body: String = state.src[__body_start..__body_end].trim().to_string();
+    let mut __body_te = __body_end;
+    while __body_te > __body_start {
+        let __tc = state.input[__body_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __body_te -= 1;
+    }
+    let mut __body_ts = __body_start;
+    while __body_ts < __body_te {
+        let __lc = state.input[__body_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __body_ts += 1;
+    }
+    let body: String = state.src[__body_ts..__body_te].to_string();
     skip_ws(state);
     if !match_literal(state, "```") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -757,7 +949,19 @@ fn parse_MarkdownLeaf__alt19(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __body_end = state.pos;
-    let body: String = state.src[__body_start..__body_end].trim().to_string();
+    let mut __body_te = __body_end;
+    while __body_te > __body_start {
+        let __tc = state.input[__body_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __body_te -= 1;
+    }
+    let mut __body_ts = __body_start;
+    while __body_ts < __body_te {
+        let __lc = state.input[__body_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __body_ts += 1;
+    }
+    let body: String = state.src[__body_ts..__body_te].to_string();
     skip_ws(state);
     if !match_literal(state, "```") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -790,7 +994,19 @@ fn parse_MarkdownLeaf__alt20(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     skip_ws(state);
     if !match_literal(state, "**") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -823,7 +1039,19 @@ fn parse_MarkdownLeaf__alt21(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     skip_ws(state);
     if !match_literal(state, "*") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -856,7 +1084,19 @@ fn parse_MarkdownLeaf__alt22(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     skip_ws(state);
     if !match_literal(state, "~~") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -889,7 +1129,19 @@ fn parse_MarkdownLeaf__alt23(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     skip_ws(state);
     if !match_literal(state, "`") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -922,7 +1174,19 @@ fn parse_MarkdownLeaf__alt24(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __label_end = state.pos;
-    let label: String = state.src[__label_start..__label_end].trim().to_string();
+    let mut __label_te = __label_end;
+    while __label_te > __label_start {
+        let __tc = state.input[__label_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __label_te -= 1;
+    }
+    let mut __label_ts = __label_start;
+    while __label_ts < __label_te {
+        let __lc = state.input[__label_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __label_ts += 1;
+    }
+    let label: String = state.src[__label_ts..__label_te].to_string();
     skip_ws(state);
     if !match_literal(state, "]") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -951,7 +1215,19 @@ fn parse_MarkdownLeaf__alt24(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __url_end = state.pos;
-    let url: String = state.src[__url_start..__url_end].trim().to_string();
+    let mut __url_te = __url_end;
+    while __url_te > __url_start {
+        let __tc = state.input[__url_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __url_te -= 1;
+    }
+    let mut __url_ts = __url_start;
+    while __url_ts < __url_te {
+        let __lc = state.input[__url_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __url_ts += 1;
+    }
+    let url: String = state.src[__url_ts..__url_te].to_string();
     skip_ws(state);
     if !match_literal(state, ")") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -984,7 +1260,19 @@ fn parse_MarkdownLeaf__alt25(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __label_end = state.pos;
-    let label: String = state.src[__label_start..__label_end].trim().to_string();
+    let mut __label_te = __label_end;
+    while __label_te > __label_start {
+        let __tc = state.input[__label_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __label_te -= 1;
+    }
+    let mut __label_ts = __label_start;
+    while __label_ts < __label_te {
+        let __lc = state.input[__label_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __label_ts += 1;
+    }
+    let label: String = state.src[__label_ts..__label_te].to_string();
     skip_ws(state);
     if !match_literal(state, "][") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1007,7 +1295,19 @@ fn parse_MarkdownLeaf__alt25(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __id_end = state.pos;
-    let id: String = state.src[__id_start..__id_end].trim().to_string();
+    let mut __id_te = __id_end;
+    while __id_te > __id_start {
+        let __tc = state.input[__id_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __id_te -= 1;
+    }
+    let mut __id_ts = __id_start;
+    while __id_ts < __id_te {
+        let __lc = state.input[__id_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __id_ts += 1;
+    }
+    let id: String = state.src[__id_ts..__id_te].to_string();
     skip_ws(state);
     if !match_literal(state, "]") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1046,7 +1346,19 @@ fn parse_MarkdownLeaf__alt26(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __alt_end = state.pos;
-    let alt: String = state.src[__alt_start..__alt_end].trim().to_string();
+    let mut __alt_te = __alt_end;
+    while __alt_te > __alt_start {
+        let __tc = state.input[__alt_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __alt_te -= 1;
+    }
+    let mut __alt_ts = __alt_start;
+    while __alt_ts < __alt_te {
+        let __lc = state.input[__alt_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __alt_ts += 1;
+    }
+    let alt: String = state.src[__alt_ts..__alt_te].to_string();
     skip_ws(state);
     if !match_literal(state, "]") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1075,7 +1387,19 @@ fn parse_MarkdownLeaf__alt26(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __url_end = state.pos;
-    let url: String = state.src[__url_start..__url_end].trim().to_string();
+    let mut __url_te = __url_end;
+    while __url_te > __url_start {
+        let __tc = state.input[__url_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __url_te -= 1;
+    }
+    let mut __url_ts = __url_start;
+    while __url_ts < __url_te {
+        let __lc = state.input[__url_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __url_ts += 1;
+    }
+    let url: String = state.src[__url_ts..__url_te].to_string();
     skip_ws(state);
     if !match_literal(state, ")") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1114,7 +1438,19 @@ fn parse_MarkdownLeaf__alt27(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __alt_end = state.pos;
-    let alt: String = state.src[__alt_start..__alt_end].trim().to_string();
+    let mut __alt_te = __alt_end;
+    while __alt_te > __alt_start {
+        let __tc = state.input[__alt_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __alt_te -= 1;
+    }
+    let mut __alt_ts = __alt_start;
+    while __alt_ts < __alt_te {
+        let __lc = state.input[__alt_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __alt_ts += 1;
+    }
+    let alt: String = state.src[__alt_ts..__alt_te].to_string();
     skip_ws(state);
     if !match_literal(state, "][") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1137,7 +1473,19 @@ fn parse_MarkdownLeaf__alt27(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __id_end = state.pos;
-    let id: String = state.src[__id_start..__id_end].trim().to_string();
+    let mut __id_te = __id_end;
+    while __id_te > __id_start {
+        let __tc = state.input[__id_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __id_te -= 1;
+    }
+    let mut __id_ts = __id_start;
+    while __id_ts < __id_te {
+        let __lc = state.input[__id_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __id_ts += 1;
+    }
+    let id: String = state.src[__id_ts..__id_te].to_string();
     skip_ws(state);
     if !match_literal(state, "]") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1279,7 +1627,19 @@ fn parse_MarkdownLeaf__alt31(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __first_end = state.pos;
-    let first: String = state.src[__first_start..__first_end].trim().to_string();
+    let mut __first_te = __first_end;
+    while __first_te > __first_start {
+        let __tc = state.input[__first_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __first_te -= 1;
+    }
+    let mut __first_ts = __first_start;
+    while __first_ts < __first_te {
+        let __lc = state.input[__first_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __first_ts += 1;
+    }
+    let first: String = state.src[__first_ts..__first_te].to_string();
     skip_ws(state);
     if !match_literal(state, "|") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1302,7 +1662,19 @@ fn parse_MarkdownLeaf__alt31(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __second_end = state.pos;
-    let second: String = state.src[__second_start..__second_end].trim().to_string();
+    let mut __second_te = __second_end;
+    while __second_te > __second_start {
+        let __tc = state.input[__second_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __second_te -= 1;
+    }
+    let mut __second_ts = __second_start;
+    while __second_ts < __second_te {
+        let __lc = state.input[__second_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __second_ts += 1;
+    }
+    let second: String = state.src[__second_ts..__second_te].to_string();
     skip_ws(state);
     if !match_literal(state, "|") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1335,7 +1707,19 @@ fn parse_MarkdownLeaf__alt32(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __id_end = state.pos;
-    let id: String = state.src[__id_start..__id_end].trim().to_string();
+    let mut __id_te = __id_end;
+    while __id_te > __id_start {
+        let __tc = state.input[__id_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __id_te -= 1;
+    }
+    let mut __id_ts = __id_start;
+    while __id_ts < __id_te {
+        let __lc = state.input[__id_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __id_ts += 1;
+    }
+    let id: String = state.src[__id_ts..__id_te].to_string();
     skip_ws(state);
     if !match_literal(state, "]") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1364,7 +1748,19 @@ fn parse_MarkdownLeaf__alt32(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __url_end = state.pos;
-    let url: String = state.src[__url_start..__url_end].trim().to_string();
+    let mut __url_te = __url_end;
+    while __url_te > __url_start {
+        let __tc = state.input[__url_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __url_te -= 1;
+    }
+    let mut __url_ts = __url_start;
+    while __url_ts < __url_te {
+        let __lc = state.input[__url_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __url_ts += 1;
+    }
+    let url: String = state.src[__url_ts..__url_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("definition".to_string())), ("id".to_string(), Value::String(id.clone())), ("url".to_string(), Value::String(url.clone()))]))
 }
 
@@ -1391,7 +1787,19 @@ fn parse_MarkdownLeaf__alt33(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __id_end = state.pos;
-    let id: String = state.src[__id_start..__id_end].trim().to_string();
+    let mut __id_te = __id_end;
+    while __id_te > __id_start {
+        let __tc = state.input[__id_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __id_te -= 1;
+    }
+    let mut __id_ts = __id_start;
+    while __id_ts < __id_te {
+        let __lc = state.input[__id_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __id_ts += 1;
+    }
+    let id: String = state.src[__id_ts..__id_te].to_string();
     skip_ws(state);
     if !match_literal(state, "]") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1420,7 +1828,19 @@ fn parse_MarkdownLeaf__alt33(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("footnote-definition".to_string())), ("id".to_string(), Value::String(id.clone())), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -1447,7 +1867,19 @@ fn parse_MarkdownLeaf__alt34(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __id_end = state.pos;
-    let id: String = state.src[__id_start..__id_end].trim().to_string();
+    let mut __id_te = __id_end;
+    while __id_te > __id_start {
+        let __tc = state.input[__id_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __id_te -= 1;
+    }
+    let mut __id_ts = __id_start;
+    while __id_ts < __id_te {
+        let __lc = state.input[__id_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __id_ts += 1;
+    }
+    let id: String = state.src[__id_ts..__id_te].to_string();
     skip_ws(state);
     if !match_literal(state, "]") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1542,7 +1974,19 @@ fn parse_MarkdownLeaf__alt36(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __url_end = state.pos;
-    let url: String = state.src[__url_start..__url_end].trim().to_string();
+    let mut __url_te = __url_end;
+    while __url_te > __url_start {
+        let __tc = state.input[__url_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __url_te -= 1;
+    }
+    let mut __url_ts = __url_start;
+    while __url_ts < __url_te {
+        let __lc = state.input[__url_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __url_ts += 1;
+    }
+    let url: String = state.src[__url_ts..__url_te].to_string();
     skip_ws(state);
     if !match_literal(state, ">") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -2843,7 +3287,19 @@ fn parse_MarkdownParagraph__alt0(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __text_end = state.pos;
-    let text: String = state.src[__text_start..__text_end].trim().to_string();
+    let mut __text_te = __text_end;
+    while __text_te > __text_start {
+        let __tc = state.input[__text_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __text_te -= 1;
+    }
+    let mut __text_ts = __text_start;
+    while __text_ts < __text_te {
+        let __lc = state.input[__text_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __text_ts += 1;
+    }
+    let text: String = state.src[__text_ts..__text_te].to_string();
     Some(Value::Object(vec![("type".to_string(), Value::String("paragraph".to_string())), ("text".to_string(), Value::String(text.clone()))]))
 }
 
@@ -2881,6 +3337,16 @@ pub fn render(input: &str) -> Result<Value, String> {
         return Err(syntax_error(&state));
     }
     Ok(result)
+}
+pub fn render_with_diagnostics(input: &str) -> Result<(Value, Vec<Diagnostic>), String> {
+    let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_MarkdownDocument(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok((result, state.diagnostics))
 }
 
 pub fn stringify(value: &Value) -> String {

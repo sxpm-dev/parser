@@ -45,6 +45,13 @@ export enum Op {
   // and append to captures[name], initializing as an empty array on first
   // call. Used by .repeats() recursive spans.
   CAPTURE_VALUE_APPEND = 0x14,
+  // operand: u32 stringPool index (capture name) → set captures[name] = []
+  // (an empty array). Emitted at the top of every production that has a
+  // named .repeats() span, so zero iterations still yield [] (not
+  // undefined) on the rendered AST. Matches v2's upfront `const <name>:
+  // unknown[] = [];` declaration. Without this, HTML's `attrs` etc.
+  // render as `null` when an element has no attributes.
+  CAPTURE_INIT_ARRAY = 0x17,
   // operands: u8 startSlot, u8 endSlot, u32 stringPool index (capture name)
   // → like CAPTURE_SLICE, but strips the wrapping `/*` and `*/` then
   // trims interior whitespace. Mirrors v2's emitClassSpanValueExpr arm
@@ -269,6 +276,7 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.CAPTURE_VALUE_APPEND]: [4],
   [Op.CAPTURE_COMMENT_INTERIOR]: [1, 1, 4],
   [Op.CAPTURE_TRIMMED_SLICE]: [1, 1, 4],
+  [Op.CAPTURE_INIT_ARRAY]: [4],
 
   [Op.SCAN_CLASS]: [1, 4],
   [Op.SCAN_UNTIL]: [4, 4], // count + token-class bitmask (variable u32s follow)

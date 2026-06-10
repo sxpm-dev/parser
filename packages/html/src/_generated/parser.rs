@@ -235,7 +235,7 @@ fn stringify_HtmlDocument__alt0(__value: &Value) -> Option<String> {
     match __value.obj_get("mode") { Some(Value::String(s)) if s == "no-quirks" => (), _ => return None }
     match __value.obj_get("parentNode") { None | Some(Value::Null) => (), _ => return None }
     let children = __value.obj_get("childNodes");
-    let __s0: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s0: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
     Some(__out)
@@ -383,7 +383,9 @@ fn parse_Comment__alt0(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __data_end = state.pos;
-    let data: String = state.src[__data_start..__data_end].to_string();
+    let __data_ts = __data_start;
+    let __data_te = __data_end;
+    let data: String = state.src[__data_ts..__data_te].to_string();
     skip_ws(state);
     if !match_literal(state, "-->") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -1830,7 +1832,7 @@ fn stringify_HtmlElement__alt4(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1848,7 +1850,7 @@ fn stringify_HtmlElement__alt5(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1866,7 +1868,7 @@ fn stringify_HtmlElement__alt6(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1884,7 +1886,7 @@ fn stringify_HtmlElement__alt7(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1902,7 +1904,7 @@ fn stringify_HtmlElement__alt8(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1920,7 +1922,7 @@ fn stringify_HtmlElement__alt9(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1938,7 +1940,7 @@ fn stringify_HtmlElement__alt10(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1956,7 +1958,7 @@ fn stringify_HtmlElement__alt11(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1974,7 +1976,7 @@ fn stringify_HtmlElement__alt12(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -1992,7 +1994,7 @@ fn stringify_HtmlElement__alt13(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -2010,7 +2012,7 @@ fn stringify_HtmlElement__alt14(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -2028,7 +2030,7 @@ fn stringify_HtmlElement__alt15(__value: &Value) -> Option<String> {
     let tag = __value.obj_get("nodeName");
     let children = __value.obj_get("childNodes");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
     __out.push_str(&__s0);
@@ -2046,7 +2048,7 @@ fn stringify_HtmlElement__alt16(__value: &Value) -> Option<String> {
     let children = __value.obj_get("childNodes");
     let closeTag = __value.obj_get("_closeTag");
     let __s0: String = if let Some(Value::String(s)) = tag { s.clone() } else { String::new() };
-    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype(item)); } __t } else { String::new() };
+    let __s1: String = if let Some(Value::Array(items)) = children { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_Doctype__alt0(item).or_else(|| stringify_Doctype__alt1(item)).or_else(|| stringify_Comment__alt0(item)).or_else(|| stringify_HtmlElement__alt0(item)).or_else(|| stringify_HtmlElement__alt1(item)).or_else(|| stringify_HtmlElement__alt2(item)).or_else(|| stringify_HtmlElement__alt3(item)).or_else(|| stringify_HtmlElement__alt4(item)).or_else(|| stringify_HtmlElement__alt5(item)).or_else(|| stringify_HtmlElement__alt6(item)).or_else(|| stringify_HtmlElement__alt7(item)).or_else(|| stringify_HtmlElement__alt8(item)).or_else(|| stringify_HtmlElement__alt9(item)).or_else(|| stringify_HtmlElement__alt10(item)).or_else(|| stringify_HtmlElement__alt11(item)).or_else(|| stringify_HtmlElement__alt12(item)).or_else(|| stringify_HtmlElement__alt13(item)).or_else(|| stringify_HtmlElement__alt14(item)).or_else(|| stringify_HtmlElement__alt15(item)).or_else(|| stringify_HtmlElement__alt16(item)).or_else(|| stringify_TextNode__alt0(item)).unwrap_or_default()); } __t } else { String::new() };
     let __s2: String = if let Some(Value::String(s)) = closeTag { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("<");
@@ -2165,7 +2167,24 @@ fn parse_Attribute__alt0(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __value_end = state.pos;
-    let value: String = state.src[__value_start..__value_end].trim().to_string();
+    if __value_end >= state.input.len() || __depth != 0 {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    let mut __value_te = __value_end;
+    while __value_te > __value_start {
+        let __tc = state.input[__value_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __value_te -= 1;
+    }
+    let mut __value_ts = __value_start;
+    while __value_ts < __value_te {
+        let __lc = state.input[__value_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __value_ts += 1;
+    }
+    let value: String = state.src[__value_ts..__value_te].to_string();
     skip_ws(state);
     if !match_literal(state, "\"") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -2223,7 +2242,24 @@ fn parse_Attribute__alt1(state: &mut State) -> Option<Value> {
         state.pos += 1;
     }
     let __value_end = state.pos;
-    let value: String = state.src[__value_start..__value_end].trim().to_string();
+    if __value_end >= state.input.len() || __depth != 0 {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    let mut __value_te = __value_end;
+    while __value_te > __value_start {
+        let __tc = state.input[__value_te - 1];
+        if __tc != b' ' && __tc != b'\t' && __tc != b'\n' && __tc != b'\r' { break; }
+        __value_te -= 1;
+    }
+    let mut __value_ts = __value_start;
+    while __value_ts < __value_te {
+        let __lc = state.input[__value_ts];
+        if __lc != b' ' && __lc != b'\t' && __lc != b'\n' && __lc != b'\r' { break; }
+        __value_ts += 1;
+    }
+    let value: String = state.src[__value_ts..__value_te].to_string();
     skip_ws(state);
     if !match_literal(state, "'") {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -2376,6 +2412,16 @@ pub fn render(input: &str) -> Result<Value, String> {
         return Err(syntax_error(&state));
     }
     Ok(result)
+}
+pub fn render_with_diagnostics(input: &str) -> Result<(Value, Vec<Diagnostic>), String> {
+    let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_HtmlDocument(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok((result, state.diagnostics))
 }
 
 pub fn stringify(value: &Value) -> String {

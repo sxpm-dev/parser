@@ -364,6 +364,28 @@ function emitProductionBlock(state: EncoderState, prod: Production, prodIdx: num
   writeOp(state, Op.PUSH_NEW_CAPTURES);
   writeU32(state, internString(state, prodKey));
 
+  // Pre-init every named .repeats({min:0}) span's captures field to an
+  // empty array. Without this, zero iterations leave the field undefined
+  // and the AST surfaces it as `null` instead of `[]`. Mirrors v2's
+  // upfront `const <name>: unknown[] = [];` declaration.
+  //
+  // SKIP when min >= 1: bcode's min-check is a LOAD_CAPTURE +
+  // JUMP_IF_NULL pattern that relies on the field being `undefined`
+  // (not `[]`) to signal "zero items parsed". Initializing to `[]`
+  // would defeat the min:1 enforcement (cron's Command#0 then
+  // succeeds with empty words instead of failing). Schemas needing
+  // both min:1 AND zero-iter-to-empty-array would require switching
+  // the min-check to an array-length op (TODO).
+  for (const span of prod.spans) {
+    if (!span.name) continue;
+    const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
+    if (repeatsMod === undefined) continue;
+    const min = 'min' in repeatsMod && typeof repeatsMod.min === 'number' ? repeatsMod.min : 0;
+    if (min >= 1) continue;
+    writeOp(state, Op.CAPTURE_INIT_ARRAY);
+    writeU32(state, internString(state, span.name));
+  }
+
   let nextSlot = 1;
   for (let i = 0; i < prod.spans.length; i++) {
     const span = prod.spans[i]!;
@@ -398,20 +420,16 @@ function emitSpan(state: EncoderState, span: ResolvedSpan, nextSlot: number): nu
   }
 
   // .rawUntil() span: plain literal-stop scan with NO bracket / string /
-  // comment awareness. The bcode emit + off-equal repeats guard together
-  // get HTML render past parse-time without hanging, but several
-  // higher-order alt-discrimination issues remain (HTML picks the
-  // recovery / raw-text variant over the canonical alt; Markdown still
-  // hits another infinite-loop pattern at higher nesting depths). Until
-  // those are diagnosed, fall through to the no-emit path so generation
-  // succeeds and HTML/Markdown bcode doesn't hang at runtime. Tracked
-  // as a follow-up.
+  // comment awareness. The off-equal repeats guard added alongside this
+  // makes "zero-byte capture" safe — the parent .repeats() loop breaks
+  // instead of spinning. Capture is raw bytes (no trim).
   if (rawUntilMod !== undefined) {
-    // No-op: don't emit any scan ops. The span has no captures to
-    // populate. Subsequent ops in the production handle their own
-    // advancement; if nothing else advances state.off, the parent
-    // .repeats() loop's off-equal guard breaks.
-    void rawUntilMod;
+    return emitRawUntilSpan(state, span, rawUntilMod as {
+      readonly stops: ReadonlyArray<string>;
+      readonly caseInsensitive: boolean;
+      readonly requireStop?: boolean;
+      readonly nonEmpty?: boolean;
+    }, nextSlot);
   }
 
   // Literal span
@@ -611,6 +629,42 @@ function emitClassSpan(
 // returned by the recursive call via CAPTURE_VALUE_FROM_STACK
 // (single calls) or CAPTURE_VALUE_APPEND (repeats). Render walks the
 // captures tree by routing each child through `__dispatchRender_<target>`.
+// Sort a list of role names by the longest literal-prefix any of their
+// productions starts with. Roles whose productions all start with a
+// non-literal first span (recursive / .until() / .rawUntil() / class)
+// get prefix-length 0 and stay in declared order relative to other
+// 0-length roles. Mirrors v2's emitRoleLadder ordering so multi-role
+// dispatch prefers more-specific (longer literal) productions over
+// less-specific ones — closes the HTML doctype-vs-comment ambiguity
+// on inputs like `<!-- ... -->`.
+function sortRolesByLongestPrefix(state: EncoderState, roles: ReadonlyArray<string>): string[] {
+  const meta = roles.map((role, declOrder) => {
+    const info = state.schema.nodeTypes.get(role);
+    let longest = 0;
+    if (info) {
+      for (const prod of info.productions) {
+        const s0 = prod.spans[0];
+        if (s0 && s0.class === 'literal' && typeof s0.text === 'string' && s0.text.length > 0) {
+          // Only fixed-position literals count — same exclusions as v2's
+          // computeSpeculationOrder (optional / until / repeats / recursive
+          // disqualify the prefix from being a stable byte-discriminator).
+          const mods = s0.modifiers;
+          const hasMod = mods.some((m) => m.kind === 'optional' || m.kind === 'until' || m.kind === 'rawUntil' || m.kind === 'repeats');
+          if (!hasMod && s0.recursiveRoles.length === 0) {
+            if (s0.text.length > longest) longest = s0.text.length;
+          }
+        }
+      }
+    }
+    return { role, longest, declOrder };
+  });
+  meta.sort((a, b) => {
+    if (a.longest !== b.longest) return b.longest - a.longest;
+    return a.declOrder - b.declOrder;
+  });
+  return meta.map((m) => m.role);
+}
+
 function emitRecursiveSpan(
   state: EncoderState,
   span: ResolvedSpan,
@@ -658,7 +712,16 @@ function emitRecursiveSpan(
     // advancing state.off, the parent loop must exit instead of
     // spinning forever). Mirrors v2's `if (off === __loopStart) break;`.
     const loopStartSlot = nextSlot + 2;
-    for (const role of span.recursiveRoles) {
+    // Sort roles by longest-literal-prefix descending. Without this,
+    // HTML's HtmlDocument.children = of(Doctype, Comment, ...) tries
+    // Doctype first for `<!--` — Doctype's prefix-share dispatcher
+    // matches '<!' and (because bcode doesn't enforce .oneOf()
+    // refinements yet) accepts arbitrary ident as the DOCTYPE keyword,
+    // routing into the recovery alt. Mirrors v2's emitRoleLadder which
+    // sorts by longestLiteralPrefix descending. Comment (literal `<!--`
+    // length 4) now wins over Doctype (literal `<!` length 2).
+    const sortedRoles = sortRolesByLongestPrefix(state, span.recursiveRoles);
+    for (const role of sortedRoles) {
       const loopTop = state.len;
       // Save state.off into loopStartSlot. The off-equal check after
       // CAPTURE_VALUE_APPEND uses this to decide whether to break.

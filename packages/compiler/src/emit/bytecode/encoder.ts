@@ -113,6 +113,20 @@ type EncoderState = {
   // route STRINGIFY_DISPATCH to the matching target. Reset to undefined
   // outside stringify emission.
   currentTarget?: string;
+  // The inferred schema this encoder is producing bytecode for. Threaded
+  // through so .until() emit can consult schema.classes (decide whether
+  // to set the skip-strings / skip-comments flags on SCAN_UNTIL).
+  schema: InferredSchema;
+  // Synthetic multi-role dispatch keys (e.g. "AtRule|Comment|Rule:source")
+  // requested by emitWriteRefValue / emitInverseTemplate during stringify
+  // emit. Populated at request time; resolved into
+  // stringifyOffsetsByNodeType at the END of encodeSchema (after all
+  // per-(prod, target) offsets are known). Done in a post-pass because
+  // a multi-role span emitted inside an EARLY production (e.g. Rule)
+  // would otherwise capture an incomplete offset list — missing any
+  // role whose stringify block hasn't emitted yet (AtRule comes after
+  // Rule in CSS).
+  pendingSyntheticDispatchKeys: Set<string>;
 };
 
 // Public entry point. Walks every node type, emits one block per production,
@@ -130,6 +144,8 @@ export function encodeSchema(schema: InferredSchema): EncodedSchema {
     stringifyOffsets: new Map(),
     stringifyOffsetsByNodeType: new Map(),
     stringifyDispatcherOffsets: new Map(),
+    schema,
+    pendingSyntheticDispatchKeys: new Set(),
   };
 
   // Pre-intern frequently used strings (production routing keys) so the
@@ -223,6 +239,27 @@ export function encodeSchema(schema: InferredSchema): EncodedSchema {
       if (!list || list.length === 0) continue;
       state.stringifyDispatcherOffsets.set(byNodeKey, list[0]!);
     }
+  }
+
+  // Post-pass: resolve every pending synthetic multi-role dispatch key.
+  // For each `<role1>|<role2>|...:<target>` request, look up each role's
+  // per-target offset list (now finalized — all stringify blocks have
+  // emitted) and concatenate. Without this, an early multi-role call
+  // site (Rule's nodes ref) would resolve against an incomplete
+  // offset map, and later prods (AtRule) would be silently absent
+  // from the dispatch chain.
+  for (const synthKey of state.pendingSyntheticDispatchKeys) {
+    const colonAt = synthKey.lastIndexOf(':');
+    if (colonAt < 0) continue;
+    const rolesJoined = synthKey.slice(0, colonAt);
+    const target = synthKey.slice(colonAt + 1);
+    const roles = rolesJoined.split('|');
+    const combined: number[] = [];
+    for (const role of roles) {
+      const offsets = state.stringifyOffsetsByNodeType.get(`${role}:${target}`);
+      if (offsets !== undefined) combined.push(...offsets);
+    }
+    state.stringifyOffsetsByNodeType.set(synthKey, combined);
   }
 
   // Patch forward references. Every pendingCalls entry resolves to either
@@ -342,10 +379,21 @@ function emitProductionBlock(state: EncoderState, prod: Production, prodIdx: num
 function emitSpan(state: EncoderState, span: ResolvedSpan, nextSlot: number): number {
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
   const isRepeats = span.modifiers.some((m) => m.kind === 'repeats');
+  const untilMod = span.modifiers.find((m) => m.kind === 'until');
 
   // Recursive reference (single or multi-role)
   if (span.recursiveRoles.length > 0) {
     return emitRecursiveSpan(state, span, nextSlot, { isOptional, isRepeats });
+  }
+
+  // .until() span: literal-stop scan with bracket / string / comment
+  // awareness. Trim-on-capture is the schema author's default.
+  if (untilMod !== undefined) {
+    return emitUntilSpan(state, span, untilMod as {
+      readonly stops: ReadonlyArray<string>;
+      readonly balanced: boolean;
+      readonly trim: boolean;
+    }, nextSlot);
   }
 
   // Literal span
@@ -355,6 +403,52 @@ function emitSpan(state: EncoderState, span: ResolvedSpan, nextSlot: number): nu
 
   // Class span (ident / number / etc.)
   return emitClassSpan(state, span, nextSlot, isOptional);
+}
+
+// Phase 6 — .until() span bytecode emit. Mirrors v2's emitUntilSpan in
+// emit/v2/span.ts. The runtime SCAN_UNTIL op handles the scan with
+// optional bracket-balance, string-skip, and comment-skip; the capture
+// op (CAPTURE_SLICE or CAPTURE_TRIMMED_SLICE) follows.
+function emitUntilSpan(
+  state: EncoderState,
+  span: ResolvedSpan,
+  modifier: {
+    readonly stops: ReadonlyArray<string>;
+    readonly balanced: boolean;
+    readonly trim: boolean;
+  },
+  nextSlot: number,
+): number {
+  const startSlot = nextSlot;
+  const endSlot = nextSlot + 1;
+  const tokens = new Set<string>();
+  for (const t of state.schema.classes) tokens.add(t.class);
+  const skipStrings = tokens.has('string');
+  const skipComments = tokens.has('comment');
+  let flags = 0;
+  if (modifier.balanced) flags |= 1;
+  if (skipStrings) flags |= 2;
+  if (skipComments) flags |= 4;
+
+  writeOp(state, Op.SAVE_OFF);
+  writeU8(state, startSlot);
+
+  writeOp(state, Op.SCAN_UNTIL);
+  writeU32(state, modifier.stops.length);
+  writeU32(state, flags);
+  for (const s of modifier.stops) writeU32(state, internString(state, s));
+
+  writeOp(state, Op.SAVE_OFF);
+  writeU8(state, endSlot);
+
+  if (span.name) {
+    const captureOp = modifier.trim ? Op.CAPTURE_TRIMMED_SLICE : Op.CAPTURE_SLICE;
+    writeOp(state, captureOp);
+    writeU8(state, startSlot);
+    writeU8(state, endSlot);
+    writeU32(state, internString(state, span.name));
+  }
+  return nextSlot + 2;
 }
 
 function emitLiteralSpan(
@@ -437,7 +531,12 @@ function emitClassSpan(
   writeU8(state, endSlot);
 
   if (span.name) {
-    writeOp(state, Op.CAPTURE_SLICE);
+    // comment-class spans implicitly carry the .comment() refinement —
+    // the captured value is the interior text (delimiters stripped,
+    // surrounding whitespace trimmed). Emit a dedicated op so the
+    // runtime applies the trim instead of returning the raw slice.
+    const captureOp = span.class === 'comment' ? Op.CAPTURE_COMMENT_INTERIOR : Op.CAPTURE_SLICE;
+    writeOp(state, captureOp);
     writeU8(state, startSlot);
     writeU8(state, endSlot);
     writeU32(state, internString(state, span.name));
@@ -1225,7 +1324,11 @@ function emitInverseIR(
       emitWriteRefValue(state, production, ir.capture, refTargetCapture);
       return;
     case 'object':
-      emitInverseObject(state, ir.fields, production);
+      // Nested emitInverseObject calls pass isTopLevel: false so the
+      // sibling-only absence check doesn't double-fire from inside a
+      // nested object (it would compare against the OUTER production's
+      // sibling field-names, which makes no sense at the nested layer).
+      emitInverseObject(state, ir.fields, production, /* isTopLevel */ false);
       return;
     case 'array':
       emitInverseArray(state, ir.elements);
@@ -1240,7 +1343,19 @@ function emitInverseObject(
   state: EncoderState,
   fields: ReadonlyArray<InverseField>,
   production: Production,
+  isTopLevel: boolean = true,
 ): void {
+  // Phase 6 — discriminator strengthening. Each multi-alt node type's
+  // inverse alts often differ only in which fields they declare (e.g.
+  // CSS AtRule#0 carries `nodes` for `@media { ... }`-style blocks,
+  // AtRule#1 omits it for `@charset "..."`-style at-rules). Without an
+  // absence check on the sibling-only fields, the first alt tried wins
+  // every time and emits the wrong shape (`@charset "UTF-8" {}`
+  // instead of `@charset "UTF-8"`). Mirror of rust emit's
+  // buildDiscriminatorChecks's absence pass.
+  if (isTopLevel) {
+    emitAbsenceChecksForSiblingOnlyFields(state, fields, production);
+  }
   // Each field reads value[name] (via PEEK_FIELD which leaves value on top
   // and adds name's value on top of THAT). Then either asserts a scalar or
   // recurses into a nested IR. Mismatch → RETURN_NULL via ASSERT path.
@@ -1259,6 +1374,53 @@ function emitInverseObject(
       // Pop it so we land back at the parent value.
       writeOp(state, Op.POP);
     }
+  }
+}
+
+// Emit an ASSERT for every field name declared by some sibling alt at
+// the same node type but NOT by this alt. The runtime asserts the value
+// is null/undefined; mismatch routes the chain-try to the next alt.
+function emitAbsenceChecksForSiblingOnlyFields(
+  state: EncoderState,
+  fields: ReadonlyArray<InverseField>,
+  production: Production,
+): void {
+  const target = state.currentTarget;
+  if (target === undefined) return;
+  const info = state.schema.nodeTypes.get(production.nodeType);
+  if (info === undefined || info.productions.length <= 1) return;
+  const myFieldNames = new Set(fields.map((f) => f.name));
+  const mustBeAbsent = new Set<string>();
+  for (const sib of info.productions) {
+    if (sib === production) continue;
+    const sibEntry = sib.renders.get(target);
+    if (!sibEntry || !sibEntry.inverseDerived) continue;
+    const sibIr = sibEntry.inverseDerived;
+    if (sibIr.kind !== 'object') continue;
+    for (const f of sibIr.fields) {
+      if (!myFieldNames.has(f.name)) mustBeAbsent.add(f.name);
+    }
+  }
+  for (const name of mustBeAbsent) {
+    // PEEK_FIELD leaves value on top with field on top of that. Assert
+    // the field is absent by checking it's null/undefined via a fresh
+    // op. There's no ASSERT_TOP_NULL op today; reuse ASSERT_TOP_STRING_EQ
+    // with the sentinel "" isn't right (would reject empty strings too).
+    // Instead, emit JUMP_IF_NULL — if the field IS null, skip a tiny
+    // failure block; otherwise fall through to RETURN_NULL.
+    writeOp(state, Op.PEEK_FIELD);
+    writeU32(state, internString(state, name));
+    // JUMP_IF_NULL takes i32 relative offset (from end of operand).
+    // The "skip past failure" target is past the next 5 bytes (JUMP_IF_NULL
+    // takes 4 bytes operand) + 1 byte RETURN_NULL = +6 from end of operand.
+    // Encoded as: write op, write i32 = +1 (to skip RETURN_NULL).
+    writeOp(state, Op.JUMP_IF_NULL);
+    writeI32(state, 1);
+    writeOp(state, Op.RETURN_NULL);
+    // After JUMP_IF_NULL we land here. The asserted null value is still
+    // on top; pop it. (POP is a no-op on empty stack but stack has the
+    // peeked null.)
+    writeOp(state, Op.POP);
   }
 }
 
@@ -1299,21 +1461,15 @@ function emitInverseTemplate(
       // `<role1>|<role2>|...:<target>`. The runtime's stringifySlot
       // chain-tries the combined offset list; each production carries
       // its own type-discriminator so wrong-typed alts fall through.
+      // Population deferred to encodeSchema's post-pass — see
+      // pendingSyntheticDispatchKeys doc on EncoderState.
       let role: string;
       if (span.recursiveRoles.length === 1) {
         role = span.recursiveRoles[0]!;
       } else {
         const sortedRoles = [...span.recursiveRoles].sort();
         role = sortedRoles.join('|');
-        const combinedByNodeKey = `${role}:${target}`;
-        if (!state.stringifyOffsetsByNodeType.has(combinedByNodeKey)) {
-          const combined: number[] = [];
-          for (const r of sortedRoles) {
-            const offsets = state.stringifyOffsetsByNodeType.get(`${r}:${target}`);
-            if (offsets !== undefined) combined.push(...offsets);
-          }
-          state.stringifyOffsetsByNodeType.set(combinedByNodeKey, combined);
-        }
+        state.pendingSyntheticDispatchKeys.add(`${role}:${target}`);
       }
       return { nameIdx: internString(state, capName), roleIdx: internString(state, role), optional };
     }
@@ -1377,15 +1533,12 @@ function emitWriteRefValue(
       // the same role set share one combined offset list.
       const sortedRoles = [...roles].sort();
       dispatchKey = sortedRoles.join('|');
-      const combinedByNodeKey = `${dispatchKey}:${target}`;
-      if (!state.stringifyOffsetsByNodeType.has(combinedByNodeKey)) {
-        const combined: number[] = [];
-        for (const role of sortedRoles) {
-          const offsets = state.stringifyOffsetsByNodeType.get(`${role}:${target}`);
-          if (offsets !== undefined) combined.push(...offsets);
-        }
-        state.stringifyOffsetsByNodeType.set(combinedByNodeKey, combined);
-      }
+      // Defer the actual offset-list build to the post-pass at the end
+      // of encodeSchema. Resolving at request time would miss offsets
+      // for any role whose stringify block hasn't emitted yet — e.g.
+      // when Rule's nodes ref is processed BEFORE AtRule's blocks
+      // emit, the combined list would lack AtRule entries.
+      state.pendingSyntheticDispatchKeys.add(`${dispatchKey}:${target}`);
     }
     writeOp(state, Op.STRINGIFY_DISPATCH);
     writeU32(state, internString(state, dispatchKey));

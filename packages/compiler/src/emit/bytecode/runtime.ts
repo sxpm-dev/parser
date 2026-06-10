@@ -348,6 +348,61 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.CAPTURE_TRIMMED_SLICE: {
+      const startSlot = readU8(state);
+      const endSlot = readU8(state);
+      const nameIdx = readU32(state);
+      const frame = frames[frames.length - 1]!;
+      const startRaw = frame.slots[startSlot]!;
+      const endRaw = frame.slots[endSlot]!;
+      const name = state.stringPool[nameIdx]!;
+      const captures = frame.captures;
+      if (captures === null) throw new Error(`bytecode runtime: CAPTURE_TRIMMED_SLICE before PUSH_NEW_CAPTURES`);
+      let ts = startRaw;
+      let te = endRaw;
+      while (ts < te) {
+        const c = state.input.charCodeAt(ts);
+        if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+        ts++;
+      }
+      while (te > ts) {
+        const c = state.input.charCodeAt(te - 1);
+        if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+        te--;
+      }
+      captures[name] = state.input.slice(ts, te);
+      return { kind: 'continue' };
+    }
+
+    case Op.CAPTURE_COMMENT_INTERIOR: {
+      // Like CAPTURE_SLICE, but strips the wrapping /* and */ then trims
+      // interior whitespace. Mirrors v2's emitClassSpanValueExpr arm
+      // for class='comment'.
+      const startSlot = readU8(state);
+      const endSlot = readU8(state);
+      const nameIdx = readU32(state);
+      const frame = frames[frames.length - 1]!;
+      const start = frame.slots[startSlot]!;
+      const end = frame.slots[endSlot]!;
+      const name = state.stringPool[nameIdx]!;
+      const captures = frame.captures;
+      if (captures === null) throw new Error(`bytecode runtime: CAPTURE_COMMENT_INTERIOR before PUSH_NEW_CAPTURES`);
+      let ts = start + 2;
+      let te = end - 2;
+      while (ts < te) {
+        const c = state.input.charCodeAt(ts);
+        if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+        ts++;
+      }
+      while (te > ts) {
+        const c = state.input.charCodeAt(te - 1);
+        if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+        te--;
+      }
+      captures[name] = state.input.slice(ts, te);
+      return { kind: 'continue' };
+    }
+
     case Op.CAPTURE_VALUE_FROM_STACK: {
       const nameIdx = readU32(state);
       const name = state.stringPool[nameIdx]!;
@@ -380,6 +435,71 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       if (state.off === start) {
         if (failProduction(state, frames)) return { kind: 'return', value: null };
         return { kind: 'continue' };
+      }
+      if (state.off > state.maxOff) state.maxOff = state.off;
+      return { kind: 'continue' };
+    }
+
+    case Op.SCAN_UNTIL: {
+      // Operands: u32 stopCount, u32 flags, then stopCount × u32 stopIdx.
+      // Flags bitmask:
+      //   bit 0 (1): balanced — track () [] {} depth; stop only at depth 0
+      //              when a stop matches OR a closing bracket appears.
+      //   bit 1 (2): skip strings — "..." / '...' regions are opaque,
+      //              even if a stop literal appears inside.
+      //   bit 2 (4): skip comments — /* ... */ regions are opaque.
+      // Scan advances off until one of the stop literals matches at depth
+      // 0 (without consuming it), or until a depth-0 closing bracket
+      // appears (also without consuming it), or EOF. Always succeeds —
+      // capture follows via CAPTURE_SLICE / CAPTURE_TRIMMED_SLICE.
+      const stopCount = readU32(state);
+      const flags = readU32(state);
+      const stops: string[] = new Array(stopCount);
+      for (let i = 0; i < stopCount; i++) {
+        stops[i] = state.stringPool[readU32(state)]!;
+      }
+      const balanced = (flags & 1) !== 0;
+      const skipStrings = (flags & 2) !== 0;
+      const skipComments = (flags & 4) !== 0;
+      const input = state.input;
+      const len = input.length;
+      let depth = 0;
+      scan: while (state.off < len) {
+        const c = input.charCodeAt(state.off);
+        if (skipComments && c === 0x2f && state.off + 1 < len && input.charCodeAt(state.off + 1) === 0x2a) {
+          state.off += 2;
+          while (state.off < len) {
+            if (input.charCodeAt(state.off) === 0x2a && state.off + 1 < len && input.charCodeAt(state.off + 1) === 0x2f) {
+              state.off += 2;
+              continue scan;
+            }
+            state.off++;
+          }
+          continue;
+        }
+        if (skipStrings && (c === 0x22 || c === 0x27)) {
+          const q = c;
+          state.off++;
+          while (state.off < len) {
+            const sc = input.charCodeAt(state.off);
+            if (sc === 0x5c && state.off + 1 < len) { state.off += 2; continue; }
+            if (sc === q) { state.off++; break; }
+            if (sc === 0x0a || sc === 0x0d) break;
+            state.off++;
+          }
+          continue;
+        }
+        if (!balanced || depth === 0) {
+          for (let i = 0; i < stops.length; i++) {
+            if (input.startsWith(stops[i]!, state.off)) break scan;
+          }
+          if (balanced && (c === 0x29 || c === 0x5d || c === 0x7d)) break;
+        }
+        if (balanced) {
+          if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+          else if (c === 0x29 || c === 0x5d || c === 0x7d) { if (depth > 0) depth--; }
+        }
+        state.off++;
       }
       if (state.off > state.maxOff) state.maxOff = state.off;
       return { kind: 'continue' };

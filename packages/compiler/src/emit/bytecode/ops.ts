@@ -45,6 +45,19 @@ export enum Op {
   // and append to captures[name], initializing as an empty array on first
   // call. Used by .repeats() recursive spans.
   CAPTURE_VALUE_APPEND = 0x14,
+  // operands: u8 startSlot, u8 endSlot, u32 stringPool index (capture name)
+  // → like CAPTURE_SLICE, but strips the wrapping `/*` and `*/` then
+  // trims interior whitespace. Mirrors v2's emitClassSpanValueExpr arm
+  // for class='comment' (the .comment() refinement is implicit on
+  // comment-class spans). Emitted instead of CAPTURE_SLICE when the
+  // span's class is 'comment'.
+  CAPTURE_COMMENT_INTERIOR = 0x15,
+  // operands: u8 startSlot, u8 endSlot, u32 stringPool index (capture name)
+  // → like CAPTURE_SLICE, but trims leading/trailing whitespace from the
+  // captured slice. Used for .until() captures where the schema author
+  // requested trim:true (the default). The trim is byte-level (skips
+  // 0x20 / 0x09 / 0x0a / 0x0d on both ends).
+  CAPTURE_TRIMMED_SLICE = 0x16,
 
   // --- Scan primitives -----------------------------------------------------
   // operands: u8 class-kind enum, u32 refinement-key stringPool index
@@ -226,6 +239,8 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.CAPTURE_SLICE]: [1, 1, 4],
   [Op.CAPTURE_VALUE_FROM_STACK]: [4],
   [Op.CAPTURE_VALUE_APPEND]: [4],
+  [Op.CAPTURE_COMMENT_INTERIOR]: [1, 1, 4],
+  [Op.CAPTURE_TRIMMED_SLICE]: [1, 1, 4],
 
   [Op.SCAN_CLASS]: [1, 4],
   [Op.SCAN_UNTIL]: [4, 4], // count + token-class bitmask (variable u32s follow)

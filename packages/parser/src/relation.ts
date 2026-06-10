@@ -11,6 +11,7 @@ import type {
   Template,
   TrailingPolicy,
 } from './types.ts';
+import { $, type TypedRefs } from './ref.ts';
 
 // ---------- Immutable span node -------------------------------------------
 
@@ -825,7 +826,39 @@ export function range(
   });
 }
 
-export function relation(nodeType: string, body: RelationBody): ExampleDef {
+// Typed form: the parse program is named directly and the render-target
+// bodies come from a callback whose `$` parameter only exposes the parse
+// program's capture names — `$.typo` fails at compile time. Runtime-wise
+// the callback receives the SAME global `$` proxy (TypedRefs is a
+// compile-time-narrowed view of RefProxy); the result merges with `parse`
+// into the legacy encodings shape, so everything downstream is unchanged.
+export type TypedRelationBody<Names extends string> = {
+  readonly input: string;
+  readonly parse: ParseProgram<Names>;
+  readonly targets: (refs: TypedRefs<Names>) => Readonly<Record<string, unknown>>;
+  readonly status?: ExampleStatus;
+};
+
+export function relation(nodeType: string, body: RelationBody): ExampleDef;
+export function relation<Names extends string>(
+  nodeType: string,
+  body: TypedRelationBody<Names>,
+): ExampleDef;
+export function relation(
+  nodeType: string,
+  body: RelationBody | TypedRelationBody<string>,
+): ExampleDef {
+  if ('targets' in body) {
+    return relationImpl(nodeType, {
+      input: body.input,
+      encodings: { parse: body.parse, ...body.targets($ as TypedRefs<string>) },
+      ...(body.status !== undefined ? { status: body.status } : {}),
+    });
+  }
+  return relationImpl(nodeType, body);
+}
+
+function relationImpl(nodeType: string, body: RelationBody): ExampleDef {
   let parseProgram: ParseProgram | undefined;
   const renders: RenderTargetDef[] = [];
 

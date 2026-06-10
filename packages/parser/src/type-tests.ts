@@ -41,3 +41,31 @@ const widened = parse([prop, anySpan]);
 type _Widened = Expect<Equal<NonNullable<(typeof widened)['__names']>, string>>;
 
 export {};
+
+// ---- targets-callback relation form ----------------------------------------
+import { relation } from './relation.ts';
+
+relation('Entry', {
+  input: 'a: b;',
+  parse: parse([prop, colon, value, literal(';').optional()]),
+  targets: ($) => ({
+    ast: { type: 'entry', p: $.prop, v: $.value, hasValue: $.value.present },
+    json: null,
+  }),
+});
+
+relation('Entry', {
+  input: 'a: b;',
+  parse: parse([prop, colon, value]),
+  targets: ($) => ({
+    // @ts-expect-error — 'typo' is not a capture name of this parse program
+    ast: { p: $.typo },
+  }),
+});
+
+relation('Entry', {
+  input: 'a: b;',
+  parse: parse([prop, colon, value]),
+  // @ts-expect-error — gap() only accepts declared capture names
+  targets: ($) => ({ ast: { g: $.gap('prop', 'nope') } }),
+});

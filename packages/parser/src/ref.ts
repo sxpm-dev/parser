@@ -70,6 +70,23 @@ export type RefProxy = {
 
 export const $: RefProxy = new Proxy({} as Record<string, never>, handler) as unknown as RefProxy;
 
+// Capture-name-scoped view of the SAME runtime proxy, used by the typed
+// `targets: ($) => …` relation form. Only the declared capture names are
+// accessible as properties — `$.typo` is a compile error — while the
+// reserved helper methods keep their loose string params (they reference
+// synthetic regions, not only named captures, and tightening them is a
+// separate decision).
+export type TypedRefs<Names extends string> = {
+  readonly [K in Names]: SpanValueRef & { readonly present: SpanPresenceRef };
+} & {
+  readonly gap: (from: Names, to: Names) => SpanGapRef;
+  readonly tail: (from: Names) => SpanTailRef;
+  readonly raw: (name: Names) => SpanRawRef;
+  readonly endsWith: (name: Names, suffix: string) => SpanEndsWithRef;
+  readonly commentLeft: (name: Names) => SpanCommentLeftRef;
+  readonly commentRight: (name: Names) => SpanCommentRightRef;
+};
+
 export function isStructureRef(value: unknown): value is StructureRef {
   if (typeof value !== 'object' || value === null) return false;
   const tag = (value as { __ref?: unknown }).__ref;

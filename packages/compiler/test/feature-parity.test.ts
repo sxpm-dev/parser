@@ -1702,6 +1702,135 @@ const rows: ReadonlyArray<ParityRow> = [
     expectedAst: { type: 'op', op: '*' },
     expected: { interp: 'impl', v2: 'impl' },
   },
+
+  // --- Sixth pass (2026-06-10) ---------------------------------------------
+
+  {
+    name: 'refinement:number-scientific-positive',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '1.5e10',
+            encodings: {
+              src: parse([span('v', '1.5e10').number().scientific()]),
+              ast: { type: 'num', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '2.0E-5',
+    expectedAst: { type: 'num', v: '2.0E-5' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:optional-class-span',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'foo',
+            encodings: {
+              src: parse([
+                span('a', 'foo').ident(),
+                span('b', 'bar').ident().optional(),
+              ]),
+              ast: { type: 'x', a: $.a, b: $.b },
+            },
+          }),
+        ],
+      }),
+    // .optional() on a class span yields null when absent (not
+    // undefined). Both backends honor.
+    input: 'hi',
+    expectedAst: { type: 'x', a: 'hi', b: null },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:repeats-trailing-required-fail',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        punctuators: { semi: ';' },
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('name', 'x').ident()]),
+              ast: { type: 'item', name: $.name },
+            },
+          }),
+          relation('List', {
+            input: 'x;',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ sep: ';', trailing: 'required' }),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    // trailing:required → fails when last item lacks the trailing sep.
+    input: 'a;b',
+    expectedAst: null,
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'class:literal-empty-string',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'a',
+            encodings: {
+              src: parse([span('a', 'a').ident()]),
+              ast: { type: 'lit', a: $.a },
+            },
+          }),
+        ],
+      }),
+    // Sanity: bare ident-only schema parses single chars.
+    input: 'z',
+    expectedAst: { type: 'lit', a: 'z' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'schemaDecl:unknownChars-reject',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        unknownChars: 'reject',
+        examples: [
+          relation('X', {
+            input: 'abc',
+            encodings: {
+              src: parse([span('v', 'abc').until(['\n'])]),
+              ast: { type: 'x', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // unknownChars:reject rejects bytes outside the declared token
+    // alphabet. The .until([\n]) scanner sees any byte; with reject
+    // the scan fails on non-content bytes. But here ident bytes are
+    // all valid → passes.
+    input: 'xyz',
+    expectedAst: { type: 'x', v: 'xyz' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
 ];
 
 // ---------------------------------------------------------------------------

@@ -2097,6 +2097,114 @@ const rows: ReadonlyArray<ParityRow> = [
     expectedAst: { type: 'x', v: 'bar' },
     expected: { interp: 'impl', v2: 'impl' },
   },
+
+  // --- Ninth pass (2026-06-10) — exercise comment-excise ------------------
+
+  {
+    name: 'modifier:until-comment-excise',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        tokens: ['comment'],
+        examples: [
+          relation('X', {
+            input: 'a;',
+            encodings: {
+              src: parse([span('v', 'a').until([';']), literal(';')]),
+              ast: { type: 'x', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // .until() captures with comment-token-class declared excise
+    // whitespace-adjacent block comments from the captured slice.
+    // Mirrors v2 emit/v2/span.ts L1445+ and the rust + bcode ports.
+    // GAP on interp: the reference interpreter doesn't excise
+    // comments from .until() captures (keeps the raw slice).
+    input: 'a /* note */ b;',
+    expectedAst: { type: 'x', v: 'a  b' },
+    expected: { interp: 'gap', v2: 'impl' },
+  },
+
+  {
+    name: 'class:comment-trim-interior',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        tokens: ['comment'],
+        examples: [
+          relation('X', {
+            input: '/* hi */',
+            encodings: {
+              src: parse([span('v', '/* hi */').comment()]),
+              ast: { type: 'c', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // .comment() refinement strips /* */ delimiters AND trims
+    // interior whitespace.
+    input: '/*   hello   */',
+    expectedAst: { type: 'c', v: 'hello' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:repeats-zero-iterations',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('n', 'x').ident()]),
+              ast: { type: 'item', n: $.n },
+            },
+          }),
+          relation('X', {
+            input: 'x',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ min: 0 }),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    // Zero iterations should yield an empty array `[]`, not null/undefined.
+    // Both backends pass an empty input through min:0 repeats successfully.
+    input: '',
+    expectedAst: { type: 'list', items: [] },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:number-coerce-numeric',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '42',
+            encodings: {
+              src: parse([span('v', '42').number().int().coerce()]),
+              ast: { type: 'n', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // .coerce() converts the captured string to a JS number.
+    // v2 honors this; interp keeps the raw slice (documented gap).
+    input: '123',
+    expectedAst: { type: 'n', v: 123 },
+    expected: { interp: 'gap', v2: 'impl' },
+  },
 ];
 
 // ---------------------------------------------------------------------------

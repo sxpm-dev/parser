@@ -1064,13 +1064,10 @@ const rows: ReadonlyArray<ParityRow> = [
       }),
     input: '`world`',
     expectedAst: { type: 'tpl', v: '`world`' },
-    // GAP — the v2 (and interp) string-class scanner only accepts `"` and
-    // `'` at start; the .backtick() refinement isn't honored by the
-    // predicate at emit/v2/span.ts:1032+. Documented gap; fix requires
-    // teaching classScanCode's string arm to extend the start-quote set
-    // when refSet.has('backtick'). Rust emit DOES honor backtick (via
-    // stringQuoteChar) — TS backend lags.
-    expected: { interp: 'gap', v2: 'gap' },
+    // Backtick is admitted at start when refSet.has('backtick') in both
+    // v2 (classScanCode) and interp (scanClassByte). Backtick strings
+    // also tolerate newlines mid-string (JS template-literal convention).
+    expected: { interp: 'impl', v2: 'impl' },
   },
 
   // --- Additional modifier rows --------------------------------------------
@@ -1190,11 +1187,9 @@ const rows: ReadonlyArray<ParityRow> = [
       }),
     input: 'foo:bar',
     expectedAst: { foo: 'bar' },
-    // GAP on interp — interp's render path doesn't yet evaluate dynKey
-    // bodies at the same layer v2 does. Documented; fix requires
-    // teaching interp/parse.ts's renderSlotAst to materialize the
-    // dynamic key from the captured slot value.
-    expected: { interp: 'gap', v2: 'impl' },
+    // Interp now handles dynKey in walkBody (interp/parse.ts) — resolves
+    // the key ref to a string and emits `{ [key]: walkBody(value) }`.
+    expected: { interp: 'impl', v2: 'impl' },
   },
 
   {
@@ -1231,10 +1226,142 @@ const rows: ReadonlyArray<ParityRow> = [
       }),
     input: 'a:1,b:2',
     expectedAst: { a: '1', b: '2' },
-    // GAP on interp — merge() depends on dynKey() at the child Pair
-    // production layer, which interp doesn't render. Closing the
-    // dynKey row above will close this too.
-    expected: { interp: 'gap', v2: 'impl' },
+    // Interp now handles merge() in walkBody — reads the array, filters
+    // object entries, Object.assigns them. Composes with the dynKey fix
+    // above so the child Pair productions yield single-entry objects.
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  // --- Even more rows (2026-06-10 second pass) -----------------------------
+
+  {
+    name: 'refinement:number-bigint',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '42n',
+            encodings: {
+              src: parse([span('v', '42n').number().bigint()]),
+              ast: { type: 'big', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '100n',
+    expectedAst: { type: 'big', v: '100n' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'schemaDecl:caseSensitive-false',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        caseSensitive: false,
+        // Per schema contract (parser/src/types.ts): with caseSensitive
+        // false, schema literals (and the canonical example) MUST be
+        // written in lowercase; input is canonicalized to lowercase
+        // before matching, so callers can pass any case.
+        examples: [
+          relation('X', {
+            input: 'select',
+            encodings: {
+              src: parse([literal('select')]),
+              ast: { type: 'kw' },
+            },
+          }),
+        ],
+      }),
+    input: 'SELECT',
+    expectedAst: { type: 'kw' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'schemaDecl:unicode-NFC',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        unicode: 'NFC',
+        examples: [
+          relation('X', {
+            input: 'cafe',
+            encodings: {
+              src: parse([span('v', 'cafe').ident()]),
+              ast: { type: 'name', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // unicode:NFC normalizes input on entry. Plain-ASCII inputs are
+    // unaffected (NFC is a no-op on already-composed bytes).
+    input: 'hello',
+    expectedAst: { type: 'name', v: 'hello' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'schemaDecl:tokens-comment-line',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        tokens: [{ class: 'comment', refinements: [{ name: 'line', args: ['//'] }] }],
+        examples: [
+          relation('X', {
+            input: '42',
+            encodings: {
+              src: parse([span('v', '42').number().int()]),
+              ast: { type: 'num', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // Line-comment-aware leading skip: `// note\n42` parses to
+    // `{ type: 'num', v: '42' }` because the marker `//` declared in
+    // tokens causes __parse's leading skip to consume the line comment
+    // before invoking the root.
+    input: '// note\n42',
+    expectedAst: { type: 'num', v: '42' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'structureRef:span-raw',
+    category: 'structureRef',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'a:42',
+            encodings: {
+              src: parse([
+                span('key', 'a').ident(),
+                literal(':'),
+                span('v', '42').number().int().coerce(),
+              ]),
+              // $.raw('v') reads the un-coerced source slice. The
+              // compiler's inverse-derivation pass REJECTS this in
+              // 'ast' bodies: "$.span-raw refs are not invertible;
+              // only $.span-value and $.span-presence refs can drive
+              // stringify". A future row could move $.raw under a
+              // raws: subfield if that path opens up.
+              ast: { type: 'kv', key: $.key, v: $.v, raw: $.raw('v') },
+            },
+          }),
+        ],
+      }),
+    input: 'x:7',
+    expectedAst: { type: 'kv', key: 'x', v: 7, raw: '7' },
+    // GAP on both: $.raw refs in 'ast' bodies fail inverse-derivation;
+    // codegen throws before either backend runs.
+    expected: { interp: 'gap', v2: 'gap' },
   },
 ];
 

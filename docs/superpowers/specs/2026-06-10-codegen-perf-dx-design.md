@@ -181,3 +181,30 @@ Measurement reshaped the plan before any emitter work:
   html/markdown/json generated output is byte-identical (their schemas
   trigger none of the new codegen paths), confirming the changes are
   structurally gated, not domain-gated.
+
+## Phase D outcomes (2026-06-11)
+
+Plan: `docs/superpowers/plans/2026-06-11-schema-dx.md`. All landed; every
+parser package's generated output stayed byte-identical (pure sugar /
+CLI-only changes; golden hashes untouched).
+
+- **D1**: `.of()` accepts a role array; the css schema declares its
+  `Comment|AtRule|Rule|Declaration` union once as `NODE`.
+- **D2**: typed capture refs via the additive `targets`-callback relation
+  form. `span('prop')` carries `'prop'` as a literal type through modifier
+  chains; `parse([...])` infers the capture-name union; `relation({ input,
+  parse, targets: ($) => ... })` types `$` as `TypedRefs<Names>` — a typo
+  now fails compile with the names enumerated:
+  `Property 'selektor' does not exist on type 'TypedRefs<"selector" |
+  "nodes">'. Did you mean 'selector'?`. The legacy `encodings` form remains
+  valid (no forced migrations); css is migrated as the showcase;
+  `packages/parser/src/type-tests.ts` pins the inference under `tsc -b`.
+  Design note: typo-safety through the GLOBAL `$` proxy is not expressible
+  in TypeScript (index signatures cannot capture literal keys), which is
+  why the scoped-callback form exists.
+- **D3**: `--explain` CLI flag prints per-node codegen decisions (dispatch
+  strategy, alt order, viability gates, union guards, fusion coverage,
+  merged-divergence) from registry-collected records at the emitter choke
+  points. Tests assert on entries, not formatting.
+- **D4 (deferred per plan)**: typed validation matchers; cross-relation
+  role-name typing in `.of()`.

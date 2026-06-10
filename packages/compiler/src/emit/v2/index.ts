@@ -29,6 +29,7 @@ import {
   structuredRoleDispatcherName,
 } from './fusion-structured.ts';
 import { emitFusedRender, fusedRenderFnName } from './fusion.ts';
+import { beginGuardHelpers, drainGuardHelpers } from './until-guard.ts';
 import { emitProduction } from './production.ts';
 import { emitPrattNode } from './pratt.ts';
 import { V2_RUNTIME } from './runtime.ts';
@@ -45,6 +46,9 @@ export function emitV2Parser(schema: InferredSchema): string {
   // parent's inline-validator pass then drops in the source verbatim and
   // emits `__validator_N` aliases that invoke the prefixed root parse fn.
   if (schema.emitMode === 'inline') {
+    // Inline emission registers any until-viability guard helpers into the
+    // PARENT's open collection (the parent emits them once at top level).
+    // When called standalone (no open collection) guards are simply skipped.
     const nodeFns: string[] = [];
     for (const info of schema.nodeTypes.values()) {
       nodeFns.push(emitNodeType(info, schema));
@@ -52,6 +56,7 @@ export function emitV2Parser(schema: InferredSchema): string {
     return nodeFns.join('\n\n') + '\n';
   }
 
+  beginGuardHelpers();
   const { imports: validatorImports, body: validateBody, inlineBlock } = emitValidate(schema, parseFnName(schema, schema.rootType));
   const header = emitHeader(schema, validatorImports);
   const runtime = V2_RUNTIME;
@@ -87,9 +92,14 @@ export function emitV2Parser(schema: InferredSchema): string {
   const { source: structuredFusion, targets: structuredTargets } = emitStructuredFusion(schema);
   const fusedEntry = emitFusedRenderEntry(schema, fusedTargets, structuredTargets);
   const api = emitPublicApi(schema, validateBody);
+  // All guard-registering emission is done — drain the collection. The
+  // helpers are plain function declarations; hoisting makes their position
+  // in the file irrelevant to the emitters that reference them.
+  const guardHelpers = drainGuardHelpers().join('\n\n');
   return [
     header,
     runtime,
+    guardHelpers,
     // Phase 3 alias block. Goes after the runtime (so ParseMode et al. are
     // already declared) and before everything that references the aliases
     // via the render/stringify overloads.
@@ -198,9 +208,6 @@ function emitStructuredFusion(schema: InferredSchema): { source: string; targets
   // Roles that need a per-role dispatcher emitted (because some recursive
   // span references them and they're structurally fusable for this target).
   const roleDispatchersByTarget = new Map<string, Set<string>>();
-  // Module-level helper fns (until-viability guards) emitted by role-dispatch
-  // snippets, deduped by name across all productions/targets.
-  const helperSink = new Map<string, string>();
 
   for (const target of allTargets) {
     const cache = new Map<string, boolean>();
@@ -211,7 +218,6 @@ function emitStructuredFusion(schema: InferredSchema): { source: string; targets
           nodeName: info.name,
           prodIdx: i,
           target,
-          helperSink,
         });
         if (src === null) continue;
         fns.push(src);
@@ -304,8 +310,6 @@ ${probes.join('\n')}
 }`);
     }
   }
-
-  for (const helper of helperSink.values()) fns.push(helper);
 
   const sortedTargets = [...tableEntries.keys()].sort();
   const tables = sortedTargets.map((target) => {

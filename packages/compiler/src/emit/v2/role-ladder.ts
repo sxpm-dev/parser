@@ -52,6 +52,7 @@ import { CompilerError, type NodeTypeInfo, type ResolvedSpan } from '../../model
 import { indent } from '../strings.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import type { SpanContext } from './span.ts';
+import { guardEnvFromSpanContext, untilGuardSpec } from './until-guard.ts';
 
 export type RoleLadderOptions = {
   // Name of the JS local that receives the parsed value (or stays null when
@@ -176,10 +177,10 @@ export function emitRoleLadder(
   if (fallthroughRoles.length === 1) {
     fallthroughBody = `${resultVar} = ${ctx.symbolPrefix}parse${fallthroughRoles[0]!.role}(state);`;
   } else if (fallthroughRoles.length >= 2) {
-    fallthroughBody = emitSpeculationGroup(
+    fallthroughBody = emitGuardedFallthroughGroup(
       fallthroughRoles.map((r) => r.role),
       resultVar,
-      ctx.symbolPrefix,
+      ctx,
     );
   }
 
@@ -475,6 +476,42 @@ function firstBytesOfSpan(span: ResolvedSpan): ReadonlySet<number> | null {
 //   if (__r === null) { __r = parseB(state); }
 //   if (__r === null) { __r = parseC(state); }
 //   ${resultVar} = __r;
+// Fallthrough speculation with until-viability guards: all but the LAST
+// probe may be skipped via a captureless terminator pre-scan (see
+// until-guard.ts). The last probe stays unguarded so the caller's "nothing
+// matched" semantics — including maxOff error positions from a real failed
+// scan — are produced by an actual production attempt, exactly as before.
+function emitGuardedFallthroughGroup(
+  roles: ReadonlyArray<string>,
+  resultVar: string,
+  ctx: SpanContext,
+): string {
+  if (roles.length === 1) {
+    return `${resultVar} = ${ctx.symbolPrefix}parse${roles[0]!}(state);`;
+  }
+  const env = guardEnvFromSpanContext(ctx);
+  const lines: string[] = [];
+  for (let i = 0; i < roles.length; i++) {
+    const call = `${ctx.symbolPrefix}parse${roles[i]!}(state)`;
+    const guard = i < roles.length - 1 ? untilGuardSpec(roles[i]!, env) : null;
+    if (guard !== null) {
+      const cond = `${guard.helperName}(input, off, len) === ${guard.litCode}`;
+      lines.push(
+        i === 0
+          ? `${resultVar} = (${cond}) ? ${call} : null;`
+          : `if (${resultVar} === null && (${cond})) { ${resultVar} = ${call}; }`,
+      );
+    } else {
+      lines.push(
+        i === 0
+          ? `${resultVar} = ${call};`
+          : `if (${resultVar} === null) { ${resultVar} = ${call}; }`,
+      );
+    }
+  }
+  return lines.join('\n');
+}
+
 function emitSpeculationGroup(roles: ReadonlyArray<string>, resultVar: string, symbolPrefix: string): string {
   if (roles.length === 0) {
     throw new Error('emitSpeculationGroup: called with no roles');

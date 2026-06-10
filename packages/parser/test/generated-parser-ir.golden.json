@@ -4,7 +4,7 @@
   "packages": {
     "css": {
       "path": "packages/css/src/_generated/parser.ts",
-      "sha256": "5d43fd08145b341b4bffb170fa34df6bb49e16066484aeeee4933ae46774c5aa"
+      "sha256": "473b372a5987c1098799a1903b5c875ae7cffb9afb24f1902cf97fd64372e0d4"
     },
     "html": {
       "path": "packages/html/src/_generated/parser.ts",

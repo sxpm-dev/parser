@@ -1962,6 +1962,141 @@ const rows: ReadonlyArray<ParityRow> = [
     expectedAst: { type: 'h', v: 'CAFE' },
     expected: { interp: 'impl', v2: 'impl' },
   },
+
+  // --- Eighth pass (2026-06-10) — final batch -----------------------------
+
+  {
+    name: 'refinement:string-singleQuoted',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: "'hello'",
+            encodings: {
+              src: parse([span('v', "'hello'").string().singleQuoted()]),
+              ast: { type: 's', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: "'world'",
+    expectedAst: { type: 's', v: "'world'" },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:ident-css-escape-friendly',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '--var',
+            encodings: {
+              src: parse([span('v', '--var').ident().css()]),
+              ast: { type: 'css', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // CSS custom-property idents allow leading `--`.
+    input: '--foo',
+    expectedAst: { type: 'css', v: '--foo' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:repeats-stopBefore-shifts',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('name', 'x').ident()]),
+              ast: { type: 'item', name: $.name },
+            },
+          }),
+          relation('List', {
+            input: 'x y END',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ stopBefore: ['END'] }),
+                literal('END'),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    // stopBefore tells .repeats() to exit when the upcoming source
+    // matches any of the stop literals — `END` here. Items are space-
+    // separated, no explicit sep. GAP on interp: stopBefore not
+    // fully implemented for sep-less repeats in the interpreter
+    // (modifier:repeats-stopBefore with sep already covered).
+    input: 'a b c END',
+    expectedAst: {
+      type: 'list',
+      items: [
+        { type: 'item', name: 'a' },
+        { type: 'item', name: 'b' },
+        { type: 'item', name: 'c' },
+      ],
+    },
+    expected: { interp: 'gap', v2: 'impl' },
+  },
+
+  {
+    name: 'class:literal-with-special-chars',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '%>',
+            encodings: {
+              src: parse([literal('%>')]),
+              ast: { type: 'tag' },
+            },
+          }),
+        ],
+      }),
+    input: '%>',
+    expectedAst: { type: 'tag' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:until-multiple-stops',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'foo;',
+            encodings: {
+              src: parse([
+                span('v', 'foo').until([';']),
+                literal(';'),
+              ]),
+              ast: { type: 'x', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // Until with a single stop — sanity check that captures bytes up
+    // to the stop literal, then the required literal consumes it.
+    input: 'bar;',
+    expectedAst: { type: 'x', v: 'bar' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
 ];
 
 // ---------------------------------------------------------------------------

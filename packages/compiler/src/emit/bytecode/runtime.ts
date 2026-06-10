@@ -911,6 +911,52 @@ function scanClass(state: RuntimeState, kind: number): void {
       while (state.off < len && isDigit(state.input.charCodeAt(state.off))) state.off++;
       return;
     }
+    case 3: { // HEX — bare [0-9a-fA-F]+ run, matches v2 emit/v2/span.ts.
+      const len = state.input.length;
+      if (state.off >= len) return;
+      if (!isHexDigit(state.input.charCodeAt(state.off))) return;
+      state.off++;
+      while (state.off < len && isHexDigit(state.input.charCodeAt(state.off))) state.off++;
+      return;
+    }
+    case 4: { // STRING — " or ' quoted, backslash-escape aware, newline
+      // breaks (mirrors v2 + interp). No backtick support yet on bcode
+      // runtime; matches the v2 default-no-refinement behavior.
+      const len = state.input.length;
+      if (state.off >= len) return;
+      const q = state.input.charCodeAt(state.off);
+      if (q !== 0x22 && q !== 0x27) return;
+      state.off++;
+      while (state.off < len) {
+        const c = state.input.charCodeAt(state.off);
+        if (c === 0x5c && state.off + 1 < len) { state.off += 2; continue; }
+        if (c === q) { state.off++; break; }
+        if (c === 0x0a || c === 0x0d) break;
+        state.off++;
+      }
+      return;
+    }
+    case 5: { // COMMENT — /* ... */, scan-to-EOF on unterminated.
+      const len = state.input.length;
+      if (state.off + 1 >= len) return;
+      if (
+        state.input.charCodeAt(state.off) !== 0x2f ||
+        state.input.charCodeAt(state.off + 1) !== 0x2a
+      ) return;
+      state.off += 2;
+      while (state.off < len) {
+        if (
+          state.input.charCodeAt(state.off) === 0x2a &&
+          state.off + 1 < len &&
+          state.input.charCodeAt(state.off + 1) === 0x2f
+        ) {
+          state.off += 2;
+          return;
+        }
+        state.off++;
+      }
+      return;
+    }
     case 6: { // OPERATOR
       // Longest-match dispatch over schema.operatorLiterals. The list is
       // pre-sorted longest-first by the inference pass, so the first
@@ -926,8 +972,16 @@ function scanClass(state: RuntimeState, kind: number): void {
       return; // no match; SCAN_CLASS will fail-rewind
     }
     default:
-      throw new Error(`bytecode runtime: SCAN_CLASS kind ${kind} not yet implemented (Task 6.3 covers cron primitives only)`);
+      throw new Error(`bytecode runtime: SCAN_CLASS kind ${kind} not yet implemented`);
   }
+}
+
+function isHexDigit(c: number): boolean {
+  return (
+    (c >= 0x30 && c <= 0x39) ||
+    (c >= 0x41 && c <= 0x46) ||
+    (c >= 0x61 && c <= 0x66)
+  );
 }
 
 function isDigit(c: number): boolean {

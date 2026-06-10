@@ -1289,19 +1289,32 @@ function emitInverseTemplate(
   }
   // Per-capture metadata: role (if recursive) + optionality.
   type CapMeta = { readonly nameIdx: number; readonly roleIdx: number; readonly optional: boolean };
+  const target = state.currentTarget;
   const meta: CapMeta[] = captures.map((capName) => {
     const span = findSpanByName(production, capName);
     const optional = span !== undefined && isAbsentAllowedSpan(span);
     if (span && span.recursiveRoles.length > 0) {
-      if (span.recursiveRoles.length !== 1) {
-        // Phase 6 follow-up #7 documents multi-role recursive as out of
-        // bytecode scope. Match emitWriteRefValue's behaviour: loud
-        // failure so a new schema doesn't silently drop captures.
-        throw new Error(
-          `bytecode encoder: multi-role recursive capture '${capName}' not yet supported in template-form inverse`,
-        );
+      // Multi-role template capture (CSS Stylesheet's `nodes` of(Comment,
+      // AtRule, Rule, Declaration)) maps to a synthetic dispatch key
+      // `<role1>|<role2>|...:<target>`. The runtime's stringifySlot
+      // chain-tries the combined offset list; each production carries
+      // its own type-discriminator so wrong-typed alts fall through.
+      let role: string;
+      if (span.recursiveRoles.length === 1) {
+        role = span.recursiveRoles[0]!;
+      } else {
+        const sortedRoles = [...span.recursiveRoles].sort();
+        role = sortedRoles.join('|');
+        const combinedByNodeKey = `${role}:${target}`;
+        if (!state.stringifyOffsetsByNodeType.has(combinedByNodeKey)) {
+          const combined: number[] = [];
+          for (const r of sortedRoles) {
+            const offsets = state.stringifyOffsetsByNodeType.get(`${r}:${target}`);
+            if (offsets !== undefined) combined.push(...offsets);
+          }
+          state.stringifyOffsetsByNodeType.set(combinedByNodeKey, combined);
+        }
       }
-      const role = span.recursiveRoles[0]!;
       return { nameIdx: internString(state, capName), roleIdx: internString(state, role), optional };
     }
     return { nameIdx: internString(state, capName), roleIdx: INVERSE_TEMPLATE_ROLE_NONE, optional };
@@ -1341,32 +1354,42 @@ function emitWriteRefValue(
   const recursive = span !== undefined && span.recursiveRoles.length > 0;
 
   if (recursive) {
-    // We need to know the single role to dispatch to. cron's recursive
-    // spans always declare exactly one role per span — we error out on
-    // multi-role spans here (not yet supported in bytecode).
     const roles = span!.recursiveRoles;
-    if (roles.length !== 1) {
-      throw new Error(`bytecode encoder: multi-role recursive span '${effectiveName}' not yet supported in stringify`);
-    }
-    const role = roles[0]!;
-    // STRINGIFY_DISPATCH consumes top of stack (the AST value) and
-    // pushes the rebuilt source string. Operand order: nodeType, target.
-    // The TARGET in this context is the same target as the outer
-    // stringify — we recover it from the production's renders map via
-    // an extra parameter. For simplicity we hard-code via a placeholder
-    // and require the caller to thread the target through. The current
-    // emitInverseIR signature does not thread target; we look it up from
-    // the production's renders map by finding the only render entry that
-    // has an inverse derivation matching this IR. Too fragile — instead,
-    // accept that the SIMPLEST design is: emitStringifyBlock threads
-    // target into emitInverseIR via a TLS-style closure variable. We do
-    // that by storing it on state.
     if (state.currentTarget === undefined) {
       throw new Error(`bytecode encoder: emitWriteRefValue called without state.currentTarget`);
     }
+    const target = state.currentTarget;
+    // For single-role spans the dispatcher key is just `<role>:<target>`
+    // and the runtime's stringifySlot chain-tries that role's productions.
+    // For MULTI-ROLE spans (CSS Stylesheet.nodes = of(Comment, AtRule,
+    // Rule, Declaration)), build a synthetic key like
+    // `Comment|AtRule|Rule|Declaration:<target>` and populate it with
+    // the concatenated offset list of every role's productions. The
+    // runtime treats the synthetic key like any other and walks the
+    // combined list; each production carries its own discriminator
+    // (type-field assert), so wrong-typed entries fall through cleanly.
+    let dispatchKey: string;
+    if (roles.length === 1) {
+      dispatchKey = roles[0]!;
+    } else {
+      // Sorted to give the synthetic key a stable identity regardless
+      // of source-order in the of() call. Two multi-role spans with
+      // the same role set share one combined offset list.
+      const sortedRoles = [...roles].sort();
+      dispatchKey = sortedRoles.join('|');
+      const combinedByNodeKey = `${dispatchKey}:${target}`;
+      if (!state.stringifyOffsetsByNodeType.has(combinedByNodeKey)) {
+        const combined: number[] = [];
+        for (const role of sortedRoles) {
+          const offsets = state.stringifyOffsetsByNodeType.get(`${role}:${target}`);
+          if (offsets !== undefined) combined.push(...offsets);
+        }
+        state.stringifyOffsetsByNodeType.set(combinedByNodeKey, combined);
+      }
+    }
     writeOp(state, Op.STRINGIFY_DISPATCH);
-    writeU32(state, internString(state, role));
-    writeU32(state, internString(state, state.currentTarget));
+    writeU32(state, internString(state, dispatchKey));
+    writeU32(state, internString(state, target));
   }
   writeOp(state, Op.CAPTURE_VALUE_FROM_STACK);
   writeU32(state, internString(state, captureName));

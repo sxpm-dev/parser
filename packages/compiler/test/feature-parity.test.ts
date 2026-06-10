@@ -49,7 +49,9 @@ import { interpretParse } from '../src/interp/parse.ts';
 import {
   $,
   defineSchema,
+  dynKey,
   literal,
+  merge,
   parse,
   relation,
   span,
@@ -951,6 +953,288 @@ const rows: ReadonlyArray<ParityRow> = [
     // optional emit becomes a no-op on that branch. Documented in
     // packages/compiler/src/model.ts (InverseIR doc).
     expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  // --- Additional refinement rows (Phase 1 matrix expansion) ---------------
+
+  {
+    name: 'refinement:number-binary',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '0b1010',
+            // The .binary() refinement is a prefix-locked scan: the
+            // captured span includes the `0b` / `0B` prefix and the
+            // binary digits. Splitting it as `literal('0b') + ...binary()`
+            // would never match because the scanner expects `0b` at the
+            // start of the span itself.
+            encodings: {
+              src: parse([span('v', '0b1010').number().binary()]),
+              ast: { type: 'bin', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '0b1101',
+    expectedAst: { type: 'bin', v: '0b1101' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:number-octal',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '0o755',
+            encodings: {
+              src: parse([span('v', '0o755').number().octal()]),
+              ast: { type: 'oct', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '0o644',
+    expectedAst: { type: 'oct', v: '0o644' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:number-separator',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '1_000',
+            encodings: {
+              src: parse([span('v', '1_000').number().separator('_')]),
+              ast: { type: 'num', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '1_234_567',
+    expectedAst: { type: 'num', v: '1_234_567' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:hex-lengths',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '#FFF',
+            encodings: {
+              src: parse([literal('#'), span('v', 'FFF').hex().lengths([3, 6, 8])]),
+              ast: { type: 'color', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '#CAFEBA',
+    expectedAst: { type: 'color', v: 'CAFEBA' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:string-backtick',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '`hello`',
+            encodings: {
+              src: parse([span('v', '`hello`').string().backtick()]),
+              ast: { type: 'tpl', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '`world`',
+    expectedAst: { type: 'tpl', v: '`world`' },
+    // GAP — the v2 (and interp) string-class scanner only accepts `"` and
+    // `'` at start; the .backtick() refinement isn't honored by the
+    // predicate at emit/v2/span.ts:1032+. Documented gap; fix requires
+    // teaching classScanCode's string arm to extend the start-quote set
+    // when refSet.has('backtick'). Rust emit DOES honor backtick (via
+    // stringQuoteChar) — TS backend lags.
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  // --- Additional modifier rows --------------------------------------------
+
+  {
+    name: 'modifier:until-rejectSuffix',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'name : value',
+            encodings: {
+              src: parse([
+                span('sel', 'name').until([':'], { rejectSuffix: [','] }),
+                literal(':'),
+                span('val', 'value').until(['\n']),
+              ]),
+              ast: { type: 'kv', sel: $.sel, val: $.val },
+            },
+          }),
+        ],
+      }),
+    input: 'prop : data',
+    expectedAst: { type: 'kv', sel: 'prop', val: 'data' },
+    // Captures that end with a rejectSuffix literal cause the production
+    // to fail. Here 'prop' doesn't end with ',' so the row passes.
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:until-requireStop',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'hello;',
+            encodings: {
+              src: parse([
+                span('v', 'hello').until([';'], { requireStop: true }),
+                literal(';'),
+              ]),
+              ast: { type: 'x', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: 'world;',
+    expectedAst: { type: 'x', v: 'world' },
+    // requireStop:true fails the production when EOF arrives before the
+    // stop literal. Positive case (stop present) verified here; the
+    // negative case is checked at parse-error level elsewhere.
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  // --- Additional schema-level declarations --------------------------------
+
+  {
+    name: 'schemaDecl:whitespace-preserve',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        whitespace: 'preserve',
+        examples: [
+          relation('X', {
+            input: 'a b',
+            encodings: {
+              src: parse([span('l', 'a').ident(), span('r', 'b').ident()]),
+              ast: { type: 'pair', l: $.l, r: $.r },
+            },
+          }),
+        ],
+      }),
+    input: 'x   y',
+    // preserve schemas auto-attach `__ws` (inter-span trivia),
+    // `__litPres` (presence flags for unnamed optional literals — empty
+    // here), and `__leadingWs` / `__trailingWs` (root-level edge trivia).
+    // The matcher uses deepEqual so every field must be present.
+    expectedAst: {
+      type: 'pair',
+      l: 'x',
+      r: 'y',
+      __ws: ['   '],
+      __litPres: [],
+      __leadingWs: '',
+      __trailingWs: '',
+    },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  // --- Additional structure refs -------------------------------------------
+
+  {
+    name: 'structureRef:dynKey',
+    category: 'structureRef',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'key:val',
+            encodings: {
+              src: parse([
+                span('k', 'key').ident(),
+                literal(':'),
+                span('v', 'val').ident(),
+              ]),
+              // dynKey($.k, $.v) emits { [k]: v } at runtime.
+              ast: dynKey($.k, $.v) as unknown as object,
+            },
+          }),
+        ],
+      }),
+    input: 'foo:bar',
+    expectedAst: { foo: 'bar' },
+    // GAP on interp — interp's render path doesn't yet evaluate dynKey
+    // bodies at the same layer v2 does. Documented; fix requires
+    // teaching interp/parse.ts's renderSlotAst to materialize the
+    // dynamic key from the captured slot value.
+    expected: { interp: 'gap', v2: 'impl' },
+  },
+
+  {
+    name: 'structureRef:merge',
+    category: 'structureRef',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        punctuators: { comma: ',' },
+        examples: [
+          relation('Pair', {
+            input: 'a:1',
+            encodings: {
+              src: parse([
+                span('k', 'a').ident(),
+                literal(':'),
+                span('v', '1').number().int(),
+              ]),
+              ast: dynKey($.k, $.v) as unknown as object,
+            },
+          }),
+          relation('List', {
+            input: 'a:1',
+            encodings: {
+              src: parse([
+                span('pairs', 'a:1').of('Pair').repeats({ sep: ',' }),
+              ]),
+              // merge($.pairs) folds an array of single-key objects into
+              // a single combined object.
+              ast: merge($.pairs) as unknown as object,
+            },
+          }),
+        ],
+      }),
+    input: 'a:1,b:2',
+    expectedAst: { a: '1', b: '2' },
+    // GAP on interp — merge() depends on dynKey() at the child Pair
+    // production layer, which interp doesn't render. Closing the
+    // dynKey row above will close this too.
+    expected: { interp: 'gap', v2: 'impl' },
   },
 ];
 

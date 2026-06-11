@@ -30,6 +30,7 @@ import {
 } from './fusion-structured.ts';
 import { emitFusedRender, fusedRenderFnName } from './fusion.ts';
 import { beginGuardHelpers, drainGuardHelpers } from './until-guard.ts';
+import { beginSharedHelpers, drainSharedHelpers } from './shared-helpers.ts';
 import { recordExplain } from './explain.ts';
 import { emitProduction } from './production.ts';
 import { emitPrattNode } from './pratt.ts';
@@ -58,6 +59,10 @@ export function emitV2Parser(schema: InferredSchema): string {
   }
 
   beginGuardHelpers();
+  // Shared-helper collection opens BEFORE emitValidate so inline-composed
+  // sub-schemas register their kernels/skips into the parent's collection
+  // (same protocol as guard helpers — see shared-helpers.ts header).
+  beginSharedHelpers();
   const { imports: validatorImports, body: validateBody, inlineBlock } = emitValidate(schema, parseFnName(schema, schema.rootType));
   const header = emitHeader(schema, validatorImports);
   const runtime = V2_RUNTIME;
@@ -97,9 +102,14 @@ export function emitV2Parser(schema: InferredSchema): string {
   // helpers are plain function declarations; hoisting makes their position
   // in the file irrelevant to the emitters that reference them.
   const guardHelpers = drainGuardHelpers().join('\n\n');
+  // Shared skip/scan helpers + hash-consed KB constants. Function decls are
+  // hoisted; the `const __KB_*` initializers run at module init, strictly
+  // before any parse call, so emission order is irrelevant to correctness.
+  const sharedHelpers = drainSharedHelpers().join('\n\n');
   return [
     header,
     runtime,
+    sharedHelpers,
     guardHelpers,
     // Phase 3 alias block. Goes after the runtime (so ParseMode et al. are
     // already declared) and before everything that references the aliases

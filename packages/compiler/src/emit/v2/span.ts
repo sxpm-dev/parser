@@ -11,6 +11,14 @@ import { indent, jsIdent, jsString } from '../strings.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import { emitRoleLadder } from './role-ladder.ts';
 import { buildAcScanner } from './scan-until-ac.ts';
+import {
+  kbConst,
+  registerHelper,
+  sharedHelpersOpen,
+  skipWsCLeadHelper,
+  skipWsStmt,
+  sliceOmitCommentsHelper,
+} from './shared-helpers.ts';
 
 // Minimum number of stops to justify the AC scanner's setup cost. Below this
 // threshold the per-stop compare chain (emitStopExpr) is faster — its branches
@@ -1191,6 +1199,143 @@ function emitRefinementChecks(span: ResolvedSpan, captureVar: string, entryOffVa
 
 // --- until / rawUntil ------------------------------------------------------
 
+type UntilKernelOpts = {
+  readonly stopExpr: string;
+  readonly balanced: boolean;
+  readonly hasStrings: boolean;
+  readonly hasComments: boolean;
+  readonly useUrlRaw: boolean;
+  readonly stopNeedsC2: boolean;
+  readonly unknownGuard: boolean;
+  readonly knownBytes: Uint8Array;
+};
+
+// Register the until-scan main loop as a shared module-level kernel,
+// content-hash-named over its full source so identical (stops, flags, KB)
+// configurations collapse to ONE function per generated module — the loop
+// was previously inlined per .until() span per production per fused
+// variant (~130 lines each, 28 copies in the css parser alone). The loop
+// body below MUST stay semantically identical to the inline fallback in
+// emitUntilSpan (registry-closed path); the round-trip + dispatch gates and
+// the differential fuzzer compare the two paths transitively through the
+// interp backend.
+//
+// Contract: returns the offset where the scan stopped. Secondary outputs
+// travel through the __u* scratch slots (see runtime.ts): __uLast
+// (last-non-ws offset for the trim), __uDepth (bracket depth, read by
+// requireStop), __uComments (interior comment ranges), __uFail (1 when the
+// unknownChars:'reject' guard hit — the CALL SITE owns the state.maxOff
+// update / state.pos rewind / null return, since the kernel never sees
+// `state`).
+function registerUntilKernel(o: UntilKernelOpts): string {
+  const kb = o.unknownGuard ? kbConst(o.knownBytes) : null;
+  const b: string[] = [];
+  b.push(`function @@NAME@@(input: string, off: number, len: number): number {`);
+  b.push(`  let __lastNonWs = off;`);
+  if (o.balanced) b.push(`  let __depth = 0;`);
+  if (o.stopNeedsC2) b.push(`  let __c2 = -1;`);
+  if (o.hasComments) b.push(`  let __comments: [number, number][] | null = null;`);
+  b.push(`  while (off < len) {`);
+  b.push(`    const __c = input.charCodeAt(off);`);
+  if (o.balanced) {
+    b.push(`    if (__depth === 0 && (${o.stopExpr})) break;`);
+  } else {
+    b.push(`    if (${o.stopExpr}) break;`);
+  }
+  if (o.balanced) {
+    b.push(`    if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {`);
+    b.push(`      __depth++; off++;`);
+    b.push(`      __lastNonWs = off;`);
+    b.push(`      continue;`);
+    b.push(`    }`);
+    b.push(`    if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {`);
+    b.push(`      if (__depth === 0) break;`);
+    b.push(`      __depth--; off++;`);
+    b.push(`      __lastNonWs = off;`);
+    b.push(`      continue;`);
+    b.push(`    }`);
+  }
+  if (o.hasStrings) {
+    b.push(`    if (__c === 0x22 || __c === 0x27) {`);
+    b.push(`      const __q = __c;`);
+    b.push(`      off++;`);
+    b.push(`      while (off < len) {`);
+    b.push(`        const __sc = input.charCodeAt(off);`);
+    b.push(`        if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }`);
+    b.push(`        if (__sc === __q) { off++; break; }`);
+    b.push(`        if (__sc === 0x0a || __sc === 0x0d) break;`);
+    b.push(`        off++;`);
+    b.push(`      }`);
+    b.push(`      __lastNonWs = off;`);
+    b.push(`      continue;`);
+    b.push(`    }`);
+  }
+  if (o.useUrlRaw) {
+    b.push(`    if (__depth === 0 && (__c === 0x75 || __c === 0x55)`);
+    b.push(`      && off + 3 < len`);
+    b.push(`      && (input.charCodeAt(off + 1) | 32) === 0x72`);
+    b.push(`      && (input.charCodeAt(off + 2) | 32) === 0x6c`);
+    b.push(`      && input.charCodeAt(off + 3) === 0x28) {`);
+    b.push(`      off += 4;`);
+    b.push(`      while (off < len) {`);
+    b.push(`        const __uc = input.charCodeAt(off);`);
+    b.push(`        if (__uc === 0x29) { off++; break; }`);
+    b.push(`        if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }`);
+    b.push(`        if (__uc === 0x22 || __uc === 0x27) {`);
+    b.push(`          const __uq = __uc;`);
+    b.push(`          off++;`);
+    b.push(`          while (off < len) {`);
+    b.push(`            const __usc = input.charCodeAt(off);`);
+    b.push(`            if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }`);
+    b.push(`            if (__usc === __uq) { off++; break; }`);
+    b.push(`            if (__usc === 0x0a || __usc === 0x0d) break;`);
+    b.push(`            off++;`);
+    b.push(`          }`);
+    b.push(`          continue;`);
+    b.push(`        }`);
+    b.push(`        off++;`);
+    b.push(`      }`);
+    b.push(`      __lastNonWs = off;`);
+    b.push(`      continue;`);
+    b.push(`    }`);
+  }
+  if (o.hasComments && o.balanced) {
+    b.push(`    if (__c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {`);
+    b.push(`      let __ce = off + 2;`);
+    b.push(`      while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;`);
+    b.push(`      if (__ce < len) {`);
+    b.push(`        (__comments ??= []).push([off, __ce + 2]);`);
+    b.push(`        off = __ce + 2;`);
+    b.push(`        continue;`);
+    b.push(`      }`);
+    b.push(`    }`);
+  }
+  if (o.balanced) {
+    b.push(`    if (__c === 0x5c && off + 1 < len) {`);
+    b.push(`      __lastNonWs = off + 2;`);
+    b.push(`      off += 2;`);
+    b.push(`      continue;`);
+    b.push(`    }`);
+  }
+  b.push(`    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;`);
+  if (o.unknownGuard && kb !== null) {
+    if (o.balanced) {
+      b.push(`    if (__depth === 0 && ${kb}[__c] === 0) { __uFail = 1; return off; }`);
+    } else {
+      b.push(`    if (${kb}[__c] === 0) { __uFail = 1; return off; }`);
+    }
+  }
+  b.push(`    off++;`);
+  b.push(`  }`);
+  if (o.unknownGuard) b.push(`  __uFail = 0;`);
+  b.push(`  __uLast = __lastNonWs;`);
+  if (o.balanced) b.push(`  __uDepth = __depth;`);
+  if (o.hasComments) b.push(`  __uComments = __comments;`);
+  b.push(`  return off;`);
+  b.push(`}`);
+  return registerHelper('__uScan', b.join('\n'));
+}
+
 function emitUntilSpan(
   span: ResolvedSpan,
   until: Extract<SpanModifier, { kind: 'until' }>,
@@ -1228,6 +1373,23 @@ function emitUntilSpan(
   // `data: 'hello'` rather than the half-trimmed `'hello '` that a literal
   // `trim:false` would produce, and aligns v2 with v1 across all packages.
   const useTrim = true;
+
+  // Shared-kernel path: when the helper registry is open (every full
+  // emitV2Parser run), the main scan loop is emitted ONCE per distinct
+  // (stops, flags, KB) configuration as a module-level __uScan_* kernel and
+  // this span just calls it. The inline emission below remains as the
+  // fallback for standalone inline emission (no registry) and for the AC
+  // fast-path, which keeps its own scanner shape.
+  if (!useAc && sharedHelpersOpen()) {
+    return emitUntilSpanViaKernel(span, until, ctx, bindings, {
+      stopExpr,
+      stopNeedsC2,
+      balanced,
+      hasStrings,
+      hasComments,
+      useUrlRaw,
+    });
+  }
 
   const v = span.name ? jsIdent(span.name) : '__captured';
   const startVar = `__${v}_start`;
@@ -1421,6 +1583,37 @@ function emitUntilSpan(
   lines.push(`  }`);
   }
 
+  pushUntilEpilogue(lines, { until, ctx, v, startVar, endVar, balanced, hasComments });
+
+  // Bind captures so the captures expression can reference this span.
+  if (span.name) {
+    bindings.valueExpr.set(span.name, v);
+    bindings.presenceExpr.set(span.name, `(${v}.length > 0)`);
+    bindings.startOffExpr.set(span.name, startVar);
+    bindings.endOffExpr.set(span.name, endVar);
+  }
+  return lines.join('\n');
+}
+
+// Until-capture epilogue, shared by the inline/AC emission above and the
+// kernel-call emission below: requireStop check, empty-anchor + capture
+// finalization (with ws-adjacent comment omission), rejectSuffix, nonEmpty.
+// Expects the scan phase to have left `off` at the stop position and
+// declared `__lastNonWs` (plus `__depth` when balanced+requireStop,
+// `__comments` / `__lastLeadingCommentEnd` when comment-aware).
+function pushUntilEpilogue(
+  lines: string[],
+  o: {
+    readonly until: Extract<SpanModifier, { kind: 'until' }>;
+    readonly ctx: SpanContext;
+    readonly v: string;
+    readonly startVar: string;
+    readonly endVar: string;
+    readonly balanced: boolean;
+    readonly hasComments: boolean;
+  },
+): void {
+  const { until, ctx, v, startVar, endVar, balanced, hasComments } = o;
   // --- requireStop check ----------------------------------------------------
   // Post-loop, pre-trim: if requireStop is set, fail the production when the
   // scan exited via EOF rather than a stop match. The kernel above breaks out
@@ -1440,7 +1633,7 @@ function emitUntilSpan(
   }
 
   // --- finalize capture -----------------------------------------------------
-  const trimEnd = useTrim ? '__lastNonWs' : 'off';
+  const trimEnd = '__lastNonWs';
   // Empty-anchor: when the captured slice is empty we rewind `off` to the
   // pre-ws position (or, if comments were skipped, the end of the last
   // leading comment). Mirrors v1's __emptyAnchor logic.
@@ -1462,22 +1655,27 @@ function emitUntilSpan(
     lines.push(`    if (__comments === null) {`);
     lines.push(`      ${v} = input.slice(${startVar}, ${trimEnd});`);
     lines.push(`    } else {`);
-    lines.push(`      let __buf = '';`);
-    lines.push(`      let __cursor = ${startVar};`);
-    lines.push(`      for (let __i = 0; __i < __comments.length; __i++) {`);
-    lines.push(`        const __cs = __comments[__i][0];`);
-    lines.push(`        const __ce = __comments[__i][1];`);
-    lines.push(`        if (__ce > ${trimEnd}) break;`);
-    lines.push(`        const __before = __cs > 0 ? input.charCodeAt(__cs - 1) : -1;`);
-    lines.push(`        const __after = __ce < len ? input.charCodeAt(__ce) : -1;`);
-    lines.push(`        const __isWsBefore = __before === 0x20 || __before === 0x09 || __before === 0x0a || __before === 0x0d;`);
-    lines.push(`        const __isWsAfter = __after === 0x20 || __after === 0x09 || __after === 0x0a || __after === 0x0d;`);
-    lines.push(`        if (!(__isWsBefore || __isWsAfter)) continue;`);
-    lines.push(`        __buf += input.slice(__cursor, __cs);`);
-    lines.push(`        __cursor = __ce;`);
-    lines.push(`      }`);
-    lines.push(`      __buf += input.slice(__cursor, ${trimEnd});`);
-    lines.push(`      ${v} = __buf;`);
+    const omitHelper = sliceOmitCommentsHelper();
+    if (omitHelper !== null) {
+      lines.push(`      ${v} = ${omitHelper}(input, ${startVar}, ${trimEnd}, __comments);`);
+    } else {
+      lines.push(`      let __buf = '';`);
+      lines.push(`      let __cursor = ${startVar};`);
+      lines.push(`      for (let __i = 0; __i < __comments.length; __i++) {`);
+      lines.push(`        const __cs = __comments[__i][0];`);
+      lines.push(`        const __ce = __comments[__i][1];`);
+      lines.push(`        if (__ce > ${trimEnd}) break;`);
+      lines.push(`        const __before = __cs > 0 ? input.charCodeAt(__cs - 1) : -1;`);
+      lines.push(`        const __after = __ce < len ? input.charCodeAt(__ce) : -1;`);
+      lines.push(`        const __isWsBefore = __before === 0x20 || __before === 0x09 || __before === 0x0a || __before === 0x0d;`);
+      lines.push(`        const __isWsAfter = __after === 0x20 || __after === 0x09 || __after === 0x0a || __after === 0x0d;`);
+      lines.push(`        if (!(__isWsBefore || __isWsAfter)) continue;`);
+      lines.push(`        __buf += input.slice(__cursor, __cs);`);
+      lines.push(`        __cursor = __ce;`);
+      lines.push(`      }`);
+      lines.push(`      __buf += input.slice(__cursor, ${trimEnd});`);
+      lines.push(`      ${v} = __buf;`);
+    }
     lines.push(`    }`);
     lines.push(`  }`);
   } else {
@@ -1504,6 +1702,72 @@ function emitUntilSpan(
     lines.push(`  if (${v}.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }`);
   }
   lines.push(`}`);
+}
+
+// Kernel-call form of emitUntilSpan: prologue + one __uScan_* call + scratch
+// reads, then the shared epilogue. See registerUntilKernel for the contract.
+function emitUntilSpanViaKernel(
+  span: ResolvedSpan,
+  until: Extract<SpanModifier, { kind: 'until' }>,
+  ctx: SpanContext,
+  bindings: SpanBindings,
+  pre: {
+    readonly stopExpr: string;
+    readonly stopNeedsC2: boolean;
+    readonly balanced: boolean;
+    readonly hasStrings: boolean;
+    readonly hasComments: boolean;
+    readonly useUrlRaw: boolean;
+  },
+): string {
+  const { stopExpr, stopNeedsC2, balanced, hasStrings, hasComments, useUrlRaw } = pre;
+  const v = span.name ? jsIdent(span.name) : '__captured';
+  const startVar = `__${v}_start`;
+  const endVar = `__${v}_end`;
+
+  const lines: string[] = [];
+  lines.push(`let ${v}: string = '';`);
+  lines.push(`let ${startVar} = off;`);
+  lines.push(`let ${endVar} = off;`);
+  lines.push(`{`);
+  // Leading ws (and comments, when declared) are skipped from the capture's
+  // view — same semantics as the inline prologue; the comment-aware variant
+  // deposits the last skipped comment's end offset for the empty-anchor.
+  if (hasComments) {
+    lines.push(`  off = ${skipWsCLeadHelper()!}(input, off, len);`);
+    lines.push(`  let __lastLeadingCommentEnd = __uLastCommentEnd;`);
+  } else {
+    lines.push(`  ${skipWsStmt()}`);
+  }
+  lines.push(`  ${startVar} = off;`);
+  const kernelName = registerUntilKernel({
+    stopExpr,
+    balanced,
+    hasStrings,
+    hasComments,
+    useUrlRaw,
+    stopNeedsC2,
+    unknownGuard: ctx.emitUnknownCharsGuard,
+    knownBytes: ctx.knownBytes,
+  });
+  lines.push(`  off = ${kernelName}(input, off, len);`);
+  if (ctx.emitUnknownCharsGuard) {
+    lines.push(`  if (__uFail !== 0) {`);
+    lines.push(`    // unknown char (no stop, no opener) — fail production`);
+    lines.push(`    if (off > state.maxOff) state.maxOff = off;`);
+    lines.push(`    state.pos = ${ctx.entryOffVar};`);
+    lines.push(`    return null;`);
+    lines.push(`  }`);
+  }
+  lines.push(`  let __lastNonWs = __uLast;`);
+  if (balanced && until.requireStop) {
+    lines.push(`  const __depth = __uDepth;`);
+  }
+  if (hasComments) {
+    lines.push(`  let __comments: [number, number][] | null = __uComments;`);
+  }
+
+  pushUntilEpilogue(lines, { until, ctx, v, startVar, endVar, balanced, hasComments });
 
   // Bind captures so the captures expression can reference this span.
   if (span.name) {

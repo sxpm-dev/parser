@@ -213,6 +213,17 @@ function skipHorizontalWs(state: State): void {
   while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
+// Scratch slots for the shared until-scan kernels (`__uScan_*`, see
+// compiler emit/v2/shared-helpers.ts). A kernel returns the new offset and
+// deposits its secondary outputs here; the call site reads them immediately
+// after the call returns. Parsing is synchronous and kernels are leaf calls,
+// so a slot cannot be clobbered between write and read.
+let __uFail = 0;
+let __uLast = 0;
+let __uDepth = 0;
+let __uComments: [number, number][] | null = null;
+let __uLastCommentEnd = -1;
+
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -251,6 +262,11 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function __skipWs(input: string, off: number, len: number): number {
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  return off;
+}
+
 // --- Inferred types ---
 export type Value_ast = { type: "string"; value: string } | { type: "boolean"; value: true } | { type: "boolean"; value: false } | { type: "integer"; value: string };
 export type Value_source = string;
@@ -266,7 +282,7 @@ function parseValue__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -299,7 +315,7 @@ function parseValue__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("true", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -319,7 +335,7 @@ function parseValue__alt2(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("false", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -339,7 +355,7 @@ function parseValue__alt3(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -363,7 +379,7 @@ function parseValue(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 116) {
@@ -386,7 +402,7 @@ function parsePair(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -396,12 +412,12 @@ function parsePair(state: State): unknown {
   const __key_end = off;
   const key = input.slice(__key_start, __key_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __value_start = off;
@@ -424,13 +440,13 @@ function parseTable(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
@@ -439,12 +455,12 @@ function parseTable(state: State): unknown {
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   const __pairs_start = off;
   const pairs: unknown[] = [];
@@ -480,7 +496,7 @@ function parseDocument(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
@@ -1597,7 +1613,7 @@ function __fusedRender_Value_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     {
@@ -1627,7 +1643,7 @@ function __fusedRender_Value_1_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("true", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
     state.pos = off;
@@ -1644,7 +1660,7 @@ function __fusedRender_Value_2_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("false", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
     state.pos = off;
@@ -1661,7 +1677,7 @@ function __fusedRender_Value_3_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1683,17 +1699,17 @@ function __fusedRender_Pair_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __key_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __key_end = off;
     const key = input.slice(__key_start, __key_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_value: string[] = [];
     let __slotMatched_value = false;
     // recursive span (Value) — fused dispatch
@@ -1702,110 +1718,35 @@ function __fusedRender_Pair_0_source(state: State, out: string[]): boolean {
       state.pos = off;
       if (off < len) {
         const __c0 = input.charCodeAt(off);
-        if (__c0 === 34) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 43) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 45) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 48) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 49) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 50) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 51) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 52) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 53) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 54) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 55) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 56) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 57) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 102) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_2_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 116) {
-          if (!__slotMatched_value) {
-            state.pos = __offBefore;
-            __slotBuf_value.length = 0;
-            if (__fusedRender_Value_1_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-          }
+        switch (__c0) {
+          case 34:
+            if (!__slotMatched_value) {
+              state.pos = __offBefore;
+              __slotBuf_value.length = 0;
+              if (__fusedRender_Value_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
+            }
+            break;
+          case 43: case 45: case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+            if (!__slotMatched_value) {
+              state.pos = __offBefore;
+              __slotBuf_value.length = 0;
+              if (__fusedRender_Value_3_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
+            }
+            break;
+          case 102:
+            if (!__slotMatched_value) {
+              state.pos = __offBefore;
+              __slotBuf_value.length = 0;
+              if (__fusedRender_Value_2_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
+            }
+            break;
+          case 116:
+            if (!__slotMatched_value) {
+              state.pos = __offBefore;
+              __slotBuf_value.length = 0;
+              if (__fusedRender_Value_1_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
+            }
+            break;
         }
       }
       if (!__slotMatched_value) __slotBuf_value.length = 0;
@@ -1827,20 +1768,20 @@ function __fusedRender_Table_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __name_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __name_end = off;
     const name = input.slice(__name_start, __name_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_pairs: string[] = [];
     let __slotMatched_pairs = false;
     // recursive repeats span (Pair) — fused loop
@@ -1856,383 +1797,14 @@ function __fusedRender_Table_0_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_pairs.push(" ");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 65) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 66) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 67) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 68) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 69) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 70) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 71) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 72) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 73) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 74) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 75) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 76) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 77) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 78) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 79) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 80) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 81) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 82) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 83) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 84) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 85) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 86) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 87) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 88) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 89) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 90) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 97) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 98) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 99) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 100) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 101) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 102) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 103) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 104) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 105) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 106) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 107) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 108) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 109) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 110) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 111) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 112) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 113) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 114) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 115) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 116) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 117) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 118) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 119) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 120) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 121) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 122) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 45: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_pairs.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_Pair_0_source(state, __slotBuf_pairs)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -2263,7 +1835,7 @@ function __fusedRender_Document_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_items: string[] = [];
     let __slotMatched_items = false;
     // recursive repeats span (Pair, Table) — fused loop
@@ -2279,390 +1851,21 @@ function __fusedRender_Document_0_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_items.push(" ");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 65) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 66) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 67) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 68) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 69) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 70) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 71) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 72) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 73) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 74) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 75) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 76) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 77) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 78) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 79) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 80) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 81) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 82) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 83) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 84) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 85) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 86) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 87) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 88) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 89) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 90) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 91) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Table_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 97) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 98) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 99) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 100) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 101) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 102) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 103) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 104) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 105) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 106) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 107) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 108) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 109) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 110) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 111) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 112) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 113) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 114) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 115) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 116) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 117) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 118) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 119) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 120) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 121) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 122) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 45: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_Pair_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 91:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_Table_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -2699,7 +1902,7 @@ function __fusedRenderStructured_Value_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   {
@@ -2725,7 +1928,7 @@ function __fusedRenderStructured_Value_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("true", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
   state.pos = off;
@@ -2738,7 +1941,7 @@ function __fusedRenderStructured_Value_2_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("false", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   state.pos = off;
@@ -2751,7 +1954,7 @@ function __fusedRenderStructured_Value_3_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2769,17 +1972,17 @@ function __fusedRenderStructured_Pair_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __key_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __key_end = off;
   const key = input.slice(__key_start, __key_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let value: unknown = null;
   {
     const __before = off;
@@ -2820,24 +2023,24 @@ function __fusedRenderStructured_Table_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const pairs: unknown[] = [];
   while (true) {
     const __loopStart = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     state.pos = off;
     let __cand: unknown = null;
     if (off < len) {
@@ -2918,11 +2121,11 @@ function __fusedRenderStructured_Document_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const items: unknown[] = [];
   while (true) {
     const __loopStart = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     state.pos = off;
     let __cand: unknown = null;
     if (off < len) {

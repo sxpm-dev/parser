@@ -21,6 +21,7 @@ import { computeReferencedSpanPresence, computeReferencedSpanValues, emitCapture
 import { productionRoutingKey } from '../render.ts';
 import { indent, jsString } from '../strings.ts';
 import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
+import { skipWsCommentsStmt, skipWsStmt } from './shared-helpers.ts';
 
 // Class kinds whose presence (alongside `unknownChars: 'reject'`) justifies
 // emitting the depth-0 byte-class guard in .until() bodies. A schema with
@@ -482,11 +483,12 @@ function skipWsBlock(): string {
   return _skipWsBlock();
 }
 
-/** Inline ws-skip block. Exported so the generic prefix-share dispatcher
+/** Ws-skip statement. Exported so the generic prefix-share dispatcher
  *  (prefix-share-dispatch.ts) can emit the same inter-span and leading
- *  ws-skip the production body uses. */
+ *  ws-skip the production body uses. Registry open → shared `__skipWs`
+ *  call; closed → the historical inline loop (see shared-helpers.ts). */
 export function _skipWsBlock(): string {
-  return `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
+  return skipWsStmt();
 }
 
 // True iff this span is meant to capture `/* */` comments as data. Covers:
@@ -514,27 +516,7 @@ export function skipWsAndCommentsBlock(lineCommentMarkers: ReadonlyArray<string>
   // ws OR `/* ... */` block comment OR (when declared via `tokens` with a
   // `line` refinement) `<marker>...\n` line comment — repeats. Matches
   // the v1 inter-span gap when the schema's token-set includes `comment`.
-  const lineCheck = lineCommentMarkers.length === 0
-    ? ''
-    : lineCommentMarkers.map((marker) => {
-        const m = JSON.stringify(marker);
-        return `  if (input.startsWith(${m}, off)) {
-    off += ${marker.length};
-    while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-    if (off < len) off++;
-    continue;
-  }`;
-      }).join('\n');
-  return `while (off < len) {
-  const c = input.charCodeAt(off);
-  if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-  if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-    off += 2;
-    while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-    if (off < len) off += 2;
-    continue;
-  }
-${lineCheck}
-  break;
-}`;
+  // Registry open → shared `__skipWsC_*` call (content-hashed over the
+  // marker set); closed → the historical inline loop.
+  return skipWsCommentsStmt(lineCommentMarkers);
 }

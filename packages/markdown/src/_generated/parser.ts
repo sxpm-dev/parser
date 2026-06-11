@@ -213,6 +213,17 @@ function skipHorizontalWs(state: State): void {
   while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
+// Scratch slots for the shared until-scan kernels (`__uScan_*`, see
+// compiler emit/v2/shared-helpers.ts). A kernel returns the new offset and
+// deposits its secondary outputs here; the call site reads them immediately
+// after the call returns. Parsing is synchronous and kernels are leaf calls,
+// so a slot cannot be clobbered between write and read.
+let __uFail = 0;
+let __uLast = 0;
+let __uDepth = 0;
+let __uComments: [number, number][] | null = null;
+let __uLastCommentEnd = -1;
+
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -251,6 +262,131 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function __skipWs(input: string, off: number, len: number): number {
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  return off;
+}
+
+function __uScan_f862d6c3(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__c === 10) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_e1d802a1(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if ((__c === 96 && input.startsWith("```", off))) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_099c2fd8(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if ((__c === 42 && input.startsWith("**", off))) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_f933c076(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__c === 42) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_b7952f81(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if ((__c === 126 && input.startsWith("~~", off))) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_3315b3e9(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__c === 96) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_5f3a3454(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__c === 93) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_43f2b0f9(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__c === 41) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_6f2a3175(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__c === 124) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
+function __uScan_ca75eaf8(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__c === 62) break;
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  return off;
+}
+
 // --- Inferred types ---
 export type MarkdownDocument_ast = { type: "document"; children: (MarkdownLeaf_ast | MarkdownParagraph_ast)[] };
 export type MarkdownDocument_html = string;
@@ -267,7 +403,7 @@ function parseMarkdownDocument(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __children_start = off;
@@ -313,31 +449,22 @@ function parseMarkdownLeaf__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("######", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -363,31 +490,22 @@ function parseMarkdownLeaf__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("#####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -413,31 +531,22 @@ function parseMarkdownLeaf__alt2(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -463,31 +572,22 @@ function parseMarkdownLeaf__alt3(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("###", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -513,31 +613,22 @@ function parseMarkdownLeaf__alt4(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 35 && input.charCodeAt(off + 1) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -563,31 +654,22 @@ function parseMarkdownLeaf__alt5(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -613,26 +695,17 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -644,7 +717,7 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
     __text_end = off;
   }
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.startsWith("===", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
@@ -663,26 +736,17 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -694,7 +758,7 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
     __text_end = off;
   }
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
@@ -713,7 +777,7 @@ function parseMarkdownLeaf__alt8(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("***", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -733,7 +797,7 @@ function parseMarkdownLeaf__alt9(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("___", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -753,7 +817,7 @@ function parseMarkdownLeaf__alt10(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -773,31 +837,22 @@ function parseMarkdownLeaf__alt11(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("- [x]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -823,31 +878,22 @@ function parseMarkdownLeaf__alt12(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("- [ ]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -873,31 +919,22 @@ function parseMarkdownLeaf__alt13(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 43 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -923,31 +960,22 @@ function parseMarkdownLeaf__alt14(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -973,31 +1001,22 @@ function parseMarkdownLeaf__alt15(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -1023,7 +1042,7 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -1034,30 +1053,21 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
   const __index_end = off;
   const index = input.slice(__index_start, __index_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 46)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -1083,31 +1093,22 @@ function parseMarkdownLeaf__alt17(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -1133,13 +1134,13 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __lang_start = off;
@@ -1148,25 +1149,16 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
   const __lang_end = off;
   const lang = input.slice(__lang_start, __lang_end);
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __body_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 96 && input.startsWith("```", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_e1d802a1(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __body_start;
     if (__lastNonWs === __body_start) {
       off = __emptyAnchor;
@@ -1178,7 +1170,7 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
     __body_end = off;
   }
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
@@ -1197,31 +1189,22 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("```\n", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __body_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 96 && input.startsWith("```", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_e1d802a1(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __body_start;
     if (__lastNonWs === __body_start) {
       off = __emptyAnchor;
@@ -1233,7 +1216,7 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
     __body_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
@@ -1252,31 +1235,22 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 42 && input.startsWith("**", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_099c2fd8(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -1288,7 +1262,7 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
     __text_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
@@ -1307,31 +1281,22 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 42) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f933c076(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -1343,7 +1308,7 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
     __text_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1362,31 +1327,22 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 126 && input.startsWith("~~", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_b7952f81(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -1398,7 +1354,7 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
     __text_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
@@ -1417,31 +1373,22 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 96) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_3315b3e9(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -1453,7 +1400,7 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
     __text_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1472,31 +1419,22 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let label: string = '';
   let __label_start = off;
   let __label_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __label_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __label_start;
     if (__lastNonWs === __label_start) {
       off = __emptyAnchor;
@@ -1508,35 +1446,26 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     __label_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 41) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_43f2b0f9(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -1548,7 +1477,7 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     __url_end = off;
   }
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1567,31 +1496,22 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let label: string = '';
   let __label_start = off;
   let __label_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __label_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __label_start;
     if (__lastNonWs === __label_start) {
       off = __emptyAnchor;
@@ -1603,30 +1523,21 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     __label_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -1638,7 +1549,7 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     __id_end = off;
   }
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1657,36 +1568,27 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let alt: string = '';
   let __alt_start = off;
   let __alt_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __alt_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __alt_start;
     if (__lastNonWs === __alt_start) {
       off = __emptyAnchor;
@@ -1698,35 +1600,26 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     __alt_end = off;
   }
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 41) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_43f2b0f9(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -1738,7 +1631,7 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     __url_end = off;
   }
   const __wsStart_6 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_6, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1757,36 +1650,27 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let alt: string = '';
   let __alt_start = off;
   let __alt_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __alt_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __alt_start;
     if (__lastNonWs === __alt_start) {
       off = __emptyAnchor;
@@ -1798,30 +1682,21 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     __alt_end = off;
   }
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -1833,7 +1708,7 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     __id_end = off;
   }
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1852,13 +1727,13 @@ function parseMarkdownLeaf__alt28(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 38)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
@@ -1867,7 +1742,7 @@ function parseMarkdownLeaf__alt28(state: State): unknown {
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 59)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1886,28 +1761,28 @@ function parseMarkdownLeaf__alt29(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1926,38 +1801,38 @@ function parseMarkdownLeaf__alt30(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_6 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_6, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -1976,31 +1851,22 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let first: string = '';
   let __first_start = off;
   let __first_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __first_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 124) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_6f2a3175(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __first_start;
     if (__lastNonWs === __first_start) {
       off = __emptyAnchor;
@@ -2012,30 +1878,21 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     __first_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   let second: string = '';
   let __second_start = off;
   let __second_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __second_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 124) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_6f2a3175(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __second_start;
     if (__lastNonWs === __second_start) {
       off = __emptyAnchor;
@@ -2047,7 +1904,7 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     __second_end = off;
   }
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -2066,31 +1923,22 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -2102,35 +1950,26 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
     __id_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -2156,31 +1995,22 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -2192,35 +2022,26 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
     __id_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -2246,31 +2067,22 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -2282,7 +2094,7 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
     __id_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -2301,13 +2113,13 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __tag_start = off;
@@ -2317,12 +2129,12 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
   const tag = input.slice(__tag_start, __tag_end);
   if (!(tag.toLowerCase() === "div" || tag.toLowerCase() === "span" || tag.toLowerCase() === "p" || tag.toLowerCase() === "pre" || tag.toLowerCase() === "code" || tag.toLowerCase() === "blockquote" || tag.toLowerCase() === "a" || tag.toLowerCase() === "img" || tag.toLowerCase() === "br" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "ul" || tag.toLowerCase() === "ol" || tag.toLowerCase() === "li" || tag.toLowerCase() === "dl" || tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd" || tag.toLowerCase() === "table" || tag.toLowerCase() === "thead" || tag.toLowerCase() === "tbody" || tag.toLowerCase() === "tfoot" || tag.toLowerCase() === "tr" || tag.toLowerCase() === "td" || tag.toLowerCase() === "th" || tag.toLowerCase() === "caption" || tag.toLowerCase() === "figure" || tag.toLowerCase() === "figcaption" || tag.toLowerCase() === "section" || tag.toLowerCase() === "article" || tag.toLowerCase() === "header" || tag.toLowerCase() === "footer" || tag.toLowerCase() === "nav" || tag.toLowerCase() === "aside" || tag.toLowerCase() === "main" || tag.toLowerCase() === "address" || tag.toLowerCase() === "details" || tag.toLowerCase() === "summary" || tag.toLowerCase() === "h1" || tag.toLowerCase() === "h2" || tag.toLowerCase() === "h3" || tag.toLowerCase() === "h4" || tag.toLowerCase() === "h5" || tag.toLowerCase() === "h6" || tag.toLowerCase() === "em" || tag.toLowerCase() === "strong" || tag.toLowerCase() === "i" || tag.toLowerCase() === "b" || tag.toLowerCase() === "u" || tag.toLowerCase() === "s" || tag.toLowerCase() === "small" || tag.toLowerCase() === "sub" || tag.toLowerCase() === "sup" || tag.toLowerCase() === "kbd" || tag.toLowerCase() === "var" || tag.toLowerCase() === "samp" || tag.toLowerCase() === "cite" || tag.toLowerCase() === "q" || tag.toLowerCase() === "dfn" || tag.toLowerCase() === "abbr" || tag.toLowerCase() === "time" || tag.toLowerCase() === "mark" || tag.toLowerCase() === "ruby" || tag.toLowerCase() === "rt" || tag.toLowerCase() === "rp" || tag.toLowerCase() === "bdi" || tag.toLowerCase() === "bdo" || tag.toLowerCase() === "wbr" || tag.toLowerCase() === "form" || tag.toLowerCase() === "input" || tag.toLowerCase() === "button" || tag.toLowerCase() === "select" || tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "label" || tag.toLowerCase() === "fieldset" || tag.toLowerCase() === "legend" || tag.toLowerCase() === "datalist" || tag.toLowerCase() === "output" || tag.toLowerCase() === "progress" || tag.toLowerCase() === "meter" || tag.toLowerCase() === "video" || tag.toLowerCase() === "audio" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "canvas" || tag.toLowerCase() === "svg" || tag.toLowerCase() === "math" || tag.toLowerCase() === "iframe" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "object" || tag.toLowerCase() === "param" || tag.toLowerCase() === "picture" || tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "noscript" || tag.toLowerCase() === "template" || tag.toLowerCase() === "html" || tag.toLowerCase() === "head" || tag.toLowerCase() === "body" || tag.toLowerCase() === "title" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "link" || tag.toLowerCase() === "base")) { state.pos = entryOff; return null; }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   let body: string = '';
   let __body_start = off;
@@ -2339,12 +2151,12 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
     body = input.slice(__body_start, __body_end);
   }
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __closingTag_start = off;
@@ -2353,7 +2165,7 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
   const __closingTag_end = off;
   const closingTag = input.slice(__closingTag_start, __closingTag_end);
   const __wsStart_6 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_6, off));
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -2372,31 +2184,22 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 62) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_ca75eaf8(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -2408,7 +2211,7 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
     __url_end = off;
   }
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -2467,7 +2270,7 @@ function parseMarkdownParagraph(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let text: string = '';
@@ -8093,7 +7896,7 @@ function __fusedRender_MarkdownDocument_0_html(state: State, out: string[]): boo
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_children: string[] = [];
     let __slotMatched_children = false;
     // recursive repeats span (MarkdownLeaf, MarkdownParagraph) — fused loop
@@ -8109,298 +7912,237 @@ function __fusedRender_MarkdownDocument_0_html(state: State, out: string[]): boo
         if (__count > 0) __slotBuf_children.push(" ");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 33) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_26_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_27_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 35) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_0_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_1_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_2_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_3_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_4_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_5_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 38) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_28_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 42) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_8_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_20_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_14_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_21_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 43) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_13_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_11_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_12_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_10_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_15_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 48) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 49) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 50) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 51) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 52) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 53) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 54) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 55) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 56) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 57) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 60) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_35_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_36_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 62) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_17_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 91) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_33_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_34_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_24_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_25_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_32_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_9_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 96) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_19_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_18_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_23_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 124) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_30_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_29_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_31_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 126) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_22_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_6_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_7_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownParagraph_0_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 33:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_26_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_27_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 35:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_0_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_1_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_2_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_3_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_4_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_5_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 38:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_28_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 42:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_8_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_20_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_14_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_21_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 43:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_13_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 45:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_11_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_12_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_10_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_15_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 60:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_35_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_36_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 62:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_17_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 91:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_33_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_34_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_24_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_25_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_32_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 95:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_9_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 96:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_19_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_18_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_23_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 124:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_30_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_29_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_31_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 126:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_22_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            default:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_6_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_7_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownParagraph_0_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -8428,7 +8170,7 @@ function __fusedRender_MarkdownDocument_0_source(state: State, out: string[]): b
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_children: string[] = [];
     let __slotMatched_children = false;
     // recursive repeats span (MarkdownLeaf, MarkdownParagraph) — fused loop
@@ -8444,298 +8186,237 @@ function __fusedRender_MarkdownDocument_0_source(state: State, out: string[]): b
         if (__count > 0) __slotBuf_children.push(" ");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 33) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_26_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_27_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 35) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_0_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_1_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_2_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_3_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_4_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_5_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 38) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_28_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 42) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_8_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_20_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_14_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_21_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 43) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_13_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_11_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_12_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_10_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_15_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 48) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 49) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 50) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 51) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 52) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 53) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 54) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 55) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 56) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 57) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 60) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_35_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_36_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 62) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_17_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 91) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_33_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_34_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_24_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_25_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_32_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_9_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 96) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_19_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_18_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_23_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 124) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_30_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_29_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_31_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 126) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_22_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_6_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_7_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownParagraph_0_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 33:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_26_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_27_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 35:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_0_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_1_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_2_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_3_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_4_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_5_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 38:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_28_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 42:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_8_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_20_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_14_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_21_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 43:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_13_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 45:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_11_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_12_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_10_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_15_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 60:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_35_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_36_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 62:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_17_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 91:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_33_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_34_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_24_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_25_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_32_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 95:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_9_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 96:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_19_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_18_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_23_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 124:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_30_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_29_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_31_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 126:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_22_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            default:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_6_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownLeaf_7_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_MarkdownParagraph_0_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -8763,27 +8444,18 @@ function __fusedRender_MarkdownLeaf_0_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("######", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 6;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -8810,27 +8482,18 @@ function __fusedRender_MarkdownLeaf_0_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("######", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 6;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -8856,27 +8519,18 @@ function __fusedRender_MarkdownLeaf_1_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("#####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -8903,27 +8557,18 @@ function __fusedRender_MarkdownLeaf_1_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("#####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -8949,27 +8594,18 @@ function __fusedRender_MarkdownLeaf_2_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -8996,27 +8632,18 @@ function __fusedRender_MarkdownLeaf_2_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9042,27 +8669,18 @@ function __fusedRender_MarkdownLeaf_3_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("###", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9089,27 +8707,18 @@ function __fusedRender_MarkdownLeaf_3_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("###", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9135,27 +8744,18 @@ function __fusedRender_MarkdownLeaf_4_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 35 && input.charCodeAt(off + 1) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9182,27 +8782,18 @@ function __fusedRender_MarkdownLeaf_4_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 35 && input.charCodeAt(off + 1) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9228,27 +8819,18 @@ function __fusedRender_MarkdownLeaf_5_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9275,27 +8857,18 @@ function __fusedRender_MarkdownLeaf_5_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9321,24 +8894,15 @@ function __fusedRender_MarkdownLeaf_6_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9349,7 +8913,7 @@ function __fusedRender_MarkdownLeaf_6_html(state: State, out: string[]): boolean
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("===", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9368,24 +8932,15 @@ function __fusedRender_MarkdownLeaf_6_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9396,7 +8951,7 @@ function __fusedRender_MarkdownLeaf_6_source(state: State, out: string[]): boole
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("===", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9414,24 +8969,15 @@ function __fusedRender_MarkdownLeaf_7_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9442,7 +8988,7 @@ function __fusedRender_MarkdownLeaf_7_html(state: State, out: string[]): boolean
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9461,24 +9007,15 @@ function __fusedRender_MarkdownLeaf_7_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9489,7 +9026,7 @@ function __fusedRender_MarkdownLeaf_7_source(state: State, out: string[]): boole
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9507,7 +9044,7 @@ function __fusedRender_MarkdownLeaf_8_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("***", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9524,7 +9061,7 @@ function __fusedRender_MarkdownLeaf_8_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("***", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9541,7 +9078,7 @@ function __fusedRender_MarkdownLeaf_9_html(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("___", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9558,7 +9095,7 @@ function __fusedRender_MarkdownLeaf_9_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("___", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9575,7 +9112,7 @@ function __fusedRender_MarkdownLeaf_10_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9592,7 +9129,7 @@ function __fusedRender_MarkdownLeaf_10_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -9609,27 +9146,18 @@ function __fusedRender_MarkdownLeaf_11_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("- [x]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9656,27 +9184,18 @@ function __fusedRender_MarkdownLeaf_11_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("- [x]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9702,27 +9221,18 @@ function __fusedRender_MarkdownLeaf_12_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("- [ ]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9749,27 +9259,18 @@ function __fusedRender_MarkdownLeaf_12_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("- [ ]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9795,27 +9296,18 @@ function __fusedRender_MarkdownLeaf_13_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 43 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9842,27 +9334,18 @@ function __fusedRender_MarkdownLeaf_13_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 43 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9888,27 +9371,18 @@ function __fusedRender_MarkdownLeaf_14_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9935,27 +9409,18 @@ function __fusedRender_MarkdownLeaf_14_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -9981,27 +9446,18 @@ function __fusedRender_MarkdownLeaf_15_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10028,27 +9484,18 @@ function __fusedRender_MarkdownLeaf_15_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10074,7 +9521,7 @@ function __fusedRender_MarkdownLeaf_16_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __index_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -10082,27 +9529,18 @@ function __fusedRender_MarkdownLeaf_16_html(state: State, out: string[]): boolea
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __index_end = off;
     const index = input.slice(__index_start, __index_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 46)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10129,7 +9567,7 @@ function __fusedRender_MarkdownLeaf_16_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __index_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -10137,27 +9575,18 @@ function __fusedRender_MarkdownLeaf_16_source(state: State, out: string[]): bool
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __index_end = off;
     const index = input.slice(__index_start, __index_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 46)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10184,27 +9613,18 @@ function __fusedRender_MarkdownLeaf_17_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10231,27 +9651,18 @@ function __fusedRender_MarkdownLeaf_17_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10277,34 +9688,25 @@ function __fusedRender_MarkdownLeaf_18_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __lang_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __lang_end = off;
     const lang = input.slice(__lang_start, __lang_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let body: string = '';
     let __body_start = off;
     let __body_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __body_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 96 && input.startsWith("```", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_e1d802a1(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __body_start;
       if (__lastNonWs === __body_start) {
         off = __emptyAnchor;
@@ -10315,7 +9717,7 @@ function __fusedRender_MarkdownLeaf_18_html(state: State, out: string[]): boolea
       }
       __body_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -10336,34 +9738,25 @@ function __fusedRender_MarkdownLeaf_18_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __lang_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __lang_end = off;
     const lang = input.slice(__lang_start, __lang_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let body: string = '';
     let __body_start = off;
     let __body_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __body_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 96 && input.startsWith("```", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_e1d802a1(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __body_start;
       if (__lastNonWs === __body_start) {
         off = __emptyAnchor;
@@ -10374,7 +9767,7 @@ function __fusedRender_MarkdownLeaf_18_source(state: State, out: string[]): bool
       }
       __body_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -10395,27 +9788,18 @@ function __fusedRender_MarkdownLeaf_19_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```\n", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let body: string = '';
     let __body_start = off;
     let __body_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __body_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 96 && input.startsWith("```", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_e1d802a1(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __body_start;
       if (__lastNonWs === __body_start) {
         off = __emptyAnchor;
@@ -10426,7 +9810,7 @@ function __fusedRender_MarkdownLeaf_19_html(state: State, out: string[]): boolea
       }
       __body_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -10445,27 +9829,18 @@ function __fusedRender_MarkdownLeaf_19_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```\n", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let body: string = '';
     let __body_start = off;
     let __body_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __body_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 96 && input.startsWith("```", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_e1d802a1(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __body_start;
       if (__lastNonWs === __body_start) {
         off = __emptyAnchor;
@@ -10476,7 +9851,7 @@ function __fusedRender_MarkdownLeaf_19_source(state: State, out: string[]): bool
       }
       __body_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
     state.pos = off;
@@ -10495,27 +9870,18 @@ function __fusedRender_MarkdownLeaf_20_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 42 && input.startsWith("**", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_099c2fd8(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10526,7 +9892,7 @@ function __fusedRender_MarkdownLeaf_20_html(state: State, out: string[]): boolea
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
     state.pos = off;
@@ -10545,27 +9911,18 @@ function __fusedRender_MarkdownLeaf_20_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 42 && input.startsWith("**", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_099c2fd8(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10576,7 +9933,7 @@ function __fusedRender_MarkdownLeaf_20_source(state: State, out: string[]): bool
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
     state.pos = off;
@@ -10595,27 +9952,18 @@ function __fusedRender_MarkdownLeaf_21_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 42) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f933c076(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10626,7 +9974,7 @@ function __fusedRender_MarkdownLeaf_21_html(state: State, out: string[]): boolea
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -10645,27 +9993,18 @@ function __fusedRender_MarkdownLeaf_21_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 42) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f933c076(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10676,7 +10015,7 @@ function __fusedRender_MarkdownLeaf_21_source(state: State, out: string[]): bool
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -10695,27 +10034,18 @@ function __fusedRender_MarkdownLeaf_22_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 126 && input.startsWith("~~", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_b7952f81(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10726,7 +10056,7 @@ function __fusedRender_MarkdownLeaf_22_html(state: State, out: string[]): boolea
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
     state.pos = off;
@@ -10745,27 +10075,18 @@ function __fusedRender_MarkdownLeaf_22_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if ((__c === 126 && input.startsWith("~~", off))) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_b7952f81(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10776,7 +10097,7 @@ function __fusedRender_MarkdownLeaf_22_source(state: State, out: string[]): bool
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
     state.pos = off;
@@ -10795,27 +10116,18 @@ function __fusedRender_MarkdownLeaf_23_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 96) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_3315b3e9(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10826,7 +10138,7 @@ function __fusedRender_MarkdownLeaf_23_html(state: State, out: string[]): boolea
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -10845,27 +10157,18 @@ function __fusedRender_MarkdownLeaf_23_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 96) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_3315b3e9(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -10876,7 +10179,7 @@ function __fusedRender_MarkdownLeaf_23_source(state: State, out: string[]): bool
       }
       __text_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -10895,27 +10198,18 @@ function __fusedRender_MarkdownLeaf_24_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let label: string = '';
     let __label_start = off;
     let __label_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __label_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __label_start;
       if (__lastNonWs === __label_start) {
         off = __emptyAnchor;
@@ -10926,30 +10220,21 @@ function __fusedRender_MarkdownLeaf_24_html(state: State, out: string[]): boolea
       }
       __label_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 41) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_43f2b0f9(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -10960,7 +10245,7 @@ function __fusedRender_MarkdownLeaf_24_html(state: State, out: string[]): boolea
       }
       __url_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -10981,27 +10266,18 @@ function __fusedRender_MarkdownLeaf_24_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let label: string = '';
     let __label_start = off;
     let __label_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __label_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __label_start;
       if (__lastNonWs === __label_start) {
         off = __emptyAnchor;
@@ -11012,30 +10288,21 @@ function __fusedRender_MarkdownLeaf_24_source(state: State, out: string[]): bool
       }
       __label_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 41) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_43f2b0f9(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -11046,7 +10313,7 @@ function __fusedRender_MarkdownLeaf_24_source(state: State, out: string[]): bool
       }
       __url_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11067,27 +10334,18 @@ function __fusedRender_MarkdownLeaf_25_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let label: string = '';
     let __label_start = off;
     let __label_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __label_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __label_start;
       if (__lastNonWs === __label_start) {
         off = __emptyAnchor;
@@ -11098,27 +10356,18 @@ function __fusedRender_MarkdownLeaf_25_html(state: State, out: string[]): boolea
       }
       __label_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -11129,7 +10378,7 @@ function __fusedRender_MarkdownLeaf_25_html(state: State, out: string[]): boolea
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11150,27 +10399,18 @@ function __fusedRender_MarkdownLeaf_25_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let label: string = '';
     let __label_start = off;
     let __label_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __label_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __label_start;
       if (__lastNonWs === __label_start) {
         off = __emptyAnchor;
@@ -11181,27 +10421,18 @@ function __fusedRender_MarkdownLeaf_25_source(state: State, out: string[]): bool
       }
       __label_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -11212,7 +10443,7 @@ function __fusedRender_MarkdownLeaf_25_source(state: State, out: string[]): bool
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11233,30 +10464,21 @@ function __fusedRender_MarkdownLeaf_26_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let alt: string = '';
     let __alt_start = off;
     let __alt_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __alt_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __alt_start;
       if (__lastNonWs === __alt_start) {
         off = __emptyAnchor;
@@ -11267,30 +10489,21 @@ function __fusedRender_MarkdownLeaf_26_html(state: State, out: string[]): boolea
       }
       __alt_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 41) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_43f2b0f9(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -11301,7 +10514,7 @@ function __fusedRender_MarkdownLeaf_26_html(state: State, out: string[]): boolea
       }
       __url_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11322,30 +10535,21 @@ function __fusedRender_MarkdownLeaf_26_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let alt: string = '';
     let __alt_start = off;
     let __alt_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __alt_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __alt_start;
       if (__lastNonWs === __alt_start) {
         off = __emptyAnchor;
@@ -11356,30 +10560,21 @@ function __fusedRender_MarkdownLeaf_26_source(state: State, out: string[]): bool
       }
       __alt_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 41) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_43f2b0f9(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -11390,7 +10585,7 @@ function __fusedRender_MarkdownLeaf_26_source(state: State, out: string[]): bool
       }
       __url_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11411,30 +10606,21 @@ function __fusedRender_MarkdownLeaf_27_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let alt: string = '';
     let __alt_start = off;
     let __alt_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __alt_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __alt_start;
       if (__lastNonWs === __alt_start) {
         off = __emptyAnchor;
@@ -11445,27 +10631,18 @@ function __fusedRender_MarkdownLeaf_27_html(state: State, out: string[]): boolea
       }
       __alt_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -11476,7 +10653,7 @@ function __fusedRender_MarkdownLeaf_27_html(state: State, out: string[]): boolea
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11497,30 +10674,21 @@ function __fusedRender_MarkdownLeaf_27_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let alt: string = '';
     let __alt_start = off;
     let __alt_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __alt_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __alt_start;
       if (__lastNonWs === __alt_start) {
         off = __emptyAnchor;
@@ -11531,27 +10699,18 @@ function __fusedRender_MarkdownLeaf_27_source(state: State, out: string[]): bool
       }
       __alt_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -11562,7 +10721,7 @@ function __fusedRender_MarkdownLeaf_27_source(state: State, out: string[]): bool
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11583,17 +10742,17 @@ function __fusedRender_MarkdownLeaf_28_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 38)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __name_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __name_end = off;
     const name = input.slice(__name_start, __name_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 59)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11612,17 +10771,17 @@ function __fusedRender_MarkdownLeaf_28_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 38)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __name_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __name_end = off;
     const name = input.slice(__name_start, __name_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 59)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11641,19 +10800,19 @@ function __fusedRender_MarkdownLeaf_29_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11669,19 +10828,19 @@ function __fusedRender_MarkdownLeaf_29_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11698,25 +10857,25 @@ function __fusedRender_MarkdownLeaf_30_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11732,25 +10891,25 @@ function __fusedRender_MarkdownLeaf_30_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 3;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11767,27 +10926,18 @@ function __fusedRender_MarkdownLeaf_31_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let first: string = '';
     let __first_start = off;
     let __first_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __first_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 124) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_6f2a3175(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __first_start;
       if (__lastNonWs === __first_start) {
         off = __emptyAnchor;
@@ -11798,27 +10948,18 @@ function __fusedRender_MarkdownLeaf_31_html(state: State, out: string[]): boolea
       }
       __first_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let second: string = '';
     let __second_start = off;
     let __second_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __second_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 124) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_6f2a3175(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __second_start;
       if (__lastNonWs === __second_start) {
         off = __emptyAnchor;
@@ -11829,7 +10970,7 @@ function __fusedRender_MarkdownLeaf_31_html(state: State, out: string[]): boolea
       }
       __second_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11850,27 +10991,18 @@ function __fusedRender_MarkdownLeaf_31_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let first: string = '';
     let __first_start = off;
     let __first_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __first_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 124) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_6f2a3175(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __first_start;
       if (__lastNonWs === __first_start) {
         off = __emptyAnchor;
@@ -11881,27 +11013,18 @@ function __fusedRender_MarkdownLeaf_31_source(state: State, out: string[]): bool
       }
       __first_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let second: string = '';
     let __second_start = off;
     let __second_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __second_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 124) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_6f2a3175(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __second_start;
       if (__lastNonWs === __second_start) {
         off = __emptyAnchor;
@@ -11912,7 +11035,7 @@ function __fusedRender_MarkdownLeaf_31_source(state: State, out: string[]): bool
       }
       __second_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -11933,27 +11056,18 @@ function __fusedRender_MarkdownLeaf_32_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -11964,30 +11078,21 @@ function __fusedRender_MarkdownLeaf_32_html(state: State, out: string[]): boolea
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -12011,27 +11116,18 @@ function __fusedRender_MarkdownLeaf_32_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -12042,30 +11138,21 @@ function __fusedRender_MarkdownLeaf_32_source(state: State, out: string[]): bool
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -12093,27 +11180,18 @@ function __fusedRender_MarkdownLeaf_33_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -12124,30 +11202,21 @@ function __fusedRender_MarkdownLeaf_33_html(state: State, out: string[]): boolea
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -12176,27 +11245,18 @@ function __fusedRender_MarkdownLeaf_33_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -12207,30 +11267,21 @@ function __fusedRender_MarkdownLeaf_33_source(state: State, out: string[]): bool
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __text_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 10) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_f862d6c3(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __text_start;
       if (__lastNonWs === __text_start) {
         off = __emptyAnchor;
@@ -12258,27 +11309,18 @@ function __fusedRender_MarkdownLeaf_34_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -12289,7 +11331,7 @@ function __fusedRender_MarkdownLeaf_34_html(state: State, out: string[]): boolea
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -12310,27 +11352,18 @@ function __fusedRender_MarkdownLeaf_34_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let id: string = '';
     let __id_start = off;
     let __id_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __id_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 93) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_5f3a3454(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __id_start;
       if (__lastNonWs === __id_start) {
         off = __emptyAnchor;
@@ -12341,7 +11374,7 @@ function __fusedRender_MarkdownLeaf_34_source(state: State, out: string[]): bool
       }
       __id_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -12360,10 +11393,10 @@ function __fusedRender_MarkdownLeaf_35_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __tag_start = off;
     off++;
@@ -12371,10 +11404,10 @@ function __fusedRender_MarkdownLeaf_35_html(state: State, out: string[]): boolea
     const __tag_end = off;
     const tag = input.slice(__tag_start, __tag_end);
     if (!(tag.toLowerCase() === "div" || tag.toLowerCase() === "span" || tag.toLowerCase() === "p" || tag.toLowerCase() === "pre" || tag.toLowerCase() === "code" || tag.toLowerCase() === "blockquote" || tag.toLowerCase() === "a" || tag.toLowerCase() === "img" || tag.toLowerCase() === "br" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "ul" || tag.toLowerCase() === "ol" || tag.toLowerCase() === "li" || tag.toLowerCase() === "dl" || tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd" || tag.toLowerCase() === "table" || tag.toLowerCase() === "thead" || tag.toLowerCase() === "tbody" || tag.toLowerCase() === "tfoot" || tag.toLowerCase() === "tr" || tag.toLowerCase() === "td" || tag.toLowerCase() === "th" || tag.toLowerCase() === "caption" || tag.toLowerCase() === "figure" || tag.toLowerCase() === "figcaption" || tag.toLowerCase() === "section" || tag.toLowerCase() === "article" || tag.toLowerCase() === "header" || tag.toLowerCase() === "footer" || tag.toLowerCase() === "nav" || tag.toLowerCase() === "aside" || tag.toLowerCase() === "main" || tag.toLowerCase() === "address" || tag.toLowerCase() === "details" || tag.toLowerCase() === "summary" || tag.toLowerCase() === "h1" || tag.toLowerCase() === "h2" || tag.toLowerCase() === "h3" || tag.toLowerCase() === "h4" || tag.toLowerCase() === "h5" || tag.toLowerCase() === "h6" || tag.toLowerCase() === "em" || tag.toLowerCase() === "strong" || tag.toLowerCase() === "i" || tag.toLowerCase() === "b" || tag.toLowerCase() === "u" || tag.toLowerCase() === "s" || tag.toLowerCase() === "small" || tag.toLowerCase() === "sub" || tag.toLowerCase() === "sup" || tag.toLowerCase() === "kbd" || tag.toLowerCase() === "var" || tag.toLowerCase() === "samp" || tag.toLowerCase() === "cite" || tag.toLowerCase() === "q" || tag.toLowerCase() === "dfn" || tag.toLowerCase() === "abbr" || tag.toLowerCase() === "time" || tag.toLowerCase() === "mark" || tag.toLowerCase() === "ruby" || tag.toLowerCase() === "rt" || tag.toLowerCase() === "rp" || tag.toLowerCase() === "bdi" || tag.toLowerCase() === "bdo" || tag.toLowerCase() === "wbr" || tag.toLowerCase() === "form" || tag.toLowerCase() === "input" || tag.toLowerCase() === "button" || tag.toLowerCase() === "select" || tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "label" || tag.toLowerCase() === "fieldset" || tag.toLowerCase() === "legend" || tag.toLowerCase() === "datalist" || tag.toLowerCase() === "output" || tag.toLowerCase() === "progress" || tag.toLowerCase() === "meter" || tag.toLowerCase() === "video" || tag.toLowerCase() === "audio" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "canvas" || tag.toLowerCase() === "svg" || tag.toLowerCase() === "math" || tag.toLowerCase() === "iframe" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "object" || tag.toLowerCase() === "param" || tag.toLowerCase() === "picture" || tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "noscript" || tag.toLowerCase() === "template" || tag.toLowerCase() === "html" || tag.toLowerCase() === "head" || tag.toLowerCase() === "body" || tag.toLowerCase() === "title" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "link" || tag.toLowerCase() === "base")) { state.pos = entryOff; return null; }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let body: string = '';
     let __body_start = off;
     let __body_end = off;
@@ -12389,17 +11422,17 @@ function __fusedRender_MarkdownLeaf_35_html(state: State, out: string[]): boolea
       __body_end = off;
       body = input.slice(__body_start, __body_end);
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __closingTag_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __closingTag_end = off;
     const closingTag = input.slice(__closingTag_start, __closingTag_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -12422,10 +11455,10 @@ function __fusedRender_MarkdownLeaf_35_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __tag_start = off;
     off++;
@@ -12433,10 +11466,10 @@ function __fusedRender_MarkdownLeaf_35_source(state: State, out: string[]): bool
     const __tag_end = off;
     const tag = input.slice(__tag_start, __tag_end);
     if (!(tag.toLowerCase() === "div" || tag.toLowerCase() === "span" || tag.toLowerCase() === "p" || tag.toLowerCase() === "pre" || tag.toLowerCase() === "code" || tag.toLowerCase() === "blockquote" || tag.toLowerCase() === "a" || tag.toLowerCase() === "img" || tag.toLowerCase() === "br" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "ul" || tag.toLowerCase() === "ol" || tag.toLowerCase() === "li" || tag.toLowerCase() === "dl" || tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd" || tag.toLowerCase() === "table" || tag.toLowerCase() === "thead" || tag.toLowerCase() === "tbody" || tag.toLowerCase() === "tfoot" || tag.toLowerCase() === "tr" || tag.toLowerCase() === "td" || tag.toLowerCase() === "th" || tag.toLowerCase() === "caption" || tag.toLowerCase() === "figure" || tag.toLowerCase() === "figcaption" || tag.toLowerCase() === "section" || tag.toLowerCase() === "article" || tag.toLowerCase() === "header" || tag.toLowerCase() === "footer" || tag.toLowerCase() === "nav" || tag.toLowerCase() === "aside" || tag.toLowerCase() === "main" || tag.toLowerCase() === "address" || tag.toLowerCase() === "details" || tag.toLowerCase() === "summary" || tag.toLowerCase() === "h1" || tag.toLowerCase() === "h2" || tag.toLowerCase() === "h3" || tag.toLowerCase() === "h4" || tag.toLowerCase() === "h5" || tag.toLowerCase() === "h6" || tag.toLowerCase() === "em" || tag.toLowerCase() === "strong" || tag.toLowerCase() === "i" || tag.toLowerCase() === "b" || tag.toLowerCase() === "u" || tag.toLowerCase() === "s" || tag.toLowerCase() === "small" || tag.toLowerCase() === "sub" || tag.toLowerCase() === "sup" || tag.toLowerCase() === "kbd" || tag.toLowerCase() === "var" || tag.toLowerCase() === "samp" || tag.toLowerCase() === "cite" || tag.toLowerCase() === "q" || tag.toLowerCase() === "dfn" || tag.toLowerCase() === "abbr" || tag.toLowerCase() === "time" || tag.toLowerCase() === "mark" || tag.toLowerCase() === "ruby" || tag.toLowerCase() === "rt" || tag.toLowerCase() === "rp" || tag.toLowerCase() === "bdi" || tag.toLowerCase() === "bdo" || tag.toLowerCase() === "wbr" || tag.toLowerCase() === "form" || tag.toLowerCase() === "input" || tag.toLowerCase() === "button" || tag.toLowerCase() === "select" || tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "label" || tag.toLowerCase() === "fieldset" || tag.toLowerCase() === "legend" || tag.toLowerCase() === "datalist" || tag.toLowerCase() === "output" || tag.toLowerCase() === "progress" || tag.toLowerCase() === "meter" || tag.toLowerCase() === "video" || tag.toLowerCase() === "audio" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "canvas" || tag.toLowerCase() === "svg" || tag.toLowerCase() === "math" || tag.toLowerCase() === "iframe" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "object" || tag.toLowerCase() === "param" || tag.toLowerCase() === "picture" || tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "noscript" || tag.toLowerCase() === "template" || tag.toLowerCase() === "html" || tag.toLowerCase() === "head" || tag.toLowerCase() === "body" || tag.toLowerCase() === "title" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "link" || tag.toLowerCase() === "base")) { state.pos = entryOff; return null; }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let body: string = '';
     let __body_start = off;
     let __body_end = off;
@@ -12451,17 +11484,17 @@ function __fusedRender_MarkdownLeaf_35_source(state: State, out: string[]): bool
       __body_end = off;
       body = input.slice(__body_start, __body_end);
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __closingTag_start = off;
     off++;
     while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
     const __closingTag_end = off;
     const closingTag = input.slice(__closingTag_start, __closingTag_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -12484,27 +11517,18 @@ function __fusedRender_MarkdownLeaf_36_html(state: State, out: string[]): boolea
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 62) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_ca75eaf8(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -12515,7 +11539,7 @@ function __fusedRender_MarkdownLeaf_36_html(state: State, out: string[]): boolea
       }
       __url_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -12536,27 +11560,18 @@ function __fusedRender_MarkdownLeaf_36_source(state: State, out: string[]): bool
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let url: string = '';
     let __url_start = off;
     let __url_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __url_start = off;
-      let __lastNonWs = off;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__c === 62) break;
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_ca75eaf8(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __url_start;
       if (__lastNonWs === __url_start) {
         off = __emptyAnchor;
@@ -12567,7 +11582,7 @@ function __fusedRender_MarkdownLeaf_36_source(state: State, out: string[]): bool
       }
       __url_end = off;
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -12586,7 +11601,7 @@ function __fusedRender_MarkdownParagraph_0_html(state: State, out: string[]): bo
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
@@ -12915,7 +11930,7 @@ function __fusedRender_MarkdownParagraph_0_source(state: State, out: string[]): 
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let text: string = '';
     let __text_start = off;
     let __text_end = off;
@@ -13325,11 +12340,11 @@ function __fusedRenderStructured_MarkdownDocument_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     state.pos = off;
     let __cand: unknown = null;
     if (off < len) {
@@ -13352,27 +12367,18 @@ function __fusedRenderStructured_MarkdownLeaf_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("######", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13393,27 +12399,18 @@ function __fusedRenderStructured_MarkdownLeaf_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("#####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13434,27 +12431,18 @@ function __fusedRenderStructured_MarkdownLeaf_2_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13475,27 +12463,18 @@ function __fusedRenderStructured_MarkdownLeaf_3_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("###", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13516,27 +12495,18 @@ function __fusedRenderStructured_MarkdownLeaf_4_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 35 && input.charCodeAt(off + 1) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13557,27 +12527,18 @@ function __fusedRenderStructured_MarkdownLeaf_5_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13598,24 +12559,15 @@ function __fusedRenderStructured_MarkdownLeaf_6_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13626,7 +12578,7 @@ function __fusedRenderStructured_MarkdownLeaf_6_ast(state: State): unknown {
     }
     __text_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("===", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
@@ -13639,24 +12591,15 @@ function __fusedRenderStructured_MarkdownLeaf_7_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13667,7 +12610,7 @@ function __fusedRenderStructured_MarkdownLeaf_7_ast(state: State): unknown {
     }
     __text_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
@@ -13680,7 +12623,7 @@ function __fusedRenderStructured_MarkdownLeaf_8_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("***", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
@@ -13693,7 +12636,7 @@ function __fusedRenderStructured_MarkdownLeaf_9_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("___", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
@@ -13706,7 +12649,7 @@ function __fusedRenderStructured_MarkdownLeaf_10_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
@@ -13719,27 +12662,18 @@ function __fusedRenderStructured_MarkdownLeaf_11_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("- [x]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13760,27 +12694,18 @@ function __fusedRenderStructured_MarkdownLeaf_12_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("- [ ]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13801,27 +12726,18 @@ function __fusedRenderStructured_MarkdownLeaf_13_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 43 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13842,27 +12758,18 @@ function __fusedRenderStructured_MarkdownLeaf_14_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13883,27 +12790,18 @@ function __fusedRenderStructured_MarkdownLeaf_15_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13924,7 +12822,7 @@ function __fusedRenderStructured_MarkdownLeaf_16_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __index_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -13932,27 +12830,18 @@ function __fusedRenderStructured_MarkdownLeaf_16_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __index_end = off;
   const index = input.slice(__index_start, __index_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 46)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -13973,27 +12862,18 @@ function __fusedRenderStructured_MarkdownLeaf_17_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -14014,34 +12894,25 @@ function __fusedRenderStructured_MarkdownLeaf_18_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __lang_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __lang_end = off;
   const lang = input.slice(__lang_start, __lang_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __body_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 96 && input.startsWith("```", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_e1d802a1(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __body_start;
     if (__lastNonWs === __body_start) {
       off = __emptyAnchor;
@@ -14052,7 +12923,7 @@ function __fusedRenderStructured_MarkdownLeaf_18_ast(state: State): unknown {
     }
     __body_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
@@ -14065,27 +12936,18 @@ function __fusedRenderStructured_MarkdownLeaf_19_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("```\n", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __body_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 96 && input.startsWith("```", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_e1d802a1(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __body_start;
     if (__lastNonWs === __body_start) {
       off = __emptyAnchor;
@@ -14096,7 +12958,7 @@ function __fusedRenderStructured_MarkdownLeaf_19_ast(state: State): unknown {
     }
     __body_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
@@ -14109,27 +12971,18 @@ function __fusedRenderStructured_MarkdownLeaf_20_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 42 && input.startsWith("**", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_099c2fd8(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -14140,7 +12993,7 @@ function __fusedRenderStructured_MarkdownLeaf_20_ast(state: State): unknown {
     }
     __text_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   state.pos = off;
@@ -14153,27 +13006,18 @@ function __fusedRenderStructured_MarkdownLeaf_21_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 42) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f933c076(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -14184,7 +13028,7 @@ function __fusedRenderStructured_MarkdownLeaf_21_ast(state: State): unknown {
     }
     __text_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14197,27 +13041,18 @@ function __fusedRenderStructured_MarkdownLeaf_22_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 126 && input.startsWith("~~", off))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_b7952f81(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -14228,7 +13063,7 @@ function __fusedRenderStructured_MarkdownLeaf_22_ast(state: State): unknown {
     }
     __text_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   state.pos = off;
@@ -14241,27 +13076,18 @@ function __fusedRenderStructured_MarkdownLeaf_23_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 96) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_3315b3e9(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -14272,7 +13098,7 @@ function __fusedRenderStructured_MarkdownLeaf_23_ast(state: State): unknown {
     }
     __text_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14285,27 +13111,18 @@ function __fusedRenderStructured_MarkdownLeaf_24_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let label: string = '';
   let __label_start = off;
   let __label_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __label_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __label_start;
     if (__lastNonWs === __label_start) {
       off = __emptyAnchor;
@@ -14316,30 +13133,21 @@ function __fusedRenderStructured_MarkdownLeaf_24_ast(state: State): unknown {
     }
     __label_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 41) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_43f2b0f9(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -14350,7 +13158,7 @@ function __fusedRenderStructured_MarkdownLeaf_24_ast(state: State): unknown {
     }
     __url_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14363,27 +13171,18 @@ function __fusedRenderStructured_MarkdownLeaf_25_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let label: string = '';
   let __label_start = off;
   let __label_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __label_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __label_start;
     if (__lastNonWs === __label_start) {
       off = __emptyAnchor;
@@ -14394,27 +13193,18 @@ function __fusedRenderStructured_MarkdownLeaf_25_ast(state: State): unknown {
     }
     __label_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -14425,7 +13215,7 @@ function __fusedRenderStructured_MarkdownLeaf_25_ast(state: State): unknown {
     }
     __id_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14438,30 +13228,21 @@ function __fusedRenderStructured_MarkdownLeaf_26_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let alt: string = '';
   let __alt_start = off;
   let __alt_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __alt_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __alt_start;
     if (__lastNonWs === __alt_start) {
       off = __emptyAnchor;
@@ -14472,30 +13253,21 @@ function __fusedRenderStructured_MarkdownLeaf_26_ast(state: State): unknown {
     }
     __alt_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 41) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_43f2b0f9(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -14506,7 +13278,7 @@ function __fusedRenderStructured_MarkdownLeaf_26_ast(state: State): unknown {
     }
     __url_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14519,30 +13291,21 @@ function __fusedRenderStructured_MarkdownLeaf_27_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let alt: string = '';
   let __alt_start = off;
   let __alt_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __alt_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __alt_start;
     if (__lastNonWs === __alt_start) {
       off = __emptyAnchor;
@@ -14553,27 +13316,18 @@ function __fusedRenderStructured_MarkdownLeaf_27_ast(state: State): unknown {
     }
     __alt_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -14584,7 +13338,7 @@ function __fusedRenderStructured_MarkdownLeaf_27_ast(state: State): unknown {
     }
     __id_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14597,17 +13351,17 @@ function __fusedRenderStructured_MarkdownLeaf_28_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 38)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 59)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14620,19 +13374,19 @@ function __fusedRenderStructured_MarkdownLeaf_29_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14645,25 +13399,25 @@ function __fusedRenderStructured_MarkdownLeaf_30_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14676,27 +13430,18 @@ function __fusedRenderStructured_MarkdownLeaf_31_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let first: string = '';
   let __first_start = off;
   let __first_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __first_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 124) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_6f2a3175(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __first_start;
     if (__lastNonWs === __first_start) {
       off = __emptyAnchor;
@@ -14707,27 +13452,18 @@ function __fusedRenderStructured_MarkdownLeaf_31_ast(state: State): unknown {
     }
     __first_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let second: string = '';
   let __second_start = off;
   let __second_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __second_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 124) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_6f2a3175(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __second_start;
     if (__lastNonWs === __second_start) {
       off = __emptyAnchor;
@@ -14738,7 +13474,7 @@ function __fusedRenderStructured_MarkdownLeaf_31_ast(state: State): unknown {
     }
     __second_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14751,27 +13487,18 @@ function __fusedRenderStructured_MarkdownLeaf_32_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -14782,30 +13509,21 @@ function __fusedRenderStructured_MarkdownLeaf_32_ast(state: State): unknown {
     }
     __id_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -14826,27 +13544,18 @@ function __fusedRenderStructured_MarkdownLeaf_33_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -14857,30 +13566,21 @@ function __fusedRenderStructured_MarkdownLeaf_33_ast(state: State): unknown {
     }
     __id_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __text_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 10) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_f862d6c3(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {
       off = __emptyAnchor;
@@ -14901,27 +13601,18 @@ function __fusedRenderStructured_MarkdownLeaf_34_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __id_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 93) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_5f3a3454(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __id_start;
     if (__lastNonWs === __id_start) {
       off = __emptyAnchor;
@@ -14932,7 +13623,7 @@ function __fusedRenderStructured_MarkdownLeaf_34_ast(state: State): unknown {
     }
     __id_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14945,10 +13636,10 @@ function __fusedRenderStructured_MarkdownLeaf_35_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __tag_start = off;
   off++;
@@ -14956,10 +13647,10 @@ function __fusedRenderStructured_MarkdownLeaf_35_ast(state: State): unknown {
   const __tag_end = off;
   const tag = input.slice(__tag_start, __tag_end);
   if (!(tag.toLowerCase() === "div" || tag.toLowerCase() === "span" || tag.toLowerCase() === "p" || tag.toLowerCase() === "pre" || tag.toLowerCase() === "code" || tag.toLowerCase() === "blockquote" || tag.toLowerCase() === "a" || tag.toLowerCase() === "img" || tag.toLowerCase() === "br" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "ul" || tag.toLowerCase() === "ol" || tag.toLowerCase() === "li" || tag.toLowerCase() === "dl" || tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd" || tag.toLowerCase() === "table" || tag.toLowerCase() === "thead" || tag.toLowerCase() === "tbody" || tag.toLowerCase() === "tfoot" || tag.toLowerCase() === "tr" || tag.toLowerCase() === "td" || tag.toLowerCase() === "th" || tag.toLowerCase() === "caption" || tag.toLowerCase() === "figure" || tag.toLowerCase() === "figcaption" || tag.toLowerCase() === "section" || tag.toLowerCase() === "article" || tag.toLowerCase() === "header" || tag.toLowerCase() === "footer" || tag.toLowerCase() === "nav" || tag.toLowerCase() === "aside" || tag.toLowerCase() === "main" || tag.toLowerCase() === "address" || tag.toLowerCase() === "details" || tag.toLowerCase() === "summary" || tag.toLowerCase() === "h1" || tag.toLowerCase() === "h2" || tag.toLowerCase() === "h3" || tag.toLowerCase() === "h4" || tag.toLowerCase() === "h5" || tag.toLowerCase() === "h6" || tag.toLowerCase() === "em" || tag.toLowerCase() === "strong" || tag.toLowerCase() === "i" || tag.toLowerCase() === "b" || tag.toLowerCase() === "u" || tag.toLowerCase() === "s" || tag.toLowerCase() === "small" || tag.toLowerCase() === "sub" || tag.toLowerCase() === "sup" || tag.toLowerCase() === "kbd" || tag.toLowerCase() === "var" || tag.toLowerCase() === "samp" || tag.toLowerCase() === "cite" || tag.toLowerCase() === "q" || tag.toLowerCase() === "dfn" || tag.toLowerCase() === "abbr" || tag.toLowerCase() === "time" || tag.toLowerCase() === "mark" || tag.toLowerCase() === "ruby" || tag.toLowerCase() === "rt" || tag.toLowerCase() === "rp" || tag.toLowerCase() === "bdi" || tag.toLowerCase() === "bdo" || tag.toLowerCase() === "wbr" || tag.toLowerCase() === "form" || tag.toLowerCase() === "input" || tag.toLowerCase() === "button" || tag.toLowerCase() === "select" || tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "label" || tag.toLowerCase() === "fieldset" || tag.toLowerCase() === "legend" || tag.toLowerCase() === "datalist" || tag.toLowerCase() === "output" || tag.toLowerCase() === "progress" || tag.toLowerCase() === "meter" || tag.toLowerCase() === "video" || tag.toLowerCase() === "audio" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "canvas" || tag.toLowerCase() === "svg" || tag.toLowerCase() === "math" || tag.toLowerCase() === "iframe" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "object" || tag.toLowerCase() === "param" || tag.toLowerCase() === "picture" || tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "noscript" || tag.toLowerCase() === "template" || tag.toLowerCase() === "html" || tag.toLowerCase() === "head" || tag.toLowerCase() === "body" || tag.toLowerCase() === "title" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "link" || tag.toLowerCase() === "base")) { state.pos = entryOff; return null; }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
@@ -14974,17 +13665,17 @@ function __fusedRenderStructured_MarkdownLeaf_35_ast(state: State): unknown {
     __body_end = off;
     body = input.slice(__body_start, __body_end);
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __closingTag_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __closingTag_end = off;
   const closingTag = input.slice(__closingTag_start, __closingTag_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -14997,27 +13688,18 @@ function __fusedRenderStructured_MarkdownLeaf_36_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __url_start = off;
-    let __lastNonWs = off;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__c === 62) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_ca75eaf8(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __url_start;
     if (__lastNonWs === __url_start) {
       off = __emptyAnchor;
@@ -15028,7 +13710,7 @@ function __fusedRenderStructured_MarkdownLeaf_36_ast(state: State): unknown {
     }
     __url_end = off;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -15041,7 +13723,7 @@ function __fusedRenderStructured_MarkdownParagraph_0_ast(state: State): unknown 
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let text: string = '';
   let __text_start = off;
   let __text_end = off;

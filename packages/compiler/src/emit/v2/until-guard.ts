@@ -26,6 +26,7 @@
 import type { InferredSchema, NodeTypeInfo, Production } from '../../model.ts';
 import type { SpanModifier } from '@parser2/parser';
 import { computeKnownLeadingBytes, type SpanContext } from './span.ts';
+import { kbConst } from './shared-helpers.ts';
 
 export type GuardEnv = {
   readonly nodeTypes: ReadonlyMap<string, NodeTypeInfo>;
@@ -132,7 +133,7 @@ export function untilGuardSpec(role: string, env: GuardEnv): UntilGuardSpec | nu
 // byte — `return __c;` for the single-segment helper, `__t = __c; break;`
 // for multi-segment chains. The loop body mirrors the until kernel's skip
 // machinery exactly (see module header).
-function emitScanLoop(stopChars: string, env: GuardEnv, onStop: (expr: string) => string): string[] {
+function emitScanLoop(stopChars: string, env: GuardEnv, onStop: (expr: string) => string, kbRef = '__KB'): string[] {
   const stopCond = [...stopChars]
     .map((s) => `__c === ${s.charCodeAt(0)}`)
     .join(' || ');
@@ -196,7 +197,7 @@ function emitScanLoop(stopChars: string, env: GuardEnv, onStop: (expr: string) =
   }
   lines.push(`    if (__c === 0x5c && off + 1 < len) { off += 2; continue; }`);
   if (env.unknownGuard) {
-    lines.push(`    if (__depth === 0 && __KB[__c] === 0) { ${onStop('__c')} }`);
+    lines.push(`    if (__depth === 0 && ${kbRef}[__c] === 0) { ${onStop('__c')} }`);
   }
   lines.push(`    off++;`);
   lines.push(`  }`);
@@ -204,13 +205,17 @@ function emitScanLoop(stopChars: string, env: GuardEnv, onStop: (expr: string) =
 }
 
 function emitTerminatorHelper(name: string, stopChars: string, env: GuardEnv): string {
+  // Known-byte table: hash-consed module constant when the shared-helper
+  // collection is open (the normal emitV2Parser path), local array literal
+  // otherwise (standalone inline emission).
+  const kbShared = env.unknownGuard ? kbConst(env.knownBytes) : null;
   const lines: string[] = [];
   lines.push(`function ${name}(input: string, off: number, len: number): number {`);
   lines.push(`  let __depth = 0;`);
-  if (env.unknownGuard) {
+  if (env.unknownGuard && kbShared === null) {
     lines.push(`  const __KB = [${Array.from(env.knownBytes).join(',')}];`);
   }
-  lines.push(...emitScanLoop(stopChars, env, (c) => `return ${c};`));
+  lines.push(...emitScanLoop(stopChars, env, (c) => `return ${c};`, kbShared ?? '__KB'));
   lines.push(`  return -1;`);
   lines.push(`}`);
   return lines.join('\n');
@@ -278,11 +283,12 @@ export function untilAltViabilitySpec(
 }
 
 function emitAltViableHelper(name: string, chain: SegmentChain, env: GuardEnv): string {
+  const kbShared = env.unknownGuard ? kbConst(env.knownBytes) : null;
   const lines: string[] = [];
   lines.push(`function ${name}(input: string, off: number, len: number): boolean {`);
   lines.push(`  let __depth = 0;`);
   lines.push(`  let __t = -1;`);
-  if (env.unknownGuard) {
+  if (env.unknownGuard && kbShared === null) {
     lines.push(`  const __KB = [${Array.from(env.knownBytes).join(',')}];`);
   }
   for (let i = 0; i < chain.length; i++) {
@@ -291,7 +297,7 @@ function emitAltViableHelper(name: string, chain: SegmentChain, env: GuardEnv): 
       lines.push(`  off++;`);
       lines.push(`  __t = -1;`);
     }
-    lines.push(...emitScanLoop(seg.stops, env, (c) => `__t = ${c}; break;`));
+    lines.push(...emitScanLoop(seg.stops, env, (c) => `__t = ${c}; break;`, kbShared ?? '__KB'));
     lines.push(`  if (__t !== ${seg.lit.charCodeAt(0)}) return false;`);
   }
   lines.push(`  return true;`);

@@ -28,6 +28,7 @@ import type { BinaryProductionInfo } from '../../infer/binary-operators.ts';
 import type { UnaryProductionInfo } from '../../infer/unary-operators.ts';
 import type { InferredSchema, NodeTypeInfo } from '../../model.ts';
 import { jsString } from '../strings.ts';
+import { skipWsStmt } from './shared-helpers.ts';
 import { parseFnName } from './index.ts';
 
 export function emitPrattNode(
@@ -114,7 +115,7 @@ ${standardLines.join('\n')}
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  ${skipWsStmt()}
   let __unaryOp: string | null = null;
   let __unaryLen = 0;
   if (off < len) {
@@ -210,7 +211,7 @@ ${precEntries.join('\n')}
     const input = state.input;
     const len = state.len;
     let off = state.pos;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    ${skipWsStmt()}
     if (off >= len) break;
     let op: string | null = null;
     let opLen = 0;

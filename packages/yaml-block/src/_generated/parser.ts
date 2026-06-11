@@ -213,6 +213,17 @@ function skipHorizontalWs(state: State): void {
   while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
+// Scratch slots for the shared until-scan kernels (`__uScan_*`, see
+// compiler emit/v2/shared-helpers.ts). A kernel returns the new offset and
+// deposits its secondary outputs here; the call site reads them immediately
+// after the call returns. Parsing is synchronous and kernels are leaf calls,
+// so a slot cannot be clobbered between write and read.
+let __uFail = 0;
+let __uLast = 0;
+let __uDepth = 0;
+let __uComments: [number, number][] | null = null;
+let __uLastCommentEnd = -1;
+
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -251,6 +262,68 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function __skipWs(input: string, off: number, len: number): number {
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  return off;
+}
+
+function __uScan_3920b339(input: string, off: number, len: number): number {
+  let __lastNonWs = off;
+  let __depth = 0;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__depth === 0 && (__c === 10)) break;
+    if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+      __depth++; off++;
+      __lastNonWs = off;
+      continue;
+    }
+    if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+      if (__depth === 0) break;
+      __depth--; off++;
+      __lastNonWs = off;
+      continue;
+    }
+    if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+      && off + 3 < len
+      && (input.charCodeAt(off + 1) | 32) === 0x72
+      && (input.charCodeAt(off + 2) | 32) === 0x6c
+      && input.charCodeAt(off + 3) === 0x28) {
+      off += 4;
+      while (off < len) {
+        const __uc = input.charCodeAt(off);
+        if (__uc === 0x29) { off++; break; }
+        if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__uc === 0x22 || __uc === 0x27) {
+          const __uq = __uc;
+          off++;
+          while (off < len) {
+            const __usc = input.charCodeAt(off);
+            if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__usc === __uq) { off++; break; }
+            if (__usc === 0x0a || __usc === 0x0d) break;
+            off++;
+          }
+          continue;
+        }
+        off++;
+      }
+      __lastNonWs = off;
+      continue;
+    }
+    if (__c === 0x5c && off + 1 < len) {
+      __lastNonWs = off + 2;
+      off += 2;
+      continue;
+    }
+    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+    off++;
+  }
+  __uLast = __lastNonWs;
+  __uDepth = __depth;
+  return off;
+}
+
 // --- Inferred types ---
 export type YamlScalar_ast = string;
 export type YamlScalar_source = string;
@@ -272,70 +345,17 @@ function parseYamlScalar(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let value: string = '';
   let __value_start = off;
   let __value_end = off;
   {
-    while (off < len) {
-      const __c0 = input.charCodeAt(off);
-      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-      break;
-    }
+    off = __skipWs(input, off, len);
     __value_start = off;
-    let __lastNonWs = off;
-    let __depth = 0;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
-        __depth++; off++;
-        __lastNonWs = off;
-        continue;
-      }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; off++;
-        __lastNonWs = off;
-        continue;
-      }
-      if (__depth === 0 && (__c === 0x75 || __c === 0x55)
-        && off + 3 < len
-        && (input.charCodeAt(off + 1) | 32) === 0x72
-        && (input.charCodeAt(off + 2) | 32) === 0x6c
-        && input.charCodeAt(off + 3) === 0x28) {
-        off += 4;
-        while (off < len) {
-          const __uc = input.charCodeAt(off);
-          if (__uc === 0x29) { off++; break; }
-          if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            off++;
-            while (off < len) {
-              const __usc = input.charCodeAt(off);
-              if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
-              if (__usc === __uq) { off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              off++;
-            }
-            continue;
-          }
-          off++;
-        }
-        __lastNonWs = off;
-        continue;
-      }
-      if (__c === 0x5c && off + 1 < len) {
-        __lastNonWs = off + 2;
-        off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
-    }
+    off = __uScan_3920b339(input, off, len);
+    let __lastNonWs = __uLast;
     const __emptyAnchor = __value_start;
     if (__lastNonWs === __value_start) {
       off = __emptyAnchor;
@@ -361,7 +381,7 @@ function parseYamlMappingEntry(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -371,18 +391,18 @@ function parseYamlMappingEntry(state: State): unknown {
   const __key_end = off;
   const key = input.slice(__key_start, __key_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __litPre_2 = off;
   if (input.charCodeAt(off) === 32) { off += 1; }
   if (__litPres !== null) __litPres.push(off > __litPre_2);
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   state.pos = off;
   const __value_start = off;
@@ -421,7 +441,7 @@ function parseYamlMapping(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __entries_start = off;
@@ -481,13 +501,13 @@ function parseYamlSequenceItem(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   state.pos = off;
   const __value_start = off;
@@ -526,7 +546,7 @@ function parseYamlSequence(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
@@ -586,7 +606,7 @@ function parseYamlNode(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
@@ -626,7 +646,7 @@ function parseYamlBlock(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
@@ -1912,68 +1932,15 @@ function __fusedRender_YamlScalar_0_source(state: State, out: string[]): boolean
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     let value: string = '';
     let __value_start = off;
     let __value_end = off;
     {
-      while (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
-        break;
-      }
+      off = __skipWs(input, off, len);
       __value_start = off;
-      let __lastNonWs = off;
-      let __depth = 0;
-      while (off < len) {
-        const __c = input.charCodeAt(off);
-        if (__depth === 0 && (__c === 10)) break;
-        if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
-          __depth++; off++;
-          __lastNonWs = off;
-          continue;
-        }
-        if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-          if (__depth === 0) break;
-          __depth--; off++;
-          __lastNonWs = off;
-          continue;
-        }
-        if (__depth === 0 && (__c === 0x75 || __c === 0x55)
-          && off + 3 < len
-          && (input.charCodeAt(off + 1) | 32) === 0x72
-          && (input.charCodeAt(off + 2) | 32) === 0x6c
-          && input.charCodeAt(off + 3) === 0x28) {
-          off += 4;
-          while (off < len) {
-            const __uc = input.charCodeAt(off);
-            if (__uc === 0x29) { off++; break; }
-            if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
-            if (__uc === 0x22 || __uc === 0x27) {
-              const __uq = __uc;
-              off++;
-              while (off < len) {
-                const __usc = input.charCodeAt(off);
-                if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
-                if (__usc === __uq) { off++; break; }
-                if (__usc === 0x0a || __usc === 0x0d) break;
-                off++;
-              }
-              continue;
-            }
-            off++;
-          }
-          __lastNonWs = off;
-          continue;
-        }
-        if (__c === 0x5c && off + 1 < len) {
-          __lastNonWs = off + 2;
-          off += 2;
-          continue;
-        }
-        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-        off++;
-      }
+      off = __uScan_3920b339(input, off, len);
+      let __lastNonWs = __uLast;
       const __emptyAnchor = __value_start;
       if (__lastNonWs === __value_start) {
         off = __emptyAnchor;

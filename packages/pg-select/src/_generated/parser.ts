@@ -213,6 +213,17 @@ function skipHorizontalWs(state: State): void {
   while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
+// Scratch slots for the shared until-scan kernels (`__uScan_*`, see
+// compiler emit/v2/shared-helpers.ts). A kernel returns the new offset and
+// deposits its secondary outputs here; the call site reads them immediately
+// after the call returns. Parsing is synchronous and kernels are leaf calls,
+// so a slot cannot be clobbered between write and read.
+let __uFail = 0;
+let __uLast = 0;
+let __uDepth = 0;
+let __uComments: [number, number][] | null = null;
+let __uLastCommentEnd = -1;
+
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -251,6 +262,11 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function __skipWs(input: string, off: number, len: number): number {
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  return off;
+}
+
 // --- Inferred types ---
 export type ColumnRef_ast = { type: "wildcard" } | { type: "column"; name: string };
 export type ColumnRef_source = string;
@@ -266,7 +282,7 @@ function parseColumnRef__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -286,7 +302,7 @@ function parseColumnRef__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -309,7 +325,7 @@ function parseColumnRef(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 42) {
@@ -326,7 +342,7 @@ function parseLiteralValue__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -351,7 +367,7 @@ function parseLiteralValue__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -383,7 +399,7 @@ function parseLiteralValue(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if (isDigit(input.charCodeAt(off))) {
@@ -400,7 +416,7 @@ function parsePredicate(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
@@ -410,7 +426,7 @@ function parsePredicate(state: State): unknown {
   off = state.pos;
   const __col_end = off;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && ((input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 61) || (input.charCodeAt(off) === 62)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __op_start = off;
@@ -418,7 +434,7 @@ function parsePredicate(state: State): unknown {
   const __op_end = off;
   const op = input.slice(__op_start, __op_end);
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __val_start = off;
@@ -455,12 +471,12 @@ function parseSelect__alt1(state: State, entryOff: number, columns: string, tabl
   const len = state.len;
   let off = state.pos;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   state.pos = off;
   const __where_start = off;
@@ -483,12 +499,12 @@ function parseSelect__alt2(state: State, entryOff: number, columns: string, tabl
   const len = state.len;
   let off = state.pos;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __limit_start = off;
@@ -512,12 +528,12 @@ function parseSelect__alt3(state: State, entryOff: number, columns: string, tabl
   const len = state.len;
   let off = state.pos;
   const __wsStart_4 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   const __wsStart_5 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   state.pos = off;
   const __where_start = off;
@@ -526,12 +542,12 @@ function parseSelect__alt3(state: State, entryOff: number, columns: string, tabl
   off = state.pos;
   const __where_end = off;
   const __wsStart_6 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_6, off));
   if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   const __wsStart_7 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_7, off));
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __limit_start = off;
@@ -555,13 +571,13 @@ function parseSelect(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __columns_start = off;
   const columns: unknown[] = [];
@@ -600,12 +616,12 @@ function parseSelect(state: State): unknown {
   if (columns.length < 1) { state.pos = entryOff; return null; }
   const __columns_end = off;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __table_start = off;
@@ -1825,7 +1841,7 @@ function __fusedRender_ColumnRef_0_source(state: State, out: string[]): boolean 
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1842,7 +1858,7 @@ function __fusedRender_ColumnRef_1_source(state: State, out: string[]): boolean 
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __name_start = off;
     off++;
@@ -1863,7 +1879,7 @@ function __fusedRender_LiteralValue_0_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1885,7 +1901,7 @@ function __fusedRender_LiteralValue_1_source(state: State, out: string[]): boole
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     {
@@ -1915,7 +1931,7 @@ function __fusedRender_Predicate_0_source(state: State, out: string[]): boolean 
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_col: string[] = [];
     let __slotMatched_col = false;
     // recursive span (ColumnRef) — fused dispatch
@@ -1924,402 +1940,33 @@ function __fusedRender_Predicate_0_source(state: State, out: string[]): boolean 
       state.pos = off;
       if (off < len) {
         const __c0 = input.charCodeAt(off);
-        if (__c0 === 36) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 42) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_0_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 65) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 66) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 67) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 68) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 69) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 70) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 71) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 72) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 73) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 74) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 75) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 76) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 77) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 78) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 79) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 80) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 81) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 82) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 83) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 84) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 85) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 86) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 87) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 88) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 89) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 90) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 95) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 97) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 98) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 99) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 100) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 101) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 102) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 103) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 104) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 105) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 106) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 107) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 108) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 109) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 110) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 111) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 112) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 113) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 114) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 115) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 116) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 117) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 118) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 119) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 120) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 121) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 122) {
-          if (!__slotMatched_col) {
-            state.pos = __offBefore;
-            __slotBuf_col.length = 0;
-            if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
-          }
+        switch (__c0) {
+          case 36: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+            if (!__slotMatched_col) {
+              state.pos = __offBefore;
+              __slotBuf_col.length = 0;
+              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
+            }
+            break;
+          case 42:
+            if (!__slotMatched_col) {
+              state.pos = __offBefore;
+              __slotBuf_col.length = 0;
+              if (__fusedRender_ColumnRef_0_source(state, __slotBuf_col)) { __slotMatched_col = true; off = state.pos; }
+            }
+            break;
         }
       }
       if (!__slotMatched_col) __slotBuf_col.length = 0;
       if (!__slotMatched_col) { state.pos = entryOff; return null; }
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && ((input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 61) || (input.charCodeAt(off) === 62)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __op_start = off;
     if (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60) { off += 1; } else if (input.charCodeAt(off) === 61) { off += 1; } else if (input.charCodeAt(off) === 62) { off += 1; }
     const __op_end = off;
     const op = input.slice(__op_start, __op_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_val: string[] = [];
     let __slotMatched_val = false;
     // recursive span (LiteralValue) — fused dispatch
@@ -2328,96 +1975,21 @@ function __fusedRender_Predicate_0_source(state: State, out: string[]): boolean 
       state.pos = off;
       if (off < len) {
         const __c0 = input.charCodeAt(off);
-        if (__c0 === 39) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_1_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 43) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 45) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 48) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 49) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 50) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 51) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 52) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 53) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 54) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 55) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 56) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 57) {
-          if (!__slotMatched_val) {
-            state.pos = __offBefore;
-            __slotBuf_val.length = 0;
-            if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
-          }
+        switch (__c0) {
+          case 39:
+            if (!__slotMatched_val) {
+              state.pos = __offBefore;
+              __slotBuf_val.length = 0;
+              if (__fusedRender_LiteralValue_1_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
+            }
+            break;
+          case 43: case 45: case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+            if (!__slotMatched_val) {
+              state.pos = __offBefore;
+              __slotBuf_val.length = 0;
+              if (__fusedRender_LiteralValue_0_source(state, __slotBuf_val)) { __slotMatched_val = true; off = state.pos; }
+            }
+            break;
         }
       }
       if (!__slotMatched_val) __slotBuf_val.length = 0;
@@ -2441,10 +2013,10 @@ function __fusedRender_Select_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 6;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_columns: string[] = [];
     let __slotMatched_columns = false;
     // recursive repeats span (ColumnRef) — fused loop
@@ -2468,390 +2040,21 @@ function __fusedRender_Select_0_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_columns.push(",");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 36) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 42) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 65) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 66) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 67) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 68) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 69) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 70) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 71) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 72) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 73) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 74) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 75) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 76) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 77) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 78) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 79) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 80) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 81) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 82) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 83) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 84) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 85) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 86) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 87) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 88) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 89) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 90) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 97) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 98) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 99) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 100) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 101) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 102) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 103) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 104) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 105) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 106) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 107) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 108) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 109) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 110) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 111) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 112) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 113) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 114) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 115) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 116) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 117) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 118) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 119) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 120) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 121) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 122) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 36: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 42:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -2866,10 +2069,10 @@ function __fusedRender_Select_0_source(state: State, out: string[]): boolean {
       }
       if (__count < 1) { state.pos = entryOff; return null; }
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __table_start = off;
     off++;
@@ -2893,10 +2096,10 @@ function __fusedRender_Select_1_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 6;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_columns: string[] = [];
     let __slotMatched_columns = false;
     // recursive repeats span (ColumnRef) — fused loop
@@ -2920,390 +2123,21 @@ function __fusedRender_Select_1_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_columns.push(",");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 36) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 42) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 65) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 66) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 67) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 68) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 69) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 70) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 71) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 72) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 73) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 74) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 75) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 76) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 77) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 78) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 79) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 80) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 81) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 82) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 83) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 84) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 85) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 86) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 87) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 88) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 89) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 90) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 97) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 98) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 99) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 100) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 101) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 102) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 103) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 104) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 105) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 106) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 107) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 108) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 109) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 110) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 111) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 112) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 113) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 114) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 115) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 116) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 117) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 118) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 119) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 120) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 121) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 122) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 36: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 42:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -3318,20 +2152,20 @@ function __fusedRender_Select_1_source(state: State, out: string[]): boolean {
       }
       if (__count < 1) { state.pos = entryOff; return null; }
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __table_start = off;
     off++;
     while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
     const __table_end = off;
     const table = input.slice(__table_start, __table_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_where: string[] = [];
     let __slotMatched_where = false;
     // recursive span (Predicate) — fused dispatch
@@ -3340,390 +2174,14 @@ function __fusedRender_Select_1_source(state: State, out: string[]): boolean {
       state.pos = off;
       if (off < len) {
         const __c0 = input.charCodeAt(off);
-        if (__c0 === 36) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 42) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 65) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 66) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 67) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 68) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 69) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 70) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 71) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 72) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 73) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 74) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 75) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 76) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 77) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 78) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 79) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 80) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 81) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 82) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 83) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 84) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 85) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 86) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 87) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 88) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 89) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 90) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 95) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 97) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 98) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 99) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 100) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 101) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 102) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 103) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 104) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 105) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 106) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 107) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 108) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 109) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 110) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 111) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 112) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 113) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 114) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 115) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 116) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 117) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 118) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 119) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 120) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 121) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 122) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
+        switch (__c0) {
+          case 36: case 42: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+            if (!__slotMatched_where) {
+              state.pos = __offBefore;
+              __slotBuf_where.length = 0;
+              if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
+            }
+            break;
         }
       }
       if (!__slotMatched_where) __slotBuf_where.length = 0;
@@ -3748,10 +2206,10 @@ function __fusedRender_Select_2_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 6;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_columns: string[] = [];
     let __slotMatched_columns = false;
     // recursive repeats span (ColumnRef) — fused loop
@@ -3775,390 +2233,21 @@ function __fusedRender_Select_2_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_columns.push(",");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 36) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 42) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 65) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 66) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 67) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 68) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 69) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 70) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 71) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 72) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 73) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 74) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 75) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 76) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 77) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 78) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 79) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 80) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 81) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 82) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 83) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 84) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 85) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 86) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 87) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 88) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 89) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 90) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 97) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 98) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 99) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 100) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 101) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 102) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 103) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 104) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 105) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 106) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 107) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 108) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 109) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 110) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 111) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 112) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 113) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 114) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 115) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 116) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 117) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 118) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 119) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 120) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 121) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 122) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 36: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 42:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -4173,20 +2262,20 @@ function __fusedRender_Select_2_source(state: State, out: string[]): boolean {
       }
       if (__count < 1) { state.pos = entryOff; return null; }
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __table_start = off;
     off++;
     while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
     const __table_end = off;
     const table = input.slice(__table_start, __table_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __limit_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -4213,10 +2302,10 @@ function __fusedRender_Select_3_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 6;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_columns: string[] = [];
     let __slotMatched_columns = false;
     // recursive repeats span (ColumnRef) — fused loop
@@ -4240,390 +2329,21 @@ function __fusedRender_Select_3_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_columns.push(",");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 36) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 42) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 65) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 66) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 67) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 68) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 69) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 70) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 71) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 72) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 73) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 74) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 75) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 76) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 77) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 78) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 79) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 80) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 81) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 82) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 83) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 84) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 85) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 86) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 87) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 88) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 89) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 90) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 97) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 98) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 99) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 100) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 101) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 102) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 103) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 104) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 105) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 106) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 107) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 108) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 109) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 110) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 111) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 112) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 113) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 114) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 115) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 116) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 117) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 118) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 119) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 120) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 121) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 122) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 36: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_1_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
+            case 42:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_columns.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_ColumnRef_0_source(state, __slotBuf_columns)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -4638,20 +2358,20 @@ function __fusedRender_Select_3_source(state: State, out: string[]): boolean {
       }
       if (__count < 1) { state.pos = entryOff; return null; }
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 4;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __table_start = off;
     off++;
     while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
     const __table_end = off;
     const table = input.slice(__table_start, __table_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_where: string[] = [];
     let __slotMatched_where = false;
     // recursive span (Predicate) — fused dispatch
@@ -4660,399 +2380,23 @@ function __fusedRender_Select_3_source(state: State, out: string[]): boolean {
       state.pos = off;
       if (off < len) {
         const __c0 = input.charCodeAt(off);
-        if (__c0 === 36) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 42) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 65) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 66) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 67) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 68) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 69) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 70) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 71) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 72) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 73) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 74) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 75) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 76) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 77) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 78) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 79) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 80) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 81) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 82) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 83) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 84) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 85) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 86) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 87) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 88) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 89) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 90) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 95) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 97) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 98) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 99) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 100) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 101) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 102) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 103) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 104) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 105) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 106) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 107) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 108) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 109) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 110) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 111) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 112) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 113) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 114) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 115) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 116) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 117) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 118) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 119) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 120) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 121) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 122) {
-          if (!__slotMatched_where) {
-            state.pos = __offBefore;
-            __slotBuf_where.length = 0;
-            if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
-          }
+        switch (__c0) {
+          case 36: case 42: case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74: case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84: case 85: case 86: case 87: case 88: case 89: case 90: case 95: case 97: case 98: case 99: case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107: case 108: case 109: case 110: case 111: case 112: case 113: case 114: case 115: case 116: case 117: case 118: case 119: case 120: case 121: case 122:
+            if (!__slotMatched_where) {
+              state.pos = __offBefore;
+              __slotBuf_where.length = 0;
+              if (__fusedRender_Predicate_0_source(state, __slotBuf_where)) { __slotMatched_where = true; off = state.pos; }
+            }
+            break;
         }
       }
       if (!__slotMatched_where) __slotBuf_where.length = 0;
       if (!__slotMatched_where) { state.pos = entryOff; return null; }
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 5;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __limit_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -5092,7 +2436,7 @@ function __fusedRenderStructured_ColumnRef_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -5105,7 +2449,7 @@ function __fusedRenderStructured_ColumnRef_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
@@ -5122,7 +2466,7 @@ function __fusedRenderStructured_LiteralValue_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -5140,7 +2484,7 @@ function __fusedRenderStructured_LiteralValue_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   {
@@ -5166,7 +2510,7 @@ function __fusedRenderStructured_Predicate_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let col: unknown = null;
   {
     const __before = off;
@@ -5237,13 +2581,13 @@ function __fusedRenderStructured_Predicate_0_ast(state: State): unknown {
     col = __cand;
     if (col === null) { off = __before; state.pos = __before; } else { off = state.pos; }
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && ((input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 61) || (input.charCodeAt(off) === 62)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __op_start = off;
   if (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60) { off += 1; } else if (input.charCodeAt(off) === 61) { off += 1; } else if (input.charCodeAt(off) === 62) { off += 1; }
   const __op_end = off;
   const op = input.slice(__op_start, __op_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let val: unknown = null;
   {
     const __before = off;
@@ -5282,10 +2626,10 @@ function __fusedRenderStructured_Select_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const columns: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
@@ -5293,11 +2637,11 @@ function __fusedRenderStructured_Select_0_ast(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     while (input.charCodeAt(off) === 44) {
       __sepConsumed = true;
       off += 1;
-      while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+      off = __skipWs(input, off, len);
     }
     if (off < len) {
       const __sb = input.charCodeAt(off);
@@ -5375,10 +2719,10 @@ function __fusedRenderStructured_Select_0_ast(state: State): unknown {
     if (off === __loopStart) break;
   }
   if (columns.length < 1) { state.pos = entryOff; return null; }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __table_start = off;
   off++;
@@ -5395,10 +2739,10 @@ function __fusedRenderStructured_Select_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const columns: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
@@ -5406,11 +2750,11 @@ function __fusedRenderStructured_Select_1_ast(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     while (input.charCodeAt(off) === 44) {
       __sepConsumed = true;
       off += 1;
-      while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+      off = __skipWs(input, off, len);
     }
     if (off < len) {
       const __sb = input.charCodeAt(off);
@@ -5488,20 +2832,20 @@ function __fusedRenderStructured_Select_1_ast(state: State): unknown {
     if (off === __loopStart) break;
   }
   if (columns.length < 1) { state.pos = entryOff; return null; }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __table_start = off;
   off++;
   while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
   const __table_end = off;
   const table = input.slice(__table_start, __table_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let where: unknown = null;
   {
     const __before = off;
@@ -5582,10 +2926,10 @@ function __fusedRenderStructured_Select_2_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const columns: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
@@ -5593,11 +2937,11 @@ function __fusedRenderStructured_Select_2_ast(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     while (input.charCodeAt(off) === 44) {
       __sepConsumed = true;
       off += 1;
-      while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+      off = __skipWs(input, off, len);
     }
     if (off < len) {
       const __sb = input.charCodeAt(off);
@@ -5675,20 +3019,20 @@ function __fusedRenderStructured_Select_2_ast(state: State): unknown {
     if (off === __loopStart) break;
   }
   if (columns.length < 1) { state.pos = entryOff; return null; }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __table_start = off;
   off++;
   while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
   const __table_end = off;
   const table = input.slice(__table_start, __table_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __limit_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -5706,10 +3050,10 @@ function __fusedRenderStructured_Select_3_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const columns: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
@@ -5717,11 +3061,11 @@ function __fusedRenderStructured_Select_3_ast(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     while (input.charCodeAt(off) === 44) {
       __sepConsumed = true;
       off += 1;
-      while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+      off = __skipWs(input, off, len);
     }
     if (off < len) {
       const __sb = input.charCodeAt(off);
@@ -5799,20 +3143,20 @@ function __fusedRenderStructured_Select_3_ast(state: State): unknown {
     if (off === __loopStart) break;
   }
   if (columns.length < 1) { state.pos = entryOff; return null; }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __table_start = off;
   off++;
   while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
   const __table_end = off;
   const table = input.slice(__table_start, __table_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   let where: unknown = null;
   {
     const __before = off;
@@ -5883,10 +3227,10 @@ function __fusedRenderStructured_Select_3_ast(state: State): unknown {
     where = __cand;
     if (where === null) { off = __before; state.pos = __before; } else { off = state.pos; }
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __limit_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;

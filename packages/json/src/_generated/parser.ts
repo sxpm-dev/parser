@@ -213,6 +213,17 @@ function skipHorizontalWs(state: State): void {
   while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
+// Scratch slots for the shared until-scan kernels (`__uScan_*`, see
+// compiler emit/v2/shared-helpers.ts). A kernel returns the new offset and
+// deposits its secondary outputs here; the call site reads them immediately
+// after the call returns. Parsing is synchronous and kernels are leaf calls,
+// so a slot cannot be clobbered between write and read.
+let __uFail = 0;
+let __uLast = 0;
+let __uDepth = 0;
+let __uComments: [number, number][] | null = null;
+let __uLastCommentEnd = -1;
+
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -251,6 +262,32 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function __skipWs(input: string, off: number, len: number): number {
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  return off;
+}
+
+function __skipWsC_55f255c1(input: string, off: number, len: number): number {
+  while (off < len) {
+    const c = input.charCodeAt(off);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
+    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+      off += 2;
+      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+      if (off < len) off += 2;
+      continue;
+    }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
+      continue;
+    }
+    break;
+  }
+  return off;
+}
+
 // --- Inferred types ---
 export type Comment_ast = null;
 export type Comment_source = string;
@@ -278,7 +315,7 @@ function parseComment(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off + 1 < len && input.charCodeAt(off) === 0x2f && input.charCodeAt(off + 1) === 0x2a)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -315,7 +352,7 @@ function parseJsonNull(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("null", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -335,7 +372,7 @@ function parseJsonTrue(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("true", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -355,7 +392,7 @@ function parseJsonFalse(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("false", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -375,7 +412,7 @@ function parseJsonNumber(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -412,7 +449,7 @@ function parseJsonString__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -445,7 +482,7 @@ function parseJsonString__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -477,7 +514,7 @@ function parseJsonString(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if ((input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)) {
@@ -492,29 +529,13 @@ function parseJsonArray(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __items_start = off;
   const items: unknown[] = [];
@@ -580,23 +601,7 @@ function parseJsonArray(state: State): unknown {
   if (!__sepConsumed) { off = __preSweep; }
   const __items_end = off;
   const __wsStart_2 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -615,7 +620,7 @@ function parseJsonMember__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -634,44 +639,12 @@ function parseJsonMember__alt0(state: State): unknown {
   const __key_end = off;
   const key = decodeJsonString(input.slice(__key_start, __key_end));
   const __wsStart_1 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __value_start = off;
@@ -694,7 +667,7 @@ function parseJsonMember__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -704,44 +677,12 @@ function parseJsonMember__alt1(state: State): unknown {
   const __key_end = off;
   const key = input.slice(__key_start, __key_end);
   const __wsStart_1 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_2 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __value_start = off;
@@ -763,7 +704,7 @@ function parseJsonMember(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if ((input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)) {
@@ -780,29 +721,13 @@ function parseJsonObject(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __entries_start = off;
   const entries: unknown[] = [];
@@ -868,23 +793,7 @@ function parseJsonObject(state: State): unknown {
   if (!__sepConsumed) { off = __preSweep; }
   const __entries_end = off;
   const __wsStart_2 = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    if (input.startsWith("//", off)) {
-      off += 2;
-      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
-      if (off < len) off++;
-      continue;
-    }
-    break;
-  }
+  off = __skipWsC_55f255c1(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 125)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -903,7 +812,7 @@ function parseJsonValue(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
@@ -2617,7 +2526,7 @@ function __fusedRender_Comment_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off + 1 < len && input.charCodeAt(off) === 0x2f && input.charCodeAt(off + 1) === 0x2a)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __text_start = off;
     off += 2;

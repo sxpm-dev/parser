@@ -28,8 +28,9 @@ import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
 import { computeReferencedSpanPresence, computeReferencedSpanValues } from '../captures.ts';
 import { findSpanByName, isAbsentAllowedSpan, repeatsJoinDescriptor } from '../../span-helpers.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
-import { classFirstBytes } from './role-ladder.ts';
+import { classFirstBytes, DISPATCH_SWITCH_MIN_BYTES } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, emitStopBeforeCheck, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
+import { skipWsCommentsStmt, skipWsStmt } from './shared-helpers.ts';
 import { findSpanModifier } from './modifiers.ts';
 
 // Class kinds whose presence (alongside `unknownChars: 'reject'`) justifies
@@ -458,20 +459,49 @@ function emitByteDispatch(
       `}`,
     ].join('\n');
   };
-  const lines: string[] = [];
+  // Group bytes whose candidate buckets render to the SAME body — an
+  // ident-start role contributes ~52 letter bytes that all probe the same
+  // candidate list, and emitting the probe chain once per byte was the
+  // single largest source of generated-code bloat (HTML's 17 fused
+  // HtmlElement renderers each carried ~50 identical 28-line blocks per
+  // ladder). Identical-body groups share one switch body via stacked case
+  // labels (same idiom as role-ladder.ts / fusion-structured.ts); the
+  // chained-if form is kept for narrow fanouts.
   const sortedBytes = [...byByte.keys()].sort((a, b) => a - b);
-  for (let i = 0; i < sortedBytes.length; i++) {
-    const byte = sortedBytes[i]!;
-    const prefix = i === 0 ? 'if' : 'else if';
-    const bucket = byByte.get(byte)!;
-    const body = bucket.map(branchSrc).join('\n');
-    lines.push(`${prefix} (__c0 === ${byte}) {`);
+  const byBody = new Map<string, number[]>();
+  for (const byte of sortedBytes) {
+    const body = byByte.get(byte)!.map(branchSrc).join('\n');
+    const group = byBody.get(body);
+    if (group) group.push(byte);
+    else byBody.set(body, [byte]);
+  }
+  const fallBody = fallthroughs.length > 0 ? fallthroughs.map(branchSrc).join('\n') : null;
+  const lines: string[] = [];
+  if (sortedBytes.length >= DISPATCH_SWITCH_MIN_BYTES) {
+    lines.push(`switch (__c0) {`);
+    for (const [body, bytes] of byBody) {
+      lines.push(`  ${bytes.map((b) => `case ${b}:`).join(' ')}`);
+      lines.push(indent(body, 2));
+      lines.push(`    break;`);
+    }
+    if (fallBody !== null) {
+      lines.push(`  default:`);
+      lines.push(indent(fallBody, 2));
+      lines.push(`    break;`);
+    }
+    lines.push(`}`);
+    return lines.join('\n');
+  }
+  let first = true;
+  for (const [body, bytes] of byBody) {
+    const prefix = first ? 'if' : 'else if';
+    first = false;
+    lines.push(`${prefix} (${bytes.map((b) => `__c0 === ${b}`).join(' || ')}) {`);
     lines.push(indent(body, 1));
     lines.push(`}`);
   }
-  if (fallthroughs.length > 0) {
-    const fallBody = fallthroughs.map(branchSrc).join('\n');
-    if (sortedBytes.length === 0) {
+  if (fallBody !== null) {
+    if (byBody.size === 0) {
       lines.push(fallBody);
     } else {
       lines.push(`else {`);
@@ -991,27 +1021,15 @@ function literalMatchExpr(text: string, offVar: string): string {
   return `input.startsWith(${jsString(text)}, ${offVar})`;
 }
 
-// Whitespace skips — identical to those in production.ts. Inlined here to
-// keep this module free-standing; the duplication is two short literals and
-// stays in sync because both modules use the same `skipWsBlock` / `skipWs
-// AndCommentsBlock` semantics from the v2 emit contract.
+// Whitespace skips — same semantics as production.ts's; both now delegate
+// to the shared-helper registry (one `__skipWs` / `__skipWsC_*` per module).
 
 function skipWsBlock(): string {
-  return `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
+  return skipWsStmt();
 }
 
 function skipWsAndCommentsBlock(): string {
-  return `while (off < len) {
-  const c = input.charCodeAt(off);
-  if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-  if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-    off += 2;
-    while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-    if (off < len) off += 2;
-    continue;
-  }
-  break;
-}`;
+  return skipWsCommentsStmt();
 }
 
 // Same logic as `spanConsumesComments` in production.ts. Inlined so this

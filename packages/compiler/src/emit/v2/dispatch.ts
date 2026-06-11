@@ -18,6 +18,7 @@ import { detectPrefixShare, emitPrefixShareDispatcher } from './prefix-share-dis
 import { findModifier, hasModifier } from './span.ts';
 import { guardEnvFromSchema, untilAltViabilitySpec } from './until-guard.ts';
 import { recordExplain } from './explain.ts';
+import { skipWsStmt } from './shared-helpers.ts';
 
 type FirstToken =
   | { kind: 'literal'; text: string }
@@ -124,7 +125,7 @@ function tryEmitBytePrefix(
   }
 
   // Skip leading ws before dispatching.
-  const skipWs = `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const skipWs = `${skipWsStmt()}
 state.pos = off;`;
 
   return `function ${fnName}(state: State): unknown {

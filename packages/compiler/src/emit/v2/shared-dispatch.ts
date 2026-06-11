@@ -12,6 +12,7 @@
 
 import type { Refinement } from '@parser2/parser';
 import type { NodeTypeInfo, ResolvedSpan } from '../../model.ts';
+import { skipWsStmt } from './shared-helpers.ts';
 
 export interface SharedDispatch {
   /** Number of spans at the start of every alt that are byte-identical
@@ -224,7 +225,7 @@ export function emitSharedDispatcher(
   const isHtml = refSet.has('html');
   const extraStartByte = !isJs && !isCss && !isHtml ? ' || input.charCodeAt(off) === 0x5c' : '';
 
-  const wsSkip = `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
+  const wsSkip = skipWsStmt();
 
   return `function ${fnName}(state: State): unknown {
   const input = state.input;

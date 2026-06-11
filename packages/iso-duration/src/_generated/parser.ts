@@ -213,6 +213,17 @@ function skipHorizontalWs(state: State): void {
   while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
+// Scratch slots for the shared until-scan kernels (`__uScan_*`, see
+// compiler emit/v2/shared-helpers.ts). A kernel returns the new offset and
+// deposits its secondary outputs here; the call site reads them immediately
+// after the call returns. Parsing is synchronous and kernels are leaf calls,
+// so a slot cannot be clobbered between write and read.
+let __uFail = 0;
+let __uLast = 0;
+let __uDepth = 0;
+let __uComments: [number, number][] | null = null;
+let __uLastCommentEnd = -1;
+
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -251,6 +262,11 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function __skipWs(input: string, off: number, len: number): number {
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  return off;
+}
+
 // --- Inferred types ---
 export type DateUnit_ast = { type: "years"; value: string } | { type: "months"; value: string } | { type: "weeks"; value: string } | { type: "days"; value: string };
 export type DateUnit_source = string;
@@ -264,7 +280,7 @@ function parseDateUnit__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -275,7 +291,7 @@ function parseDateUnit__alt0(state: State): unknown {
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 89)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -294,7 +310,7 @@ function parseDateUnit__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -305,7 +321,7 @@ function parseDateUnit__alt1(state: State): unknown {
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -324,7 +340,7 @@ function parseDateUnit__alt2(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -335,7 +351,7 @@ function parseDateUnit__alt2(state: State): unknown {
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 87)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -354,7 +370,7 @@ function parseDateUnit__alt3(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -365,7 +381,7 @@ function parseDateUnit__alt3(state: State): unknown {
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 68)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -383,7 +399,7 @@ function parseDateUnit(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if (isDigit(input.charCodeAt(off))) {
@@ -400,7 +416,7 @@ function parseTimeUnit__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -411,7 +427,7 @@ function parseTimeUnit__alt0(state: State): unknown {
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 72)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -430,7 +446,7 @@ function parseTimeUnit__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -441,7 +457,7 @@ function parseTimeUnit__alt1(state: State): unknown {
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -460,7 +476,7 @@ function parseTimeUnit__alt2(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -471,7 +487,7 @@ function parseTimeUnit__alt2(state: State): unknown {
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 83)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
@@ -489,7 +505,7 @@ function parseTimeUnit(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if (isDigit(input.charCodeAt(off))) {
@@ -505,13 +521,13 @@ function parseDuration__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __date_start = off;
   const date: unknown[] = [];
@@ -548,13 +564,13 @@ function parseDuration__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const __ws: string[] | null = state.mode === 'raws' ? [] : null;
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_1 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __date_start = off;
   const date: unknown[] = [];
@@ -576,12 +592,12 @@ function parseDuration__alt1(state: State): unknown {
   }
   const __date_end = off;
   const __wsStart_2 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 84)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   const __wsStart_3 = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   const __time_start = off;
   const time: unknown[] = [];
@@ -617,7 +633,7 @@ function parseDuration(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 80) {
@@ -1748,7 +1764,7 @@ function __fusedRender_DateUnit_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1756,7 +1772,7 @@ function __fusedRender_DateUnit_0_source(state: State, out: string[]): boolean {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
     const value = input.slice(__value_start, __value_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 89)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1774,7 +1790,7 @@ function __fusedRender_DateUnit_1_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1782,7 +1798,7 @@ function __fusedRender_DateUnit_1_source(state: State, out: string[]): boolean {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
     const value = input.slice(__value_start, __value_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1800,7 +1816,7 @@ function __fusedRender_DateUnit_2_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1808,7 +1824,7 @@ function __fusedRender_DateUnit_2_source(state: State, out: string[]): boolean {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
     const value = input.slice(__value_start, __value_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 87)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1826,7 +1842,7 @@ function __fusedRender_DateUnit_3_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1834,7 +1850,7 @@ function __fusedRender_DateUnit_3_source(state: State, out: string[]): boolean {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
     const value = input.slice(__value_start, __value_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 68)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1852,7 +1868,7 @@ function __fusedRender_TimeUnit_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1860,7 +1876,7 @@ function __fusedRender_TimeUnit_0_source(state: State, out: string[]): boolean {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
     const value = input.slice(__value_start, __value_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 72)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1878,7 +1894,7 @@ function __fusedRender_TimeUnit_1_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1886,7 +1902,7 @@ function __fusedRender_TimeUnit_1_source(state: State, out: string[]): boolean {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
     const value = input.slice(__value_start, __value_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1904,7 +1920,7 @@ function __fusedRender_TimeUnit_2_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
     if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1912,7 +1928,7 @@ function __fusedRender_TimeUnit_2_source(state: State, out: string[]): boolean {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
     const value = input.slice(__value_start, __value_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 83)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     state.pos = off;
@@ -1930,10 +1946,10 @@ function __fusedRender_Duration_0_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_date: string[] = [];
     let __slotMatched_date = false;
     // recursive repeats span (DateUnit) — fused loop
@@ -1949,269 +1965,29 @@ function __fusedRender_Duration_0_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_date.push(" ");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 43) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 48) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 49) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 50) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 51) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 52) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 53) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 54) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 55) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 56) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 57) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 43: case 45: case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -2241,10 +2017,10 @@ function __fusedRender_Duration_1_source(state: State, out: string[]): boolean {
     const len = state.len;
     let off = state.pos;
     const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_date: string[] = [];
     let __slotMatched_date = false;
     // recursive repeats span (DateUnit) — fused loop
@@ -2260,269 +2036,29 @@ function __fusedRender_Duration_1_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_date.push(" ");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 43) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 48) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 49) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 50) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 51) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 52) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 53) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 54) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 55) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 56) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 57) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 43: case 45: case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_0_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_1_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_2_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_date.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_DateUnit_3_source(state, __slotBuf_date)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -2536,10 +2072,10 @@ function __fusedRender_Duration_1_source(state: State, out: string[]): boolean {
         if (off === __loopStart) break;
       }
     }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     if (!(input.charCodeAt(off) === 84)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     const __slotBuf_time: string[] = [];
     let __slotMatched_time = false;
     // recursive repeats span (TimeUnit) — fused loop
@@ -2555,209 +2091,24 @@ function __fusedRender_Duration_1_source(state: State, out: string[]): boolean {
         if (__count > 0) __slotBuf_time.push(" ");
         if (off < len) {
           const __c0 = input.charCodeAt(off);
-          if (__c0 === 43) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 48) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 49) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 50) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 51) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 52) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 53) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 54) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 55) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 56) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 57) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
-            }
+          switch (__c0) {
+            case 43: case 45: case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_TimeUnit_0_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_TimeUnit_1_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
+              }
+              if (!__itemMatched) {
+                state.pos = __offBeforeItem;
+                __slotBuf_time.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+                if (__fusedRender_TimeUnit_2_source(state, __slotBuf_time)) { __itemMatched = true; off = state.pos; }
+              }
+              break;
           }
         }
         if (!__itemMatched) {
@@ -2800,7 +2151,7 @@ function __fusedRenderStructured_DateUnit_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2808,7 +2159,7 @@ function __fusedRenderStructured_DateUnit_0_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 89)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -2821,7 +2172,7 @@ function __fusedRenderStructured_DateUnit_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2829,7 +2180,7 @@ function __fusedRenderStructured_DateUnit_1_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -2842,7 +2193,7 @@ function __fusedRenderStructured_DateUnit_2_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2850,7 +2201,7 @@ function __fusedRenderStructured_DateUnit_2_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 87)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -2863,7 +2214,7 @@ function __fusedRenderStructured_DateUnit_3_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2871,7 +2222,7 @@ function __fusedRenderStructured_DateUnit_3_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 68)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -2884,7 +2235,7 @@ function __fusedRenderStructured_TimeUnit_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2892,7 +2243,7 @@ function __fusedRenderStructured_TimeUnit_0_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 72)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -2905,7 +2256,7 @@ function __fusedRenderStructured_TimeUnit_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2913,7 +2264,7 @@ function __fusedRenderStructured_TimeUnit_1_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -2926,7 +2277,7 @@ function __fusedRenderStructured_TimeUnit_2_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -2934,7 +2285,7 @@ function __fusedRenderStructured_TimeUnit_2_ast(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 83)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
@@ -2947,14 +2298,14 @@ function __fusedRenderStructured_Duration_0_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const date: unknown[] = [];
   while (true) {
     const __loopStart = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     state.pos = off;
     let __cand: unknown = null;
     if (off < len) {
@@ -2994,14 +2345,14 @@ function __fusedRenderStructured_Duration_1_ast(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const date: unknown[] = [];
   while (true) {
     const __loopStart = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     state.pos = off;
     let __cand: unknown = null;
     if (off < len) {
@@ -3030,14 +2381,14 @@ function __fusedRenderStructured_Duration_1_ast(state: State): unknown {
     off = state.pos;
     if (off === __loopStart) break;
   }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   if (!(input.charCodeAt(off) === 84)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  off = __skipWs(input, off, len);
   const time: unknown[] = [];
   while (true) {
     const __loopStart = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    off = __skipWs(input, off, len);
     state.pos = off;
     let __cand: unknown = null;
     if (off < len) {

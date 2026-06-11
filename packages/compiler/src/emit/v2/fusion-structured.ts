@@ -29,6 +29,7 @@ import { recordExplain } from './explain.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { computeRoleFirstBytes } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, type SpanBindings, type SpanContext } from './span.ts';
+import { skipWsStmt } from './shared-helpers.ts';
 
 export function canFuseStructured(
   production: Production,
@@ -746,7 +747,7 @@ function jsObjectKey(key: string): string {
 }
 
 function skipWsBlock(): string {
-  return `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
+  return skipWsStmt();
 }
 
 function bodyIsStaticOrResolved(body: RenderBody, spanNames: ReadonlySet<string>): boolean {

@@ -1,6 +1,36 @@
 # Example-inferred syntax
 
-The source of a parser is concrete input/output pairs plus explicit generalization metadata. The compiler infers fixed literals, capture locations, separators, output placement, and canonical reverse formatting. Inference runs at build time. A generated module imports neither this schema nor a parsing library.
+## The idea: infer syntax from examples
+
+**Describe what input means by pairing concrete source text with the output you want.** Add metadata that states what may vary. At build time, the compiler infers the structural relationship between them and generates both a parser and its reverse conversion.
+
+The schema is the source of truth: examples show punctuation, ordering, nesting and output shape; metadata defines the boundaries of generalization. You do not need to enumerate every possible input. You provide representative examples of each structural form and explicitly describe variable fields, repetition, alternatives and lexical rules.
+
+This inference is deterministic structural inference, not machine learning or a runtime guess. The compiler aligns values in the example output with their occurrences in the source. Text between those captures becomes literal syntax. Repeated items reveal separators; nested output examples connect productions. Ambiguous or inconsistent evidence is rejected rather than silently generalized.
+
+The overall flow is:
+
+```text
+Examples + generalization metadata
+                  ↓ build-time inference and code generation
+         Standalone generated module
+                  ↕ runtime conversion
+     Source text ↔ example-defined output
+```
+
+The generated module imports neither the schema nor a parsing library. Inference happens once during generation; runtime code executes the inferred rules directly.
+
+## Why use this approach?
+
+- **Readable definitions.** A concrete source/output pair shows both the syntax and the data contract. Examples remain executable checks: compilation verifies that the generated parser handles them.
+- **Outputs shaped for your application.** Examples can describe records, nested objects, lists, tuples or another supported projection. There is no required intermediate AST. An AST is one possible output shape if you choose to define it.
+- **Bidirectional by construction.** The same examples define parsing and canonical reconstruction. You maintain one schema instead of independently evolving a parser and a serializer.
+- **Small, fast runtime as a design goal.** Build-time inference removes runtime grammar interpretation. The compiler can specialize scans, literal matching and output construction to the schema. Actual size and speed depend on the schema and workload; the benchmark and size gates measure them.
+- **Reusable compiler improvements.** The compiler is language- and domain-agnostic. CSS, SCSS, Less and other languages supply their rules through schema data. An optimization based on a shared schema structure can benefit every language using it.
+
+## From examples to unseen input
+
+Consider a small declaration schema:
 
 ```ts
 import { defineSchema, text, list } from './packages/compiler/src/schema.ts';
@@ -22,7 +52,23 @@ const schema = defineSchema({
 });
 ```
 
-Here `property` and `value` name paths in the default output. Their concrete values locate captures in the example input. The compiler infers the colon, semicolon, and their order. It emits parsing of unseen values satisfying the declared constraints, not lookup of known examples.
+Here `property` and `value` name paths in the default output. Their concrete values locate captures in the example input. The compiler infers the colon, semicolon, their order and the output field placement.
+
+For unseen input `padding: 24px;`, the generated parser captures `padding` as the property and `24px` as the value, producing `{ property: 'padding', value: '24px' }`. Neither string needs to appear in a teaching example. The declared property pattern accepts `padding`; the value capture runs to the inferred semicolon while respecting the configured balanced regions.
+
+For `color: rgb(10, 20, 30);`, the value remains one captured string. The parser does not need a separate example for every color, function or number. It also does not infer CSS value semantics: whether a property accepts a particular value is outside this structural schema.
+
+The distinction between evidence and policy matters:
+
+| Examples demonstrate | Metadata explicitly declares |
+| --- | --- |
+| The colon and semicolon around captured values | Which characters a property may contain |
+| Where captures appear in the output | How quotes, escapes and brackets affect boundaries |
+| A comma between two example selectors | Whether repetition is allowed and its minimum length |
+| A child declaration inside a rule | Which child productions may recur |
+| Concrete punctuation and spacing | Which whitespace is significant |
+
+A few examples cannot uniquely determine an entire language. Metadata supplies the intent that examples alone cannot establish. Adding more examples is useful when they demonstrate another supported case or check a boundary; arbitrary extra sample values do not replace a declared rule.
 
 ## Metadata
 
@@ -58,6 +104,12 @@ with a text list for `selectors` and recursive alternatives for `children`. The 
 Use finite, unambiguous seed examples. Capture text must occur uniquely and captures must not overlap. Child examples should use the same concrete spelling as their occurrences in parent examples. If examples describe distinct literal layouts, put them in separate productions. Examples validate the complete generated parser at compile time; they are not discarded after alignment.
 
 ## Outputs and bidirectionality
+
+**Conversion works in both directions: source text to an example-defined value, and that value back to canonical source text.** A declared JSON encoding also allows source text to JSON text and JSON text back to source. These are generated views of the same schema, not separate handwritten parsers.
+
+For the declaration above, parsing `padding: 24px;` yields `{ property: 'padding', value: '24px' }`; reverse conversion reconstructs `padding: 24px;`. Changing the value to `32px` in the output lets the inverse produce the corresponding declaration, provided the updated value satisfies the schema.
+
+Bidirectional does not mean byte-for-byte source preservation. The reverse direction uses the example-defined canonical layout. Insignificant whitespace and skipped comments are not retained. For supported output values, the intended round trip is `parse(stringify(value))` reproducing the represented value; `stringify(parse(source))` produces a canonical spelling of the source.
 
 Output names have no built-in AST meaning. Each example may contain multiple output values, including differently nested objects, tuples, constants and captured strings/lists. The compiler matches example values to infer each projection and emits corresponding TypeScript types.
 

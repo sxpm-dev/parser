@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync, copyFileSync } from 'node:fs';
 import { dirname, posix, resolve } from 'node:path';
+import hljs from 'highlight.js';
 import { repositoryRoot, parserPackages } from './parser-packages.ts';
 const markdownModule='markdown-it';
 const {default:MarkdownIt}=await import(markdownModule);
@@ -16,7 +17,7 @@ rmSync(destination,{recursive:true,force:true});mkdirSync(destination,{recursive
 for(const file of files){
  const output=outputs.get(file)!;const base=posix.dirname(output);
  const local=(target:string)=>posix.relative(base,outputs.get(target)!)||'index.html';
- const md=new MarkdownIt({html:false,linkify:true,typographer:false});
+ const md=new MarkdownIt({html:false,linkify:true,typographer:false,highlight:(code:string,language:string)=>language&&hljs.getLanguage(language)?hljs.highlight(code,{language,ignoreIllegals:true}).value:''});
  const ids=new Map<string,number>();
  const headings:{id:string;text:string;level:number}[]=[];
  md.renderer.rules.heading_open=(tokens:any[],i:number,options:any,_env:any,self:any)=>{

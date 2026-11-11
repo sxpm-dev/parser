@@ -45,6 +45,7 @@
     "email-addresses": "^5.0.0",
     "esbuild": "~0.28.0",
     "graphql": "^16.15.0",
+    "highlight.js": "^11.12.0",
     "htmlparser2": "^9.1.0",
     "http-parser-js": "^0.5.10",
     "ini": "^4.1.3",

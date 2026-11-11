@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync, copyFileSync } from 'node:fs';
 import { dirname, posix, resolve } from 'node:path';
 import hljs from 'highlight.js';
+import { parserDocumentation } from './parser-documentation.ts';
 import { repositoryRoot, parserPackages } from './parser-packages.ts';
 const markdownModule='markdown-it';
 const {default:MarkdownIt}=await import(markdownModule);
@@ -33,7 +34,8 @@ for(const file of files){
  }
  const renderLink=md.renderer.rules.link_open??((tokens:any[],i:number,options:any,_env:any,self:any)=>self.renderToken(tokens,i,options));
  md.renderer.rules.link_open=(tokens:any[],i:number,options:any,env:any,self:any)=>{tokens[i].attrSet('href',rewrite(tokens[i].attrGet('href')??''));return renderLink(tokens,i,options,env,self);};
- const source=readFileSync(resolve(repositoryRoot,file),'utf8');const title=/^#\s+(.+)$/m.exec(source)?.[1]??'Parser documentation';
+ const parserName=parserPackages.find(name=>file===`packages/${name}/README.md`);
+ const source=readFileSync(resolve(repositoryRoot,file),'utf8')+(parserName?await parserDocumentation(parserName):'');const title=/^#\s+(.+)$/m.exec(source)?.[1]??'Parser documentation';
  let body=md.render(source);
  if(file==='README.md')headings.push({id:'parsers',text:'Parser catalogue',level:2});
  if(file==='README.md')body+=`<h2 id="parsers">Parser catalogue</h2><ul class="catalogue">${parserPackages.map(n=>`<li><a href="${outputs.has(`packages/${n}/README.md`)?local(`packages/${n}/README.md`):`${repo}/tree/main/packages/${n}`}">${escape(n)}</a></li>`).join('')}</ul>`;
@@ -52,7 +54,7 @@ for(const file of files){
   'Time & scheduling':['cron','rrule','duration','iso-duration'],
   'Other languages':['env','log','commits','gitignore','glob','search','filter','mentions'],
  };
- const parserMenu=group('Parsers',`<div class="parser-search"><label for="parser-search">Find a parser</label><input id="parser-search" type="search" placeholder="Search 52 parsers…" autocomplete="off"></div><div class="parser-groups">${Object.entries(families).map(([label,names])=>`<section class="parser-family"><h2>${label}</h2>${names.map(name=>{const target=`packages/${name}/README.md`;const href=outputs.has(target)?local(target):local('docs/example-first-structure-dsl.md')+'#css-less-scss-scope';return `<a href="${href}" data-parser="${name}"${file===target?' aria-current="page"':''}>${name}</a>`;}).join('')}</section>`).join('')}</div><p class="parser-empty" role="status" hidden>No matching parsers. Try another name.</p>`,file.startsWith('packages/')&&!file.startsWith('packages/compiler/'),'parser-panel');
+ const parserMenu=group('Parsers',`<a href="${local('README.md')}#parsers">All ${parserPackages.length} parsers<small>Browse the full catalogue</small></a><div class="parser-search"><label for="parser-search">Find a parser</label><input id="parser-search" type="search" placeholder="Search ${parserPackages.length} parsers…" autocomplete="off"></div><div class="parser-groups">${Object.entries(families).map(([label,names])=>`<section class="parser-family"><h2>${label}</h2>${names.map(name=>{const target=`packages/${name}/README.md`;const href=local(target);return `<a href="${href}" data-parser="${name}"${file===target?' aria-current="page"':''}>${name}</a>`;}).join('')}</section>`).join('')}</div><p class="parser-empty" role="status" hidden>No matching parsers. Try another name.</p>`,file.startsWith('packages/')&&!file.startsWith('packages/compiler/'),'parser-panel');
  const reports=[['docs/benchmarks/README.md','Benchmark overview','Methodology, comparisons and gates'],['docs/benchmarks/2026-11-11/RESULTS.md','Initial rebuild','Recorded CSS, Less and SCSS results'],['docs/benchmarks/2026-11-11-performance/RESULTS.md','Performance work','Compiler optimizations and measured results'],['docs/benchmarks/2026-11-11-migration/RESULTS.md','Migration verification','Correctness and competitor checks'],['docs/benchmarks/2026-11-11-all-parsers/README.md','Interrupted comparison','Partial run · awaiting a quiet-machine rerun']];
  const benchMenu=group('Benchmarks',reports.filter(([path])=>outputs.has(path)).map(([path,label,description])=>link(path,label,description)).join(''),file.startsWith('docs/benchmarks/'));
  const sections=headings.filter(h=>h.level>1);if(!sections.length&&headings[0])sections.push({...headings[0],text:'Overview'});

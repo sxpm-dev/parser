@@ -1,0 +1,4 @@
+Native library output; output shape and validation work differ.
+rrule: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------

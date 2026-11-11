@@ -1,7 +1,0 @@
-# schema=css
-# kind=parse-divergence-interp-threw
-# target=-
-# mutator=insert-noise@12+1
-# seed="@import \"foo.css\";"
-# detail=interp threw, v2 accepted
-@import "foo).css";

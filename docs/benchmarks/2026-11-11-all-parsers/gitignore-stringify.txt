@@ -1,0 +1,7 @@
+picomatch.parse does not support this output mode; comparison omitted.
+Pattern compiler/parser; does more work than source-record extraction.
+gitignore: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/8ddca101    generated (checked inverse) 11.89ms     84.1        +/-2.9  17067 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+pg-select: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/df17c85b    generated (checked inverse) 4.64ms      215.6       +/-2.3  2134 documents        1.00x
+                              node-sql-parser             12.08ms     82.8        +/-3.5  2134 documents        2.60x
+-----------------------------------------------------------------------------------------------------------------------

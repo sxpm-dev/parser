@@ -1,182 +1,86 @@
-import assert from 'node:assert/strict';
+import { strict as assert } from 'node:assert';
 import test from 'node:test';
-import { generateParser, inferSchema } from '../src/index.ts';
+import { compile, type Schema } from '../src/index.ts';
 
-// NOTE: The "inference walks the css smoke-test schema end to end" test that
-// previously lived here was deleted as part of the unified-render-targets
-// refactor — it imported `../../css/src/schema.ts`, which is still on the
-// legacy `.structure()/.stringify()` API. Phase 6 brings the CSS package
-// across; Phase 7 adds round-trip tests that supersede that smoke check.
-
-test('inference rejects schemas with unresolved recursive roles', async () => {
-  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
-  const broken = defineSchema({
-    rootType: 'Outer',
-    examples: [
-      relation('Outer', {
-        input: 'x',
-        encodings: {
-          src: parse([span('inner', 'x').of('NoSuchType')]),
-          ast: { inner: $.inner },
-        },
-      }),
-    ],
-  });
-  assert.throws(() => inferSchema(broken), /Recursive role 'NoSuchType'/);
-});
-
-test('inference rejects ambiguous recursive span text', async () => {
-  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
-  const ambiguous = defineSchema({
-    rootType: 'Pair',
-    examples: [
-      relation('Pair', {
-        input: 'x x',
-        encodings: {
-          src: parse([
-            span('left', 'x').of('Atom'),
-            span('right', 'x').of('Atom'),
-          ]),
-          ast: { left: $.left, right: $.right },
-        },
-      }),
-      relation('Atom', {
-        input: 'y',
-        encodings: {
-          src: parse([span('v', 'y').ident().js()]),
-          ast: { v: $.v },
-        },
-      }),
-    ],
-  });
-  assert.throws(() => inferSchema(ambiguous), /appears multiple times/);
-});
-
-test('validation metadata is separate from SchemaDef and reaches inferSchema', async () => {
-  const { defineSchema, defineValidation, relation, parse, span, literal, $ } = await import('@parser2/parser');
-  const schema = defineSchema({
-    rootType: 'Declaration',
-    examples: [
-      relation('Declaration', {
-        input: 'color: red;',
-        encodings: {
-          src: parse([
-            span('prop', 'color').until(':'),
-            literal(':'),
-            span('value', 'red').until(';'),
-            literal(';'),
-          ]),
-          ast: { type: 'decl', prop: $.prop, value: $.value },
-        },
-      }),
-    ],
-  });
-  const valueValidator = Object.assign(
-    (_input: string): void => {},
-    { __parser2Validator: { module: '@parser2/css-color', exportName: 'validate' } },
-  );
-
-  assert.equal('validation' in schema, false);
-
-  const validation = defineValidation(schema)
-    .node('Declaration')
-    .field('value')
-    .match('prop', ['color'])
-    .validate(valueValidator);
-  const inferred = inferSchema(schema, validation);
-  assert.equal(inferred.validation?.rules.length, 1);
-
-  // Validator-hook codegen for the v2 backend is a Phase 2 follow-up
-  // (see docs/v2-migration-status.md). The schema/inference plumbing is
-  // covered above; the emit-side assertions live with v2 once landed.
-  const emitted = generateParser(schema, validation);
-  assert.match(emitted, /function validate\(input: string, options\?: ParseOptions\): void/);
-});
-
-test('emitter factors shared recursive repeats before literal branch points', async () => {
-  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
-  const schema = defineSchema({
-    rootType: 'Node',
-    punctuators: {
-      open: '<',
-      close: '>',
-      selfClose: '/>',
-      equals: '=',
+async function runtime(schema: any) {
+  const source = compile(schema);
+  return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+}
+const record: Schema = {
+  input: 'text', output: 'record', root: 'entry',
+  productions: {
+    entry: {
+      examples: [
+        { text: 'name = alice;', record: { key: 'name', value: 'alice' }, alternate: { label: 'name', data: { text: 'alice' } } },
+        { text: 'city = paris;', record: { key: 'city', value: 'paris' }, alternate: { label: 'city', data: { text: 'paris' } } },
+      ],
+      fields: { key: { kind: 'text', pattern: '[a-z]+' }, value: { kind: 'text', balanced: true } },
     },
-    tokens: ['string'],
-    examples: [
-      relation('Pair', {
-        input: 'key="value"',
-        encodings: {
-          src: parse([
-            span('name', 'key').ident().css(),
-            literal('='),
-            span('value', '"value"').string().doubleQuoted(),
-          ]),
-          ast: { name: $.name, value: $.value },
-        },
-      }),
-      relation('Node', {
-        input: '<box key="value">body</box>',
-        encodings: {
-          src: parse([
-            literal('<'),
-            span('tag', 'box').ident().css(),
-            span('pairs', 'key="value"').of('Pair').repeats({ min: 0 }),
-            literal('>'),
-            span('body', 'body').until('</'),
-            literal('</'),
-            span('closeTag', 'box').ident().css(),
-            literal('>'),
-          ]),
-          ast: { tag: $.tag, pairs: $.pairs, body: $.body, closeTag: $.closeTag },
-        },
-      }),
-      relation('Node', {
-        input: '<box />',
-        encodings: {
-          src: parse([
-            literal('<'),
-            span('tag', 'box').ident().css(),
-            span('pairs', '').of('Pair').repeats({ min: 0 }),
-            literal('/>'),
-          ]),
-          ast: { tag: $.tag, pairs: $.pairs, selfClosing: true },
-        },
-      }),
-    ],
-  });
-
-  const emitted = generateParser(schema);
-  // No alt dispatch should fall back to trySpeculate — every alt-bucket here
-  // is statically distinguishable, so the dispatcher uses the soft-fail
-  // null-check pattern instead of throw/catch speculation.
-  assert.doesNotMatch(emitted, /\btrySpeculate\(state,/);
-  // v2 emits a first-byte branch gate around the alt chain, but the chain
-  // itself still uses the soft-fail null-check pattern (no speculation).
-  assert.match(
-    emitted,
-    /\{ const r = parseNode__alt0\(state\); if \(r !== null\) return r; \}\s*return parseNode__alt1\(state\);/,
-  );
+  },
+  encodings: { json: { from: 'record', format: 'json' } },
+};
+test('infers unseen records and alternate nested output shapes, with inverse', async () => {
+  const api = await runtime(record);
+  assert.deepEqual(api.parse('country = japan;'), { key: 'country', value: 'japan' });
+  assert.deepEqual(api.parse('country = japan;', { output: 'alternate' }), { label: 'country', data: { text: 'japan' } });
+  assert.equal(api.stringify({ label: 'country', data: { text: 'japan' } }, { input: 'alternate' }), 'country = japan;');
+  assert.equal(api.parse('country = japan;', { output: 'json' }), '{"key":"country","value":"japan"}');
+  assert.deepEqual(api.parse(api.stringify('{"key":"country","value":"japan"}', { input: 'json' })), { key: 'country', value: 'japan' });
 });
-
-test('inferSchema attaches an empty renders map to a production with no .render entries', async () => {
-  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
-  const schema = defineSchema({
-    rootType: 'Atom',
-    examples: [
-      relation('Atom', {
-        input: 'x',
-        encodings: {
-          src: parse([span('v', 'x').ident()]),
-          ast: { type: 'atom', v: $.v },
-        },
-      }),
-    ],
-  });
-  const inferred = inferSchema(schema);
-  const production = inferred.nodeTypes.get('Atom')!.productions[0]!;
-  assert.ok(production.renders instanceof Map);
-  // The single declared 'ast' entry is the only render target on this production.
-  assert.deepEqual([...production.renders.keys()], ['ast']);
+test('rejects malformed, trailing, unknown-target and invalid inverse inputs', async () => {
+  const api = await runtime(record);
+  for (const text of ['bad key = x;', 'x = "unterminated;', 'x = (a];', 'x = a; junk']) assert.throws(() => api.parse(text), SyntaxError);
+  assert.throws(() => api.parse('x = a;', { output: 'missing' }), /output/i);
+  assert.throws(() => api.stringify({ key: 'x', value: 'a; y = b' }), /represent|round.trip|value/i);
+});
+test('infers list separators from paired examples', async () => {
+  const api = await runtime({ input: 'text', output: 'data', root: 'group', productions: { group: {
+    examples: [{ text: '[alpha, beta]', data: { names: ['alpha', 'beta'] } }],
+    fields: { names: { kind: 'list', item: { kind: 'text', balanced: true }, min: 1 } },
+  } } });
+  assert.deepEqual(api.parse('[one, fn(two, three), four]'), { names: ['one', 'fn(two, three)', 'four'] });
+  assert.throws(() => api.parse('[]'), SyntaxError);
+  assert.throws(() => api.parse('[one,]'), SyntaxError);
+});
+test('fails compilation for ambiguous captures and inconsistent examples', () => {
+  const bad = structuredClone(record);
+  bad.productions.entry.examples[0].text = 'name name = alice;';
+  assert.throws(() => compile(bad), /ambiguous/i);
+  const inconsistent = structuredClone(record);
+  inconsistent.productions.entry.examples[1].text = 'city : paris;';
+  assert.throws(() => compile(inconsistent), /example|layout|literal/i);
+});
+test('emits standalone deterministic code without runtime grammar data', () => {
+  const a = compile(record);
+  assert.equal(a, compile(record));
+  assert.doesNotMatch(a, /\bimport\s|examples:|productions:/);
+});
+test('recursive alternatives align children by output shape, not declaration order', async () => {
+  const api = await runtime({input:'text',output:'data',root:'box',productions:{
+    atom:{examples:[{text:'x=one;',data:{key:'x',value:'one'}}],fields:{key:{kind:'text',pattern:'[a-z]+'},value:{kind:'text'}}},
+    box:{examples:[{text:'[x=one;]',data:{items:[{key:'x',value:'one'}]}}],fields:{items:{kind:'list',item:['atom','box']}}},
+    outer:{examples:[{text:'([x=one;])',data:{items:[{items:[{key:'x',value:'one'}]}]}}],fields:{items:{kind:'list',item:['atom','box']}}},
+  }});
+  assert.deepEqual(api.parse('[[q=two;]]'),{items:[{items:[{key:'q',value:'two'}]}]});
+});
+test('prefix constraints distinguish alternatives without changing inferred layouts', async () => {
+  const schema: Schema = {input:'text',output:'data',root:'item',productions:{item:{examples:[{text:'@one;',data:{value:'@one'}}],fields:{value:{kind:'text',prefix:['@'],balanced:true}}}}};
+  const api=await runtime(schema);
+  assert.deepEqual(api.parse('@two;'),{value:'@two'});
+  assert.throws(()=>api.parse('#two;'),SyntaxError);
+});
+test('rejects examples that violate metadata and indistinguishable alternatives', () => {
+  const bad=structuredClone(record);
+  bad.productions.entry.fields.key={kind:'text',pattern:'[0-9]+'};
+  assert.throws(()=>compile(bad),/example/i);
+  const duplicate=structuredClone(record);
+  duplicate.productions.copy=structuredClone(duplicate.productions.entry);
+  assert.throws(()=>compile(duplicate),/indistinguishable|duplicate/i);
+});
+test('regions close independently of the ordinary bracket vocabulary', async () => {
+  for(const policy of ['regions','commentFree']) {
+    const schema:Schema={input:'text',output:'data',root:'r',lexical:{pairs:[],[policy]:[['<','>']]},productions:{r:{examples:[{text:'ok;',data:{v:'ok'}}],fields:{v:{kind:'text',balanced:true}}}}};
+    const api=await runtime(schema);
+    assert.deepEqual(api.parse('<a;b>;'),{v:'<a;b>'});
+  }
 });

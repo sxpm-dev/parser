@@ -1,0 +1,22 @@
+
+> @parser3/less@0.0.0 bench:round-trip
+> tsx bench/parse.ts --round-trip
+
+less: round trip (full structural outputs, native competitor metadata)
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/e1d74681      generated parse + stringify 454.72us    2199.2      +/-2.6  5103 bytes            1.00x
+                              postcss-less parse + stringify969.25us    1031.7      +/-3.2  5292 bytes            2.13x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/3fe95f59     generated parse + stringify 1.68ms      596.5       +/-1.8  19845 bytes           1.00x
+                              postcss-less parse + stringify10.55ms     94.8        +/-2.4  20580 bytes           6.29x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/51a6a041    generated parse + stringify 10.06ms     99.4        +/-10.8 98847 bytes           1.00x
+                              postcss-less parse + stringify230.16ms    4.3         +/-3.8  102508 bytes          22.87x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/3c07cb29    generated parse + stringify 52.58ms     19.0        +/-15.3 493857 bytes          1.00x
+                              postcss-less parse + stringifyskipped (too slow for input)
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/fb418f59   generated parse + stringify 107.61ms    9.3         +/-24.8 987525 bytes          1.00x
+                              postcss-less parse + stringifyskipped (too slow for input)
+-----------------------------------------------------------------------------------------------------------------------

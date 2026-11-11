@@ -1,50 +1,11 @@
+import { parserPackages } from './parser-packages.ts';
 import { mkdir } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 
-type PackageName =
-  | 'arn'
-  | 'cron'
-  | 'css'
-  | 'css-color'
-  | 'css-length-percentage'
-  | 'html'
-  | 'iso-duration'
-  | 'js'
-  | 'js-expr'
-  | 'json'
-  | 'log'
-  | 'mac'
-  | 'markdown'
-  | 'pg-select'
-  | 'proto'
-  | 'rrule'
-  | 'toml'
-  | 'url'
-  | 'yaml-block';
-
-const packageNames = new Set<PackageName>([
-  'arn',
-  'cron',
-  'css',
-  'css-color',
-  'css-length-percentage',
-  'html',
-  'iso-duration',
-  'js',
-  'js-expr',
-  'json',
-  'log',
-  'mac',
-  'markdown',
-  'pg-select',
-  'proto',
-  'rrule',
-  'toml',
-  'url',
-  'yaml-block',
-]);
+type PackageName = string;
+const packageNames = new Set<PackageName>(parserPackages);
 const explicitPackage = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));

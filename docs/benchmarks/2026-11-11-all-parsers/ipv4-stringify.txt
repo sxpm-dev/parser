@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+ipv4: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/ba49e98d    generated (checked inverse) 8.17ms      122.5       +/-1.7  7315 documents        1.00x
+                              ipaddr.js                   1.48ms      673.5       +/-1.7  7315 documents        0.18x
+-----------------------------------------------------------------------------------------------------------------------

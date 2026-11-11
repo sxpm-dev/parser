@@ -21,3 +21,6 @@ packages/compiler/test/.raws-*-tmp/
 packages/compiler/test/.rust-diff/
 packages/compiler/test/.rust-wasm/
 .bench-cache/
+
+.DS_Store
+.superpowers/

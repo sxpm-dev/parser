@@ -1,0 +1,7 @@
+picomatch.parse does not support this output mode; comparison omitted.
+Pattern compiler/parser; does more work than source-record extraction.
+glob: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/ee53dc02    generated (checked inverse) 29.78ms     33.6        +/-16.4 14629 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------

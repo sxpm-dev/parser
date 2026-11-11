@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+cookie: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/1b078400    generated (checked inverse) 4.91ms      203.8       +/-21.0 6827 documents        1.00x
+                              cookie                      2.36ms      423.9       +/-3.2  6827 documents        0.48x
+-----------------------------------------------------------------------------------------------------------------------

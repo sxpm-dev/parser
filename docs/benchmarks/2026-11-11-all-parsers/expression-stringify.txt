@@ -1,0 +1,7 @@
+jsep does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+expression: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/34f8f7a1    generated (checked inverse) 69.71ms     14.3        +/-9.2  9310 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------

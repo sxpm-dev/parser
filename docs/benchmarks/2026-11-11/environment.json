@@ -1,0 +1,77 @@
+{
+  "date": "2026-11-11",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "node": "v18.15.0",
+  "dependencies": {
+    "version": "0.0.0",
+    "name": "example-parser-workspace",
+    "dependencies": {
+      "@parser3/compiler": {
+        "version": "0.0.0",
+        "resolved": "file:../../packages/compiler",
+        "overridden": false
+      },
+      "@parser3/css": {
+        "version": "0.0.0",
+        "resolved": "file:../../packages/css",
+        "overridden": false
+      },
+      "@parser3/less": {
+        "version": "0.0.0",
+        "resolved": "file:../../packages/less",
+        "overridden": false
+      },
+      "@parser3/scss": {
+        "version": "0.0.0",
+        "resolved": "file:../../packages/scss",
+        "overridden": false
+      },
+      "@types/node": {
+        "version": "20.19.41",
+        "resolved": "https://registry.npmjs.org/@types/node/-/node-20.19.41.tgz",
+        "overridden": false
+      },
+      "css-tree": {
+        "version": "3.2.1",
+        "resolved": "https://registry.npmjs.org/css-tree/-/css-tree-3.2.1.tgz",
+        "overridden": false
+      },
+      "esbuild": {
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "overridden": false
+      },
+      "postcss-less": {
+        "version": "6.0.0",
+        "resolved": "https://registry.npmjs.org/postcss-less/-/postcss-less-6.0.0.tgz",
+        "overridden": false
+      },
+      "postcss-scss": {
+        "version": "4.0.9",
+        "resolved": "https://registry.npmjs.org/postcss-scss/-/postcss-scss-4.0.9.tgz",
+        "overridden": false
+      },
+      "postcss": {
+        "version": "8.5.32",
+        "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.32.tgz",
+        "overridden": false
+      },
+      "tinybench": {
+        "version": "2.9.0",
+        "resolved": "https://registry.npmjs.org/tinybench/-/tinybench-2.9.0.tgz",
+        "overridden": false
+      },
+      "tsx": {
+        "version": "4.22.1",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.22.1.tgz",
+        "overridden": false
+      },
+      "typescript": {
+        "version": "5.9.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+        "overridden": false
+      }
+    }
+  }
+}

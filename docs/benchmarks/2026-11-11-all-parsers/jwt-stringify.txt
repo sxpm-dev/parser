@@ -1,0 +1,7 @@
+Segment splitting/validation only, without authentication.
+jwt: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/18da76f1    generated (checked inverse) 4.45ms      224.5       +/-19.0 1933 documents        1.00x
+                              compact JWS split           1.41ms      711.0       +/-38.2 1933 documents        0.32x
+-----------------------------------------------------------------------------------------------------------------------

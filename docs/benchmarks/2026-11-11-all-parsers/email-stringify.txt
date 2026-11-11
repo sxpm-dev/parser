@@ -1,0 +1,7 @@
+email-addresses does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+email: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/0179f251    generated (checked inverse) 2.54ms      393.1       +/-1.8  5689 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,7 @@
+http-parser-js does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+http: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/aa6edd7b    generated (checked inverse) 5.34ms      187.3       +/-3.8  2134 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------

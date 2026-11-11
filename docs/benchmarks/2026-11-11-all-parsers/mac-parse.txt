@@ -1,0 +1,7 @@
+Independent lexical/field baseline.
+mac: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/9d6c7017    generated (checked inverse) 6.95ms      143.8       +/-15.6 5689 documents        1.00x
+                              regexp MAC octets           2.91ms      343.1       +/-2.7  5689 documents        0.42x
+-----------------------------------------------------------------------------------------------------------------------

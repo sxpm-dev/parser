@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+ini: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/d34f9772    generated (checked inverse) 8.05ms      124.2       +/-27.3 4877 documents        1.00x
+                              ini                         40.20ms     24.9        +/-12.7 4877 documents        4.99x
+-----------------------------------------------------------------------------------------------------------------------

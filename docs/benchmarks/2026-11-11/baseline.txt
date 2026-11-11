@@ -1,0 +1,79 @@
+
+> example-parser-workspace@0.0.0 baseline
+> npm run baseline --workspaces --if-present
+
+
+> @parser3/css@0.0.0 baseline
+> npm run perf:baseline && npm run size:baseline
+
+
+> @parser3/css@0.0.0 perf:baseline
+> tsx ../../scripts/perf-gate.ts css --write
+
+css performance baseline (25% tolerance, 100% floor)
+case              input             ops/s         baseline
+parse:5KB         5KB/e39ba972      11791         locked
+parse:20KB        20KB/fada8088     3225          locked
+parse:100KB       100KB/abecaf9c    636           locked
+
+> @parser3/css@0.0.0 size:baseline
+> npm run browser:build && tsx ../../scripts/size-gate.ts css --write
+
+
+> @parser3/css@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts css
+
+browser built packages/css/dist/browser/index.min.js
+css size baseline (5% tolerance)
+asset                           bytes       gzip        baseline
+dist/browser/index.min.js       17118       2444        locked
+
+> @parser3/less@0.0.0 baseline
+> npm run perf:baseline && npm run size:baseline
+
+
+> @parser3/less@0.0.0 perf:baseline
+> tsx ../../scripts/perf-gate.ts less --write
+
+less performance baseline (25% tolerance, 100% floor)
+case              input             ops/s         baseline
+parse:5KB         5KB/e1d74681      6478          locked
+parse:20KB        20KB/3fe95f59     1444          locked
+parse:100KB       100KB/51a6a041    285           locked
+
+> @parser3/less@0.0.0 size:baseline
+> npm run browser:build && tsx ../../scripts/size-gate.ts less --write
+
+
+> @parser3/less@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts less
+
+browser built packages/less/dist/browser/index.min.js
+less size baseline (5% tolerance)
+asset                           bytes       gzip        baseline
+dist/browser/index.min.js       25283       2731        locked
+
+> @parser3/scss@0.0.0 baseline
+> npm run perf:baseline && npm run size:baseline
+
+
+> @parser3/scss@0.0.0 perf:baseline
+> tsx ../../scripts/perf-gate.ts scss --write
+
+scss performance baseline (25% tolerance, 100% floor)
+case              input             ops/s         baseline
+parse:5KB         5KB/129c4e2d      6455          locked
+parse:20KB        20KB/9249f781     1396          locked
+parse:100KB       100KB/916565c5    276           locked
+
+> @parser3/scss@0.0.0 size:baseline
+> npm run browser:build && tsx ../../scripts/size-gate.ts scss --write
+
+
+> @parser3/scss@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts scss
+
+browser built packages/scss/dist/browser/index.min.js
+scss size baseline (5% tolerance)
+asset                           bytes       gzip        baseline
+dist/browser/index.min.js       24234       2706        locked

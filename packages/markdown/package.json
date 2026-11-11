@@ -1,40 +1,22 @@
 {
-  "name": "@parser2/markdown",
+  "name": "@parser3/markdown",
   "version": "0.0.0",
   "type": "module",
+  "exports": "./src/index.ts",
   "scripts": {
-    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
-    "generate:ts": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
-    "generate:bcode": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --bcode",
-    "generate:rs": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --rs",
-    "generate:all": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts --ts --rs --bcode",
-    "build": "tsc -b",
-    "test": "npm run generate && tsx --test test/*.test.ts",
-    "bench": "npm run generate && npm run bench:ast && npm run bench:html",
-    "bench:ast": "tsx bench/ast.ts",
-    "bench:html": "tsx bench/html.ts",
-    "bench:focused": "tsx bench/focused.ts",
-    "bench:backends": "npm run generate:all && tsx bench/backends.ts",
-    "bench:rs": "npm run generate:all && tsx bench/backends.ts --only rust",
-    "bench:bcode": "npm run generate:all && tsx bench/backends.ts --only bcode",
+    "generate": "tsx ../compiler/src/cli.ts src/schema.ts",
+    "test": "tsx --test test/*.test.ts",
+    "bench": "tsx bench/parse.ts",
+    "bench:parse": "tsx bench/parse.ts",
+    "bench:json": "tsx bench/parse.ts --json",
+    "bench:round-trip": "tsx bench/parse.ts --round-trip",
     "browser:build": "tsx ../../scripts/browser-build.ts markdown",
     "perf:baseline": "tsx ../../scripts/perf-gate.ts markdown --write",
     "perf:gate": "tsx ../../scripts/perf-gate.ts markdown",
     "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts markdown --write",
     "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts markdown",
-    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
-    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
-  },
-  "exports": {
-    ".": "./dist/index.js"
-  },
-  "dependencies": {
-    "@parser2/parser": "0.0.0",
-    "commonmark": "^0.31.2",
-    "markdown-it": "^14.1.1",
-    "marked": "^18.0.4",
-    "micromark": "^4.0.2",
-    "remark-parse": "^11.0.0",
-    "unified": "^11.0.5"
+    "baseline": "npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run perf:gate && npm run size:gate",
+    "bench:stringify": "tsx bench/parse.ts --stringify"
   }
 }

@@ -1,0 +1,22 @@
+{
+  "name": "@parser3/scss",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "generate": "tsx ../compiler/src/cli.ts src/schema.ts",
+    "test": "tsx --test test/*.test.ts",
+    "bench": "tsx bench/parse.ts",
+    "bench:parse": "tsx bench/parse.ts",
+    "bench:json": "tsx bench/parse.ts --json",
+    "bench:round-trip": "tsx bench/parse.ts --round-trip",
+    "browser:build": "tsx ../../scripts/browser-build.ts scss",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts scss --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts scss",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts scss --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts scss",
+    "baseline": "npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run perf:gate && npm run size:gate",
+    "bench:stringify": "tsx bench/parse.ts --stringify"
+  }
+}

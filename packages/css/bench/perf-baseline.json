@@ -1,17 +1,17 @@
 {
   "parse:5KB": {
-    "hz": 1607,
-    "inputHash": "692dc886",
-    "bytes": 5200
+    "hz": 11791,
+    "inputHash": "e39ba972",
+    "bytes": 5175
   },
   "parse:20KB": {
-    "hz": 423,
-    "inputHash": "c6eb223c",
-    "bytes": 20481
+    "hz": 3225,
+    "inputHash": "fada8088",
+    "bytes": 20493
   },
   "parse:100KB": {
-    "hz": 86,
-    "inputHash": "c083b522",
-    "bytes": 102403
+    "hz": 636,
+    "inputHash": "abecaf9c",
+    "bytes": 102465
   }
 }

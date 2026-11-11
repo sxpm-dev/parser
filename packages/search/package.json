@@ -1,0 +1,22 @@
+{
+  "name": "@parser3/search",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "generate": "tsx ../compiler/src/cli.ts src/schema.ts",
+    "test": "tsx --test test/*.test.ts",
+    "bench": "tsx bench/parse.ts",
+    "bench:parse": "tsx bench/parse.ts",
+    "bench:json": "tsx bench/parse.ts --json",
+    "bench:round-trip": "tsx bench/parse.ts --round-trip",
+    "browser:build": "tsx ../../scripts/browser-build.ts search",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts search --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts search",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts search --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts search",
+    "baseline": "npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run perf:gate && npm run size:gate",
+    "bench:stringify": "tsx bench/parse.ts --stringify"
+  }
+}

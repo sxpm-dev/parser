@@ -1,31 +1,22 @@
 {
-  "name": "@parser2/toml",
+  "name": "@parser3/toml",
   "version": "0.0.0",
   "type": "module",
+  "exports": "./src/index.ts",
   "scripts": {
-    "generate": "npm run build -w @parser2/compiler && npm run generate:ts",
-    "generate:ts": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
-    "generate:rs": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --rs",
-    "generate:all": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts --ts --rs",
-    "build": "tsc -b",
-    "test": "npm run generate && tsx --test test/*.test.ts",
-    "bench": "npm run bench:parse && npm run bench:round-trip",
-    "bench:parse": "npm run generate && tsx bench/parse.ts",
-    "bench:round-trip": "npm run generate && tsx bench/round-trip.ts",
-    "bench:backends": "npm run generate:all && tsx bench/backends.ts",
-    "bench:rs": "npm run generate:all && tsx bench/backends.ts --only rust",
+    "generate": "tsx ../compiler/src/cli.ts src/schema.ts",
+    "test": "tsx --test test/*.test.ts",
+    "bench": "tsx bench/parse.ts",
+    "bench:parse": "tsx bench/parse.ts",
+    "bench:json": "tsx bench/parse.ts --json",
+    "bench:round-trip": "tsx bench/parse.ts --round-trip",
     "browser:build": "tsx ../../scripts/browser-build.ts toml",
     "perf:baseline": "tsx ../../scripts/perf-gate.ts toml --write",
     "perf:gate": "tsx ../../scripts/perf-gate.ts toml",
     "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts toml --write",
     "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts toml",
-    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
-    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
-  },
-  "exports": {
-    ".": "./dist/index.js"
-  },
-  "dependencies": {
-    "@parser2/parser": "0.0.0"
+    "baseline": "npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run perf:gate && npm run size:gate",
+    "bench:stringify": "tsx bench/parse.ts --stringify"
   }
 }

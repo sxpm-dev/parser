@@ -1,0 +1,7 @@
+Independent image-reference field baseline.
+docker-ref: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/0fd62830    generated (checked inverse) 3.40ms      294.4       +/-17.8 7877 documents        1.00x
+                              regexp image reference      1.21ms      825.6       +/-2.7  7877 documents        0.36x
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,3 @@
+$brand: #abc;
+@mixin size($n) { width: $n; }
+.button, #button { color: $brand; @include size(12px); &.icon { margin: 2px; } #icon { display: block; } .item-#{$name} { width: calc(100% - #{$gap}); } }

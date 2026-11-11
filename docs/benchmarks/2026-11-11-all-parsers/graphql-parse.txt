@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+graphql: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/f4b3cd1e    generated (checked inverse) 14.59ms     68.6        +/-21.1 4655 documents        1.00x
+                              graphql                     19.37ms     51.6        +/-28.4 4655 documents        1.33x
+-----------------------------------------------------------------------------------------------------------------------

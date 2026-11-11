@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+env: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/209ada47    generated (checked inverse) 2.54ms      393.4       +/-13.0 5120 documents        1.00x
+                              dotenv                      2.73ms      366.8       +/-3.0  5120 documents        1.07x
+-----------------------------------------------------------------------------------------------------------------------

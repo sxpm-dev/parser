@@ -1,18 +1,15 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./packages/parser" },
-    { "path": "./packages/compiler" },
-    { "path": "./packages/css-color" },
-    { "path": "./packages/css-length-percentage" },
-    { "path": "./packages/css" },
-    { "path": "./packages/html" },
-    { "path": "./packages/markdown" },
-    { "path": "./packages/proto" },
-    { "path": "./packages/arn" },
-    { "path": "./packages/url" },
-    { "path": "./packages/cron" },
-    { "path": "./packages/log" },
-    { "path": "./packages/mac" }
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "packages/**/*.ts",
+    "scripts/*.ts"
   ]
 }

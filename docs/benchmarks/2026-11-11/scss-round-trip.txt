@@ -1,0 +1,22 @@
+
+> @parser3/scss@0.0.0 bench:round-trip
+> tsx bench/parse.ts --round-trip
+
+scss: round trip (full structural outputs, native competitor metadata)
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/129c4e2d      generated parse + stringify 414.92us    2410.1      +/-2.0  5018 bytes            1.00x
+                              postcss-scss parse + stringify294.11us    3400.0      +/-4.7  5200 bytes            0.71x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/9249f781     generated parse + stringify 1.74ms      576.3       +/-1.9  19879 bytes           1.00x
+                              postcss-scss parse + stringify1.19ms      838.0       +/-5.8  20600 bytes           0.69x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/916565c5    generated parse + stringify 9.17ms      109.0       +/-2.7  98816 bytes           1.00x
+                              postcss-scss parse + stringify6.25ms      160.1       +/-2.5  102400 bytes          0.68x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/c68885c5    generated parse + stringify 50.69ms     19.7        +/-7.2  494080 bytes          1.00x
+                              postcss-scss parse + stringify41.30ms     24.2        +/-18.2 512000 bytes          0.81x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/6df46dc5   generated parse + stringify 108.00ms    9.3         +/-24.8 988160 bytes          1.00x
+                              postcss-scss parse + stringify83.55ms     12.0        +/-24.0 1024000 bytes         0.77x
+-----------------------------------------------------------------------------------------------------------------------

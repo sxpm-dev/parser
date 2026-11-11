@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+route: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/bfe4808d    generated (checked inverse) 7.42ms      134.8       +/-19.1 9310 documents        1.00x
+                              path-to-regexp              15.21ms     65.7        +/-2.9  9310 documents        2.05x
+-----------------------------------------------------------------------------------------------------------------------

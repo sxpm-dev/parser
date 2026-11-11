@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+iso-duration: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a984c9af    generated (checked inverse) 18.99ms     52.6        +/-3.4  11378 documents       1.00x
+                              Temporal.Duration           29.61ms     33.8        +/-5.0  11378 documents       1.56x
+-----------------------------------------------------------------------------------------------------------------------

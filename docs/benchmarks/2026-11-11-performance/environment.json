@@ -1,0 +1,29 @@
+{
+  "node": "v18.15.0",
+  "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "captured": "2026-11-11T06:04:47.119561+00:00",
+  "artifacts": {
+    "css-before.mjs.gz": {
+      "sha256": "e3bfd0a417b909ccd9fbcf296661b6061abd24ba2cc3db1026088939b0768927",
+      "bytes": 33615
+    },
+    "css-after.mjs.gz": {
+      "sha256": "52298977fc66c7cc2da1e93263d0ada26ec6def466b7017fa61f0c6ed73951a7",
+      "bytes": 29703
+    },
+    "scss-before.mjs.gz": {
+      "sha256": "fa86a8973de4ca71b3a9c912a68b617508a51970fe5610f500f19bcee526fb06",
+      "bytes": 47742
+    },
+    "scss-after.mjs.gz": {
+      "sha256": "c6a1f69ffcabd83d33a784307824e675a90454d0f1893bf4b0a24fce4773787f",
+      "bytes": 42890
+    }
+  },
+  "observed_load_during_gates": [
+    6.41,
+    9.15,
+    10.65
+  ],
+  "performance_gates": "failed; thresholds unchanged"
+}

@@ -1,0 +1,53 @@
+
+> example-parser-workspace@0.0.0 bench:check
+> tsx scripts/check-parser-benches.ts
+
+arn: generated inverse + @aws-sdk/util-arn-parser seed checked
+authorization: generated inverse + regexp auth fields seed checked
+cache-control: generated inverse + parse-cache-control seed checked
+color: generated inverse + color-string seed checked
+commits: generated inverse + conventional-commits-parser seed checked
+cookie: generated inverse + cookie seed checked
+cron: generated inverse + cron-parser seed checked
+css-color: generated inverse + color-string seed checked
+css-length-percentage: generated inverse + css-tree value seed checked
+csv: generated inverse + csv-parse seed checked
+docker-ref: generated inverse + regexp image reference seed checked
+duration: generated inverse + ms seed checked
+email: generated inverse + email-addresses seed checked
+env: generated inverse + dotenv seed checked
+expression: generated inverse + jsep seed checked
+filter: generated inverse + jsep seed checked
+gitignore: generated inverse + picomatch.parse seed checked
+glob: generated inverse + picomatch.parse seed checked
+graphql: generated inverse + graphql seed checked
+html: generated inverse + htmlparser2 seed checked
+http: generated inverse + http-parser-js seed checked
+ini: generated inverse + ini seed checked
+ipv4: generated inverse + ipaddr.js seed checked
+ipv6: generated inverse + ipaddr.js seed checked
+iso-duration: generated inverse + Temporal.Duration seed checked
+js-expr: generated inverse + jsep seed checked
+json: generated inverse + JSON.parse seed checked
+json-flat: generated inverse + JSON.parse seed checked
+jwt: generated inverse + compact JWS split seed checked
+log: generated inverse + regexp log fields seed checked
+mac: generated inverse + regexp MAC octets seed checked
+markdown: generated inverse + markdown-it seed checked
+mentions: generated inverse + regexp mentions seed checked
+mime: generated inverse + content-type seed checked
+npm-range: generated inverse + semver.Range seed checked
+pg-select: generated inverse + node-sql-parser seed checked
+proto: generated inverse + protobufjs seed checked
+route: generated inverse + path-to-regexp seed checked
+rrule: generated inverse + rrule seed checked
+search: generated inverse + regexp query tokens seed checked
+semver: generated inverse + semver seed checked
+spdx: generated inverse + spdx-expression-parse seed checked
+sql: generated inverse + node-sql-parser seed checked
+toml: generated inverse + @iarna/toml seed checked
+ulid: generated inverse + ulid.decodeTime seed checked
+url: generated inverse + WHATWG URL seed checked
+uuid: generated inverse + regexp UUID fields seed checked
+yaml: generated inverse + yaml seed checked
+yaml-block: generated inverse + yaml seed checked

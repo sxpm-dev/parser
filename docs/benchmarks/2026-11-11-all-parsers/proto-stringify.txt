@@ -1,0 +1,7 @@
+protobufjs does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+proto: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/bbd5cfec    generated (checked inverse) 7.73ms      129.3       +/-5.7  1933 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,974 @@
+
+> example-parser-workspace@0.0.0 test
+> npm run generate && tsx --test scripts/all-tests.ts
+
+
+> example-parser-workspace@0.0.0 generate
+> tsx scripts/generate.ts
+
+generated /Users/valerii/Develop/parser3_codex/packages/arn/src/_generated/parser.ts (6377 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/authorization/src/_generated/parser.ts (4451 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/cache-control/src/_generated/parser.ts (7159 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/color/src/_generated/parser.ts (19159 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/commits/src/_generated/parser.ts (10728 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/cookie/src/_generated/parser.ts (5953 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/cron/src/_generated/parser.ts (8493 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/css/src/_generated/parser.ts (22023 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/css-color/src/_generated/parser.ts (19159 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/css-length-percentage/src/_generated/parser.ts (13901 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/csv/src/_generated/parser.ts (6007 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/docker-ref/src/_generated/parser.ts (7795 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/duration/src/_generated/parser.ts (7097 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/email/src/_generated/parser.ts (4498 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/env/src/_generated/parser.ts (5962 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/expression/src/_generated/parser.ts (28354 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/filter/src/_generated/parser.ts (28383 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/gitignore/src/_generated/parser.ts (7056 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/glob/src/_generated/parser.ts (11026 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/graphql/src/_generated/parser.ts (48297 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/html/src/_generated/parser.ts (14583 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/http/src/_generated/parser.ts (8154 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/ini/src/_generated/parser.ts (7568 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/ipv4/src/_generated/parser.ts (5073 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/ipv6/src/_generated/parser.ts (6601 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/iso-duration/src/_generated/parser.ts (16980 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/js-expr/src/_generated/parser.ts (28354 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/json/src/_generated/parser.ts (14378 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/json-flat/src/_generated/parser.ts (7126 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/jwt/src/_generated/parser.ts (4787 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/less/src/_generated/parser.ts (31613 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/log/src/_generated/parser.ts (10067 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/mac/src/_generated/parser.ts (8756 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/markdown/src/_generated/parser.ts (9159 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/mentions/src/_generated/parser.ts (7694 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/mime/src/_generated/parser.ts (4467 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/npm-range/src/_generated/parser.ts (16162 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/pg-select/src/_generated/parser.ts (9948 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/proto/src/_generated/parser.ts (24553 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/route/src/_generated/parser.ts (7691 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/rrule/src/_generated/parser.ts (5944 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/scss/src/_generated/parser.ts (31185 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/search/src/_generated/parser.ts (10763 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/semver/src/_generated/parser.ts (12205 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/spdx/src/_generated/parser.ts (10612 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/sql/src/_generated/parser.ts (11714 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/toml/src/_generated/parser.ts (7390 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/ulid/src/_generated/parser.ts (3952 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/url/src/_generated/parser.ts (17359 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/uuid/src/_generated/parser.ts (5618 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/yaml/src/_generated/parser.ts (10556 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/yaml-block/src/_generated/parser.ts (12515 bytes)
+TAP version 13
+# Subtest: arn: structured output and both inverse paths
+ok 1 - arn: structured output and both inverse paths
+  ---
+  duration_ms: 4.035083
+  ...
+# Subtest: arn: historical teaching-input corpus
+ok 2 - arn: historical teaching-input corpus
+  ---
+  duration_ms: 0.613958
+  ...
+# Subtest: arn: unseen input and rejection corpus
+ok 3 - arn: unseen input and rejection corpus
+  ---
+  duration_ms: 0.619666
+  ...
+# Subtest: authorization: structured output and both inverse paths
+ok 4 - authorization: structured output and both inverse paths
+  ---
+  duration_ms: 1.177875
+  ...
+# Subtest: authorization: historical teaching-input corpus
+ok 5 - authorization: historical teaching-input corpus
+  ---
+  duration_ms: 0.920666
+  ...
+# Subtest: authorization: unseen input and rejection corpus
+ok 6 - authorization: unseen input and rejection corpus
+  ---
+  duration_ms: 0.596083
+  ...
+# Subtest: cache-control: structured output and both inverse paths
+ok 7 - cache-control: structured output and both inverse paths
+  ---
+  duration_ms: 1.290833
+  ...
+# Subtest: cache-control: historical teaching-input corpus
+ok 8 - cache-control: historical teaching-input corpus
+  ---
+  duration_ms: 1.190875
+  ...
+# Subtest: cache-control: unseen input and rejection corpus
+ok 9 - cache-control: unseen input and rejection corpus
+  ---
+  duration_ms: 0.59025
+  ...
+# Subtest: color: structured output and both inverse paths
+ok 10 - color: structured output and both inverse paths
+  ---
+  duration_ms: 1.214834
+  ...
+# Subtest: color: historical teaching-input corpus
+ok 11 - color: historical teaching-input corpus
+  ---
+  duration_ms: 1.817209
+  ...
+# Subtest: color: unseen input and rejection corpus
+ok 12 - color: unseen input and rejection corpus
+  ---
+  duration_ms: 0.605666
+  ...
+# Subtest: commits: structured output and both inverse paths
+ok 13 - commits: structured output and both inverse paths
+  ---
+  duration_ms: 1.60825
+  ...
+# Subtest: commits: historical teaching-input corpus
+ok 14 - commits: historical teaching-input corpus
+  ---
+  duration_ms: 1.640458
+  ...
+# Subtest: commits: unseen input and rejection corpus
+ok 15 - commits: unseen input and rejection corpus
+  ---
+  duration_ms: 0.413791
+  ...
+# Subtest: scalar recursive alternatives infer unseen trees and checked inverses
+ok 16 - scalar recursive alternatives infer unseen trees and checked inverses
+  ---
+  duration_ms: 9.829291
+  ...
+# Subtest: prefix captures compose adjacent fields and preserve significant newlines
+ok 17 - prefix captures compose adjacent fields and preserve significant newlines
+  ---
+  duration_ms: 2.920834
+  ...
+# Subtest: bounded repetitions stop at nonmatching syntax and validate empty evidence
+ok 18 - bounded repetitions stop at nonmatching syntax and validate empty evidence
+  ---
+  duration_ms: 2.93975
+  ...
+# Subtest: line-list trailing separators are explicit and empty token cells advance through delimiters
+ok 19 - line-list trailing separators are explicit and empty token cells advance through delimiters
+  ---
+  duration_ms: 3.262625
+  ...
+# Subtest: both list kinds allow explicit trailing separators before skipped whitespace
+ok 20 - both list kinds allow explicit trailing separators before skipped whitespace
+  ---
+  duration_ms: 8.088
+  ...
+# Subtest: significant delimiters keep the newline owned by the enclosing production
+ok 21 - significant delimiters keep the newline owned by the enclosing production
+  ---
+  duration_ms: 4.145625
+  ...
+# Subtest: inverse scalar alternatives retry same-shaped candidates using their lexical rules
+ok 22 - inverse scalar alternatives retry same-shaped candidates using their lexical rules
+  ---
+  duration_ms: 3.808083
+  ...
+# Subtest: token captures retain declared prefix constraints
+ok 23 - token captures retain declared prefix constraints
+  ---
+  duration_ms: 2.823042
+  ...
+# Subtest: inverse list alternatives also retry overlapping shapes with distinct layouts
+ok 24 - inverse list alternatives also retry overlapping shapes with distinct layouts
+  ---
+  duration_ms: 4.247583
+  ...
+# Subtest: infers unseen records and alternate nested output shapes, with inverse
+ok 25 - infers unseen records and alternate nested output shapes, with inverse
+  ---
+  duration_ms: 8.549958
+  ...
+# Subtest: rejects malformed, trailing, unknown-target and invalid inverse inputs
+ok 26 - rejects malformed, trailing, unknown-target and invalid inverse inputs
+  ---
+  duration_ms: 2.910542
+  ...
+# Subtest: infers list separators from paired examples
+ok 27 - infers list separators from paired examples
+  ---
+  duration_ms: 3.234
+  ...
+# Subtest: fails compilation for ambiguous captures and inconsistent examples
+ok 28 - fails compilation for ambiguous captures and inconsistent examples
+  ---
+  duration_ms: 0.857125
+  ...
+# Subtest: emits standalone deterministic code without runtime grammar data
+ok 29 - emits standalone deterministic code without runtime grammar data
+  ---
+  duration_ms: 1.696708
+  ...
+# Subtest: recursive alternatives align children by output shape, not declaration order
+ok 30 - recursive alternatives align children by output shape, not declaration order
+  ---
+  duration_ms: 4.065208
+  ...
+# Subtest: prefix constraints distinguish alternatives without changing inferred layouts
+ok 31 - prefix constraints distinguish alternatives without changing inferred layouts
+  ---
+  duration_ms: 2.377792
+  ...
+# Subtest: rejects examples that violate metadata and indistinguishable alternatives
+ok 32 - rejects examples that violate metadata and indistinguishable alternatives
+  ---
+  duration_ms: 2.141333
+  ...
+# Subtest: regions close independently of the ordinary bracket vocabulary
+ok 33 - regions close independently of the ordinary bracket vocabulary
+  ---
+  duration_ms: 4.864375
+  ...
+# Subtest: inverse validation preserves ordered grammar selection despite expected shape
+ok 34 - inverse validation preserves ordered grammar selection despite expected shape
+  ---
+  duration_ms: 8.420125
+  ...
+# Subtest: inverse validates nested field boundaries, whitespace, keys, counts and empties
+ok 35 - inverse validates nested field boundaries, whitespace, keys, counts and empties
+  ---
+  duration_ms: 5.685042
+  ...
+# Subtest: inverse preserves non-object outputs and repeated bindings
+ok 36 - inverse preserves non-object outputs and repeated bindings
+  ---
+  duration_ms: 2.683708
+  ...
+# Subtest: renaming input, output, fields and productions does not change grammar semantics
+ok 37 - renaming input, output, fields and productions does not change grammar semantics
+  ---
+  duration_ms: 5.8675
+  ...
+# Subtest: inverse rejects extra enumerable properties on output arrays
+ok 38 - inverse rejects extra enumerable properties on output arrays
+  ---
+  duration_ms: 2.779333
+  ...
+# Subtest: factored prefixes preserve membership, including divergent suffixes
+ok 39 - factored prefixes preserve membership, including divergent suffixes
+  ---
+  duration_ms: 2.809375
+  ...
+# Subtest: cookie: structured output and both inverse paths
+ok 40 - cookie: structured output and both inverse paths
+  ---
+  duration_ms: 1.265792
+  ...
+# Subtest: cookie: historical teaching-input corpus
+ok 41 - cookie: historical teaching-input corpus
+  ---
+  duration_ms: 0.727708
+  ...
+# Subtest: cookie: unseen input and rejection corpus
+ok 42 - cookie: unseen input and rejection corpus
+  ---
+  duration_ms: 0.53275
+  ...
+# Subtest: cron: structured output and both inverse paths
+ok 43 - cron: structured output and both inverse paths
+  ---
+  duration_ms: 1.6445
+  ...
+# Subtest: cron: historical teaching-input corpus
+ok 44 - cron: historical teaching-input corpus
+  ---
+  duration_ms: 0.299
+  ...
+# Subtest: cron: unseen input and rejection corpus
+ok 45 - cron: unseen input and rejection corpus
+  ---
+  duration_ms: 0.753416
+  ...
+# Subtest: preserved 1MB CSS fixture agrees structurally with PostCSS and round-trips
+ok 46 - preserved 1MB CSS fixture agrees structurally with PostCSS and round-trips
+  ---
+  duration_ms: 500.385583
+  ...
+# Subtest: 150 unseen stylesheet combinations agree with PostCSS
+ok 47 - 150 unseen stylesheet combinations agree with PostCSS
+  ---
+  duration_ms: 13.695916
+  ...
+# Subtest: unseen declarations, selector lists and recursive rules
+ok 48 - unseen declarations, selector lists and recursive rules
+  ---
+  duration_ms: 0.32575
+  ...
+# Subtest: balanced values, escaped selectors, quotes and comments preserve boundaries
+ok 49 - balanced values, escaped selectors, quotes and comments preserve boundaries
+  ---
+  duration_ms: 1.110208
+  ...
+# Subtest: at rules, empty blocks, optional final semicolon and JSON encoding
+ok 50 - at rules, empty blocks, optional final semicolon and JSON encoding
+  ---
+  duration_ms: 1.782084
+  ...
+# Subtest: rejects malformed syntax rather than returning partial results
+ok 51 - rejects malformed syntax rather than returning partial results
+  ---
+  duration_ms: 0.672125
+  ...
+# Subtest: bounds recursive nesting and rejects invalid inverse data
+ok 52 - bounds recursive nesting and rejects invalid inverse data
+  ---
+  duration_ms: 1.967167
+  ...
+# Subtest: mixed stylesheet constructs remain value-stable
+ok 53 - mixed stylesheet constructs remain value-stable
+  ---
+  duration_ms: 0.566458
+  ...
+# Subtest: css-color: structured output and both inverse paths
+ok 54 - css-color: structured output and both inverse paths
+  ---
+  duration_ms: 1.6065
+  ...
+# Subtest: css-color: unseen input and rejection corpus
+ok 55 - css-color: unseen input and rejection corpus
+  ---
+  duration_ms: 1.387875
+  ...
+# Subtest: css-length-percentage: structured output and both inverse paths
+ok 56 - css-length-percentage: structured output and both inverse paths
+  ---
+  duration_ms: 1.574875
+  ...
+# Subtest: css-length-percentage: unseen input and rejection corpus
+ok 57 - css-length-percentage: unseen input and rejection corpus
+  ---
+  duration_ms: 1.600417
+  ...
+# Subtest: csv: structured output and both inverse paths
+ok 58 - csv: structured output and both inverse paths
+  ---
+  duration_ms: 1.100958
+  ...
+# Subtest: csv: historical teaching-input corpus
+ok 59 - csv: historical teaching-input corpus
+  ---
+  duration_ms: 1.021417
+  ...
+# Subtest: csv: unseen input and rejection corpus
+ok 60 - csv: unseen input and rejection corpus
+  ---
+  duration_ms: 0.7005
+  ...
+# Subtest: docker-ref: structured output and both inverse paths
+ok 61 - docker-ref: structured output and both inverse paths
+  ---
+  duration_ms: 0.919042
+  ...
+# Subtest: docker-ref: historical teaching-input corpus
+ok 62 - docker-ref: historical teaching-input corpus
+  ---
+  duration_ms: 0.853208
+  ...
+# Subtest: docker-ref: unseen input and rejection corpus
+ok 63 - docker-ref: unseen input and rejection corpus
+  ---
+  duration_ms: 0.544042
+  ...
+# Subtest: duration: structured output and both inverse paths
+ok 64 - duration: structured output and both inverse paths
+  ---
+  duration_ms: 1.000792
+  ...
+# Subtest: duration: historical teaching-input corpus
+ok 65 - duration: historical teaching-input corpus
+  ---
+  duration_ms: 1.426292
+  ...
+# Subtest: duration: unseen input and rejection corpus
+ok 66 - duration: unseen input and rejection corpus
+  ---
+  duration_ms: 0.326625
+  ...
+# Subtest: email: structured output and both inverse paths
+ok 67 - email: structured output and both inverse paths
+  ---
+  duration_ms: 0.975208
+  ...
+# Subtest: email: historical teaching-input corpus
+ok 68 - email: historical teaching-input corpus
+  ---
+  duration_ms: 0.668375
+  ...
+# Subtest: email: unseen input and rejection corpus
+ok 69 - email: unseen input and rejection corpus
+  ---
+  duration_ms: 0.317542
+  ...
+# Subtest: env: structured output and both inverse paths
+ok 70 - env: structured output and both inverse paths
+  ---
+  duration_ms: 1.073
+  ...
+# Subtest: env: historical teaching-input corpus
+ok 71 - env: historical teaching-input corpus
+  ---
+  duration_ms: 0.791917
+  ...
+# Subtest: env: unseen input and rejection corpus
+ok 72 - env: unseen input and rejection corpus
+  ---
+  duration_ms: 0.33075
+  ...
+# Subtest: expression: structured output and both inverse paths
+ok 73 - expression: structured output and both inverse paths
+  ---
+  duration_ms: 4.651417
+  ...
+# Subtest: expression: historical teaching-input corpus
+ok 74 - expression: historical teaching-input corpus
+  ---
+  duration_ms: 2.955125
+  ...
+# Subtest: expression: unseen input and rejection corpus
+ok 75 - expression: unseen input and rejection corpus
+  ---
+  duration_ms: 1.515
+  ...
+# Subtest: filter: structured output and both inverse paths
+ok 76 - filter: structured output and both inverse paths
+  ---
+  duration_ms: 2.749625
+  ...
+# Subtest: filter: historical teaching-input corpus
+ok 77 - filter: historical teaching-input corpus
+  ---
+  duration_ms: 3.195791
+  ...
+# Subtest: filter: unseen input and rejection corpus
+ok 78 - filter: unseen input and rejection corpus
+  ---
+  duration_ms: 0.798916
+  ...
+# Subtest: gitignore: structured output and both inverse paths
+ok 79 - gitignore: structured output and both inverse paths
+  ---
+  duration_ms: 1.46925
+  ...
+# Subtest: gitignore: historical teaching-input corpus
+ok 80 - gitignore: historical teaching-input corpus
+  ---
+  duration_ms: 1.3085
+  ...
+# Subtest: gitignore: unseen input and rejection corpus
+ok 81 - gitignore: unseen input and rejection corpus
+  ---
+  duration_ms: 0.618042
+  ...
+# Subtest: glob: structured output and both inverse paths
+ok 82 - glob: structured output and both inverse paths
+  ---
+  duration_ms: 1.747583
+  ...
+# Subtest: glob: historical teaching-input corpus
+ok 83 - glob: historical teaching-input corpus
+  ---
+  duration_ms: 1.777791
+  ...
+# Subtest: glob: unseen input and rejection corpus
+ok 84 - glob: unseen input and rejection corpus
+  ---
+  duration_ms: 0.730833
+  ...
+# Subtest: graphql: structured output and both inverse paths
+ok 85 - graphql: structured output and both inverse paths
+  ---
+  duration_ms: 3.314375
+  ...
+# Subtest: graphql: historical teaching-input corpus
+ok 86 - graphql: historical teaching-input corpus
+  ---
+  duration_ms: 3.657167
+  ...
+# Subtest: graphql: unseen input and rejection corpus
+ok 87 - graphql: unseen input and rejection corpus
+  ---
+  duration_ms: 1.220334
+  ...
+# Subtest: html: structured output and both inverse paths
+ok 88 - html: structured output and both inverse paths
+  ---
+  duration_ms: 2.219958
+  ...
+# Subtest: html: historical teaching-input corpus
+ok 89 - html: historical teaching-input corpus
+  ---
+  duration_ms: 1.980125
+  ...
+# Subtest: html: unseen input and rejection corpus
+ok 90 - html: unseen input and rejection corpus
+  ---
+  duration_ms: 0.37525
+  ...
+# Subtest: http: structured output and both inverse paths
+ok 91 - http: structured output and both inverse paths
+  ---
+  duration_ms: 2.108834
+  ...
+# Subtest: http: historical teaching-input corpus
+ok 92 - http: historical teaching-input corpus
+  ---
+  duration_ms: 1.22875
+  ...
+# Subtest: http: unseen input and rejection corpus
+ok 93 - http: unseen input and rejection corpus
+  ---
+  duration_ms: 0.404208
+  ...
+# Subtest: ini: structured output and both inverse paths
+ok 94 - ini: structured output and both inverse paths
+  ---
+  duration_ms: 1.458833
+  ...
+# Subtest: ini: historical teaching-input corpus
+ok 95 - ini: historical teaching-input corpus
+  ---
+  duration_ms: 0.954084
+  ...
+# Subtest: ini: unseen input and rejection corpus
+ok 96 - ini: unseen input and rejection corpus
+  ---
+  duration_ms: 0.268333
+  ...
+# Subtest: ipv4: structured output and both inverse paths
+ok 97 - ipv4: structured output and both inverse paths
+  ---
+  duration_ms: 1.916291
+  ...
+# Subtest: ipv4: historical teaching-input corpus
+ok 98 - ipv4: historical teaching-input corpus
+  ---
+  duration_ms: 0.674791
+  ...
+# Subtest: ipv4: unseen input and rejection corpus
+ok 99 - ipv4: unseen input and rejection corpus
+  ---
+  duration_ms: 0.375042
+  ...
+# Subtest: ipv6: structured output and both inverse paths
+ok 100 - ipv6: structured output and both inverse paths
+  ---
+  duration_ms: 8.739917
+  ...
+# Subtest: ipv6: historical teaching-input corpus
+ok 101 - ipv6: historical teaching-input corpus
+  ---
+  duration_ms: 0.270958
+  ...
+# Subtest: ipv6: unseen input and rejection corpus
+ok 102 - ipv6: unseen input and rejection corpus
+  ---
+  duration_ms: 0.763791
+  ...
+# Subtest: iso-duration: structured output and both inverse paths
+ok 103 - iso-duration: structured output and both inverse paths
+  ---
+  duration_ms: 1.999625
+  ...
+# Subtest: iso-duration: unseen input and rejection corpus
+ok 104 - iso-duration: unseen input and rejection corpus
+  ---
+  duration_ms: 1.867375
+  ...
+# Subtest: js-expr: structured output and both inverse paths
+ok 105 - js-expr: structured output and both inverse paths
+  ---
+  duration_ms: 2.896292
+  ...
+# Subtest: js-expr: unseen input and rejection corpus
+ok 106 - js-expr: unseen input and rejection corpus
+  ---
+  duration_ms: 2.359208
+  ...
+# Subtest: json: structured output and both inverse paths
+ok 107 - json: structured output and both inverse paths
+  ---
+  duration_ms: 1.806209
+  ...
+# Subtest: json: historical teaching-input corpus
+ok 108 - json: historical teaching-input corpus
+  ---
+  duration_ms: 2.892333
+  ...
+# Subtest: json: unseen input and rejection corpus
+ok 109 - json: unseen input and rejection corpus
+  ---
+  duration_ms: 0.548584
+  ...
+# Subtest: json-flat: structured output and both inverse paths
+ok 110 - json-flat: structured output and both inverse paths
+  ---
+  duration_ms: 0.8885
+  ...
+# Subtest: json-flat: historical teaching-input corpus
+ok 111 - json-flat: historical teaching-input corpus
+  ---
+  duration_ms: 0.909875
+  ...
+# Subtest: json-flat: unseen input and rejection corpus
+ok 112 - json-flat: unseen input and rejection corpus
+  ---
+  duration_ms: 0.479458
+  ...
+# Subtest: jwt: structured output and both inverse paths
+ok 113 - jwt: structured output and both inverse paths
+  ---
+  duration_ms: 0.779792
+  ...
+# Subtest: jwt: historical teaching-input corpus
+ok 114 - jwt: historical teaching-input corpus
+  ---
+  duration_ms: 0.191542
+  ...
+# Subtest: jwt: unseen input and rejection corpus
+ok 115 - jwt: unseen input and rejection corpus
+  ---
+  duration_ms: 0.552417
+  ...
+# Subtest: Less variables, mixin calls/definitions, guards, interpolation and nesting
+ok 116 - Less variables, mixin calls/definitions, guards, interpolation and nesting
+  ---
+  duration_ms: 6.336667
+  ...
+# Subtest: Less interpolation and blocks must close
+ok 117 - Less interpolation and blocks must close
+  ---
+  duration_ms: 0.863542
+  ...
+# Subtest: Less URLs, detached rulesets and escaped values
+ok 118 - Less URLs, detached rulesets and escaped values
+  ---
+  duration_ms: 0.971666
+  ...
+# Subtest: mixed-case URL function names protect slash pairs from line comments
+ok 119 - mixed-case URL function names protect slash pairs from line comments
+  ---
+  duration_ms: 1.666083
+  ...
+# Subtest: log: structured output and both inverse paths
+ok 120 - log: structured output and both inverse paths
+  ---
+  duration_ms: 1.448375
+  ...
+# Subtest: log: historical teaching-input corpus
+ok 121 - log: historical teaching-input corpus
+  ---
+  duration_ms: 0.631
+  ...
+# Subtest: log: unseen input and rejection corpus
+ok 122 - log: unseen input and rejection corpus
+  ---
+  duration_ms: 0.34275
+  ...
+# Subtest: mac: structured output and both inverse paths
+ok 123 - mac: structured output and both inverse paths
+  ---
+  duration_ms: 1.212166
+  ...
+# Subtest: mac: historical teaching-input corpus
+ok 124 - mac: historical teaching-input corpus
+  ---
+  duration_ms: 1.439
+  ...
+# Subtest: mac: unseen input and rejection corpus
+ok 125 - mac: unseen input and rejection corpus
+  ---
+  duration_ms: 0.379291
+  ...
+# Subtest: markdown: structured output and both inverse paths
+ok 126 - markdown: structured output and both inverse paths
+  ---
+  duration_ms: 1.289208
+  ...
+# Subtest: markdown: historical teaching-input corpus
+ok 127 - markdown: historical teaching-input corpus
+  ---
+  duration_ms: 1.445291
+  ...
+# Subtest: markdown: unseen input and rejection corpus
+ok 128 - markdown: unseen input and rejection corpus
+  ---
+  duration_ms: 0.266875
+  ...
+# Subtest: mentions: structured output and both inverse paths
+ok 129 - mentions: structured output and both inverse paths
+  ---
+  duration_ms: 1.228625
+  ...
+# Subtest: mentions: historical teaching-input corpus
+ok 130 - mentions: historical teaching-input corpus
+  ---
+  duration_ms: 0.674584
+  ...
+# Subtest: mentions: unseen input and rejection corpus
+ok 131 - mentions: unseen input and rejection corpus
+  ---
+  duration_ms: 0.517625
+  ...
+# Subtest: mime: structured output and both inverse paths
+ok 132 - mime: structured output and both inverse paths
+  ---
+  duration_ms: 0.782375
+  ...
+# Subtest: mime: historical teaching-input corpus
+ok 133 - mime: historical teaching-input corpus
+  ---
+  duration_ms: 0.526667
+  ...
+# Subtest: mime: unseen input and rejection corpus
+ok 134 - mime: unseen input and rejection corpus
+  ---
+  duration_ms: 0.278459
+  ...
+# Subtest: npm-range: structured output and both inverse paths
+ok 135 - npm-range: structured output and both inverse paths
+  ---
+  duration_ms: 2.178667
+  ...
+# Subtest: npm-range: historical teaching-input corpus
+ok 136 - npm-range: historical teaching-input corpus
+  ---
+  duration_ms: 1.03075
+  ...
+# Subtest: npm-range: unseen input and rejection corpus
+ok 137 - npm-range: unseen input and rejection corpus
+  ---
+  duration_ms: 1.10775
+  ...
+# Subtest: pg-select: structured output and both inverse paths
+ok 138 - pg-select: structured output and both inverse paths
+  ---
+  duration_ms: 1.510875
+  ...
+# Subtest: pg-select: unseen input and rejection corpus
+ok 139 - pg-select: unseen input and rejection corpus
+  ---
+  duration_ms: 1.024875
+  ...
+# Subtest: proto: structured output and both inverse paths
+ok 140 - proto: structured output and both inverse paths
+  ---
+  duration_ms: 2.364666
+  ...
+# Subtest: proto: historical teaching-input corpus
+ok 141 - proto: historical teaching-input corpus
+  ---
+  duration_ms: 3.732625
+  ...
+# Subtest: proto: unseen input and rejection corpus
+ok 142 - proto: unseen input and rejection corpus
+  ---
+  duration_ms: 0.355917
+  ...
+# Subtest: route: structured output and both inverse paths
+ok 143 - route: structured output and both inverse paths
+  ---
+  duration_ms: 1.243459
+  ...
+# Subtest: route: historical teaching-input corpus
+ok 144 - route: historical teaching-input corpus
+  ---
+  duration_ms: 0.997417
+  ...
+# Subtest: route: unseen input and rejection corpus
+ok 145 - route: unseen input and rejection corpus
+  ---
+  duration_ms: 0.233625
+  ...
+# Subtest: rrule: structured output and both inverse paths
+ok 146 - rrule: structured output and both inverse paths
+  ---
+  duration_ms: 1.245875
+  ...
+# Subtest: rrule: unseen input and rejection corpus
+ok 147 - rrule: unseen input and rejection corpus
+  ---
+  duration_ms: 0.491416
+  ...
+# Subtest: SCSS variables, interpolation, mixins, directives, loops and nested rules
+ok 148 - SCSS variables, interpolation, mixins, directives, loops and nested rules
+  ---
+  duration_ms: 4.096542
+  ...
+# Subtest: SCSS interpolation is balanced and malformed input is rejected
+ok 149 - SCSS interpolation is balanced and malformed input is rejected
+  ---
+  duration_ms: 0.82675
+  ...
+# Subtest: SCSS URLs, maps, escaped values and nested properties
+ok 150 - SCSS URLs, maps, escaped values and nested properties
+  ---
+  duration_ms: 1.181958
+  ...
+# Subtest: inferred punctuation accepts minified nested property groups
+ok 151 - inferred punctuation accepts minified nested property groups
+  ---
+  duration_ms: 0.174708
+  ...
+# Subtest: mixed-case URL function names protect slash pairs from line comments
+ok 152 - mixed-case URL function names protect slash pairs from line comments
+  ---
+  duration_ms: 1.284958
+  ...
+# Subtest: search: structured output and both inverse paths
+ok 153 - search: structured output and both inverse paths
+  ---
+  duration_ms: 1.071834
+  ...
+# Subtest: search: historical teaching-input corpus
+ok 154 - search: historical teaching-input corpus
+  ---
+  duration_ms: 0.632917
+  ...
+# Subtest: search: unseen input and rejection corpus
+ok 155 - search: unseen input and rejection corpus
+  ---
+  duration_ms: 0.583708
+  ...
+# Subtest: semver: structured output and both inverse paths
+ok 156 - semver: structured output and both inverse paths
+  ---
+  duration_ms: 0.922375
+  ...
+# Subtest: semver: historical teaching-input corpus
+ok 157 - semver: historical teaching-input corpus
+  ---
+  duration_ms: 0.639416
+  ...
+# Subtest: semver: unseen input and rejection corpus
+ok 158 - semver: unseen input and rejection corpus
+  ---
+  duration_ms: 0.773208
+  ...
+# Subtest: spdx: structured output and both inverse paths
+ok 159 - spdx: structured output and both inverse paths
+  ---
+  duration_ms: 1.688958
+  ...
+# Subtest: spdx: historical teaching-input corpus
+ok 160 - spdx: historical teaching-input corpus
+  ---
+  duration_ms: 0.740208
+  ...
+# Subtest: spdx: unseen input and rejection corpus
+ok 161 - spdx: unseen input and rejection corpus
+  ---
+  duration_ms: 0.575709
+  ...
+# Subtest: sql: structured output and both inverse paths
+ok 162 - sql: structured output and both inverse paths
+  ---
+  duration_ms: 1.357084
+  ...
+# Subtest: sql: historical teaching-input corpus
+ok 163 - sql: historical teaching-input corpus
+  ---
+  duration_ms: 2.440209
+  ...
+# Subtest: sql: unseen input and rejection corpus
+ok 164 - sql: unseen input and rejection corpus
+  ---
+  duration_ms: 0.511
+  ...
+# Subtest: toml: structured output and both inverse paths
+ok 165 - toml: structured output and both inverse paths
+  ---
+  duration_ms: 1.073875
+  ...
+# Subtest: toml: historical teaching-input corpus
+ok 166 - toml: historical teaching-input corpus
+  ---
+  duration_ms: 0.814334
+  ...
+# Subtest: toml: unseen input and rejection corpus
+ok 167 - toml: unseen input and rejection corpus
+  ---
+  duration_ms: 0.254083
+  ...
+# Subtest: ulid: structured output and both inverse paths
+ok 168 - ulid: structured output and both inverse paths
+  ---
+  duration_ms: 0.725917
+  ...
+# Subtest: ulid: historical teaching-input corpus
+ok 169 - ulid: historical teaching-input corpus
+  ---
+  duration_ms: 0.444625
+  ...
+# Subtest: ulid: unseen input and rejection corpus
+ok 170 - ulid: unseen input and rejection corpus
+  ---
+  duration_ms: 0.413709
+  ...
+# Subtest: url: structured output and both inverse paths
+ok 171 - url: structured output and both inverse paths
+  ---
+  duration_ms: 1.661708
+  ...
+# Subtest: url: historical teaching-input corpus
+ok 172 - url: historical teaching-input corpus
+  ---
+  duration_ms: 1.186791
+  ...
+# Subtest: url: unseen input and rejection corpus
+ok 173 - url: unseen input and rejection corpus
+  ---
+  duration_ms: 0.310458
+  ...
+# Subtest: uuid: structured output and both inverse paths
+ok 174 - uuid: structured output and both inverse paths
+  ---
+  duration_ms: 1.251375
+  ...
+# Subtest: uuid: historical teaching-input corpus
+ok 175 - uuid: historical teaching-input corpus
+  ---
+  duration_ms: 0.511667
+  ...
+# Subtest: uuid: unseen input and rejection corpus
+ok 176 - uuid: unseen input and rejection corpus
+  ---
+  duration_ms: 0.646125
+  ...
+# Subtest: yaml: structured output and both inverse paths
+ok 177 - yaml: structured output and both inverse paths
+  ---
+  duration_ms: 1.334
+  ...
+# Subtest: yaml: historical teaching-input corpus
+ok 178 - yaml: historical teaching-input corpus
+  ---
+  duration_ms: 0.725583
+  ...
+# Subtest: yaml: unseen input and rejection corpus
+ok 179 - yaml: unseen input and rejection corpus
+  ---
+  duration_ms: 0.497292
+  ...
+# Subtest: yaml-block: structured output and both inverse paths
+ok 180 - yaml-block: structured output and both inverse paths
+  ---
+  duration_ms: 1.432041
+  ...
+# Subtest: yaml-block: unseen input and rejection corpus
+ok 181 - yaml-block: unseen input and rejection corpus
+  ---
+  duration_ms: 0.778083
+  ...
+1..181
+# tests 181
+# pass 181
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3237.014542

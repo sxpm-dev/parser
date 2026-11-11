@@ -1,0 +1,3 @@
+.card, #panel { color: red; margin: 12px 4px; background: url("asset.svg"); }
+@media screen and (min-width: 600px) { .card:hover { padding: calc(100% - 2px); } }
+[data-x="a,b"]::before { content: "{x;y}"; }

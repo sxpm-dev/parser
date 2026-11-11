@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+npm-range: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/f4e515f3    generated (checked inverse) 12.93ms     77.4        +/-18.9 14629 documents       1.00x
+                              semver.Range                13.05ms     76.6        +/-3.8  14629 documents       1.01x
+-----------------------------------------------------------------------------------------------------------------------

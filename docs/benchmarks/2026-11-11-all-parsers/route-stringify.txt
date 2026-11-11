@@ -1,0 +1,7 @@
+path-to-regexp does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+route: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/bfe4808d    generated (checked inverse) 13.80ms     72.4        +/-2.6  9310 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------

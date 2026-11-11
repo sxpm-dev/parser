@@ -1,0 +1,180 @@
+
+> example-parser-workspace@0.0.0 test
+> npm run generate && tsx --test packages/compiler/test/*.test.ts packages/css/test/*.test.ts packages/less/test/*.test.ts packages/scss/test/*.test.ts
+
+
+> example-parser-workspace@0.0.0 generate
+> tsx packages/compiler/src/cli.ts packages/css/src/schema.ts packages/less/src/schema.ts packages/scss/src/schema.ts
+
+generated /Users/valerii/Develop/parser3_codex/packages/css/src/_generated/parser.ts (22021 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/less/src/_generated/parser.ts (31611 bytes)
+generated /Users/valerii/Develop/parser3_codex/packages/scss/src/_generated/parser.ts (31183 bytes)
+TAP version 13
+# Subtest: infers unseen records and alternate nested output shapes, with inverse
+ok 1 - infers unseen records and alternate nested output shapes, with inverse
+  ---
+  duration_ms: 13.091375
+  ...
+# Subtest: rejects malformed, trailing, unknown-target and invalid inverse inputs
+ok 2 - rejects malformed, trailing, unknown-target and invalid inverse inputs
+  ---
+  duration_ms: 3.930667
+  ...
+# Subtest: infers list separators from paired examples
+ok 3 - infers list separators from paired examples
+  ---
+  duration_ms: 6.161834
+  ...
+# Subtest: fails compilation for ambiguous captures and inconsistent examples
+ok 4 - fails compilation for ambiguous captures and inconsistent examples
+  ---
+  duration_ms: 1.512
+  ...
+# Subtest: emits standalone deterministic code without runtime grammar data
+ok 5 - emits standalone deterministic code without runtime grammar data
+  ---
+  duration_ms: 2.686833
+  ...
+# Subtest: recursive alternatives align children by output shape, not declaration order
+ok 6 - recursive alternatives align children by output shape, not declaration order
+  ---
+  duration_ms: 5.485375
+  ...
+# Subtest: prefix constraints distinguish alternatives without changing inferred layouts
+ok 7 - prefix constraints distinguish alternatives without changing inferred layouts
+  ---
+  duration_ms: 4.554875
+  ...
+# Subtest: rejects examples that violate metadata and indistinguishable alternatives
+ok 8 - rejects examples that violate metadata and indistinguishable alternatives
+  ---
+  duration_ms: 2.983917
+  ...
+# Subtest: regions close independently of the ordinary bracket vocabulary
+ok 9 - regions close independently of the ordinary bracket vocabulary
+  ---
+  duration_ms: 5.729375
+  ...
+# Subtest: inverse validation preserves ordered grammar selection despite expected shape
+ok 2 - inverse validation preserves ordered grammar selection despite expected shape
+  ---
+  duration_ms: 13.875542
+  ...
+# Subtest: inverse validates nested field boundaries, whitespace, keys, counts and empties
+ok 3 - inverse validates nested field boundaries, whitespace, keys, counts and empties
+  ---
+  duration_ms: 6.863125
+  ...
+# Subtest: inverse preserves non-object outputs and repeated bindings
+ok 4 - inverse preserves non-object outputs and repeated bindings
+  ---
+  duration_ms: 5.950791
+  ...
+# Subtest: renaming input, output, fields and productions does not change grammar semantics
+ok 5 - renaming input, output, fields and productions does not change grammar semantics
+  ---
+  duration_ms: 10.644209
+  ...
+# Subtest: inverse rejects extra enumerable properties on output arrays
+ok 6 - inverse rejects extra enumerable properties on output arrays
+  ---
+  duration_ms: 4.880792
+  ...
+# Subtest: factored prefixes preserve membership, including divergent suffixes
+ok 3 - factored prefixes preserve membership, including divergent suffixes
+  ---
+  duration_ms: 6.012833
+  ...
+# Subtest: preserved 1MB CSS fixture agrees structurally with PostCSS and round-trips
+ok 4 - preserved 1MB CSS fixture agrees structurally with PostCSS and round-trips
+  ---
+  duration_ms: 527.209833
+  ...
+# Subtest: 150 unseen stylesheet combinations agree with PostCSS
+ok 5 - 150 unseen stylesheet combinations agree with PostCSS
+  ---
+  duration_ms: 14.749625
+  ...
+# Subtest: unseen declarations, selector lists and recursive rules
+ok 5 - unseen declarations, selector lists and recursive rules
+  ---
+  duration_ms: 7.040542
+  ...
+# Subtest: balanced values, escaped selectors, quotes and comments preserve boundaries
+ok 6 - balanced values, escaped selectors, quotes and comments preserve boundaries
+  ---
+  duration_ms: 1.752334
+  ...
+# Subtest: at rules, empty blocks, optional final semicolon and JSON encoding
+ok 7 - at rules, empty blocks, optional final semicolon and JSON encoding
+  ---
+  duration_ms: 2.139875
+  ...
+# Subtest: rejects malformed syntax rather than returning partial results
+ok 8 - rejects malformed syntax rather than returning partial results
+  ---
+  duration_ms: 0.714542
+  ...
+# Subtest: bounds recursive nesting and rejects invalid inverse data
+ok 9 - bounds recursive nesting and rejects invalid inverse data
+  ---
+  duration_ms: 2.144125
+  ...
+# Subtest: mixed stylesheet constructs remain value-stable
+ok 10 - mixed stylesheet constructs remain value-stable
+  ---
+  duration_ms: 2.70275
+  ...
+# Subtest: Less variables, mixin calls/definitions, guards, interpolation and nesting
+ok 6 - Less variables, mixin calls/definitions, guards, interpolation and nesting
+  ---
+  duration_ms: 8.380417
+  ...
+# Subtest: Less interpolation and blocks must close
+ok 7 - Less interpolation and blocks must close
+  ---
+  duration_ms: 0.689584
+  ...
+# Subtest: Less URLs, detached rulesets and escaped values
+ok 8 - Less URLs, detached rulesets and escaped values
+  ---
+  duration_ms: 0.750708
+  ...
+# Subtest: mixed-case URL function names protect slash pairs from line comments
+ok 9 - mixed-case URL function names protect slash pairs from line comments
+  ---
+  duration_ms: 2.224208
+  ...
+# Subtest: SCSS variables, interpolation, mixins, directives, loops and nested rules
+ok 7 - SCSS variables, interpolation, mixins, directives, loops and nested rules
+  ---
+  duration_ms: 13.109833
+  ...
+# Subtest: SCSS interpolation is balanced and malformed input is rejected
+ok 8 - SCSS interpolation is balanced and malformed input is rejected
+  ---
+  duration_ms: 1.241833
+  ...
+# Subtest: SCSS URLs, maps, escaped values and nested properties
+ok 9 - SCSS URLs, maps, escaped values and nested properties
+  ---
+  duration_ms: 2.177375
+  ...
+# Subtest: inferred punctuation accepts minified nested property groups
+ok 10 - inferred punctuation accepts minified nested property groups
+  ---
+  duration_ms: 0.480917
+  ...
+# Subtest: mixed-case URL function names protect slash pairs from line comments
+ok 11 - mixed-case URL function names protect slash pairs from line comments
+  ---
+  duration_ms: 3.393875
+  ...
+1..32
+# tests 32
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5750.208209

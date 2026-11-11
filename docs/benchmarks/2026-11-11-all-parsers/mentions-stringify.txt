@@ -1,0 +1,7 @@
+regexp mentions does not support this output mode; comparison omitted.
+Extracts identifiers only, dropping intervening text.
+mentions: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/ac215f15    generated (checked inverse) 10.70ms     93.4        +/-2.9  7877 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------

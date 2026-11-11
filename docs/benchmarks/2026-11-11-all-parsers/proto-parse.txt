@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+proto: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/bbd5cfec    generated (checked inverse) 6.95ms      143.9       +/-20.5 1933 documents        1.00x
+                              protobufjs                  37.65ms     26.6        +/-7.7  1933 documents        5.42x
+-----------------------------------------------------------------------------------------------------------------------

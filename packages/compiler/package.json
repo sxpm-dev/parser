@@ -1,23 +1,9 @@
 {
-  "name": "@parser2/compiler",
+  "name": "@parser3/compiler",
   "version": "0.0.0",
   "type": "module",
+  "exports": "./src/index.ts",
   "scripts": {
-    "fetch": "echo '@parser2/compiler has no conformance suite'",
-    "generate": "echo '@parser2/compiler has no generated parser'",
-    "build": "tsc -b",
-    "test": "tsx --test test/*.test.ts",
-    "fuzz": "tsx bin/fuzz.ts",
-    "fuzz:60s": "tsx bin/fuzz.ts --duration 60"
-  },
-  "exports": {
-    ".": "./dist/index.js",
-    "./bytecode/runtime": {
-      "types": "./src/emit/bytecode/runtime.ts",
-      "default": "./src/emit/bytecode/runtime.ts"
-    }
-  },
-  "dependencies": {
-    "@parser2/parser": "0.0.0"
+    "test": "tsx --test test/*.test.ts"
   }
 }

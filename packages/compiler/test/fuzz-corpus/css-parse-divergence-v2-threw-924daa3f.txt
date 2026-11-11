@@ -1,7 +1,0 @@
-# schema=css
-# kind=parse-divergence-v2-threw
-# target=-
-# mutator=replace-byte@7
-# seed="a { color: red; }"
-# detail=v2 threw, interp accepted
-a { col'r: red; }

@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+ini: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/d34f9772    generated (checked inverse) 8.58ms      116.6       +/-4.8  4877 documents        1.00x
+                              ini                         38.10ms     26.2        +/-4.5  4877 documents        4.44x
+-----------------------------------------------------------------------------------------------------------------------

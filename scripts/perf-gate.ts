@@ -1,20 +1,10 @@
+import { parserPackages } from './parser-packages.ts';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Bench } from 'tinybench';
 
-type PackageName =
-  | 'cron'
-  | 'css'
-  | 'html'
-  | 'iso-duration'
-  | 'js-expr'
-  | 'json'
-  | 'markdown'
-  | 'pg-select'
-  | 'rrule'
-  | 'toml'
-  | 'yaml-block';
+type PackageName = string;
 
 type PerfCase = {
   readonly name: string;
@@ -31,25 +21,13 @@ type BaselineEntry = {
 
 type Baseline = Record<string, BaselineEntry>;
 
-const packageNames = new Set<PackageName>([
-  'cron',
-  'css',
-  'html',
-  'iso-duration',
-  'js-expr',
-  'json',
-  'markdown',
-  'pg-select',
-  'rrule',
-  'toml',
-  'yaml-block',
-]);
+const packageNames = new Set<PackageName>(parserPackages);
 const args = process.argv.slice(2);
 const explicitPackage = args.find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
 const writeBaseline = args.includes('--write') || args.includes('-w');
 const tolerance = readTolerance('PARSER2_PERF_TOLERANCE', 0.25);
-const baselineFloorFactor = readTolerance('PARSER2_PERF_BASELINE_FLOOR', 0.1);
+const baselineFloorFactor = 1;
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const packageRoot = join(root, 'packages', packageName);
 const baselinePath = join(packageRoot, 'bench', 'perf-baseline.json');
@@ -61,7 +39,7 @@ main().catch((error: unknown) => {
 
 async function main(): Promise<void> {
   const api = await import(pathToFileURL(join(packageRoot, 'src', 'index.ts')).href) as Record<string, unknown>;
-  const cases = createCases(packageName);
+  const { cases } = await import(pathToFileURL(join(packageRoot, 'bench', 'cases.ts')).href);
   const baseline: Baseline = existsSync(baselinePath)
     ? JSON.parse(readFileSync(baselinePath, 'utf8')) as Baseline
     : {};
@@ -130,212 +108,6 @@ async function measure(perfCase: PerfCase, api: Record<string, unknown>): Promis
   return { hz: stableHz };
 }
 
-function createCases(name: PackageName): PerfCase[] {
-  const sizes = [5, 20, 100];
-
-  if (name === 'cron') {
-    const seed = '*/5 * * * *\n0 9 * * 1-5 npm test\n15 14 1 * * deploy\n';
-    return sizes.map((kb) => ({
-      name: `validate:${kb}KB`,
-      kb,
-      input: repeat(seed, kb * 1024),
-      run: (api, input) => {
-        const validate = api.validate as (value: string) => void;
-        let rows = 0;
-        for (const row of input.trim().split(/\n/)) {
-          validate(row);
-          rows++;
-        }
-        return rows;
-      },
-    }));
-  }
-
-  if (name === 'css') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateCss(kb * 1024),
-      run: (api, css) => (api.render as (input: string, opts: { target: string }) => unknown)(css, { target: 'ast' }),
-    }));
-  }
-
-  if (name === 'html') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateHtml(kb * 1024),
-      run: (api, html) => (api.render as (input: string, opts: { target: string }) => unknown)(html, { target: 'ast' }),
-    }));
-  }
-
-  if (name === 'json') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateJson(kb * 1024),
-      run: (api, json) => (api.render as (input: string, opts: { target: string }) => unknown)(json, { target: 'ast' }),
-    }));
-  }
-
-  if (name === 'iso-duration') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateIsoDuration(kb * 1024),
-      run: (api, input) => parsePerLine(api, input),
-    }));
-  }
-
-  if (name === 'js-expr') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateJsExpr(kb * 1024),
-      run: (api, input) => parsePerLine(api, input),
-    }));
-  }
-
-  if (name === 'pg-select') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generatePgSelect(kb * 1024),
-      run: (api, input) => parsePerLine(api, input),
-    }));
-  }
-
-  if (name === 'rrule') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateRrule(kb * 1024),
-      run: (api, input) => parsePerLine(api, input),
-    }));
-  }
-
-  if (name === 'toml') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateToml(kb * 1024),
-      run: (api, toml) => (api.render as (input: string, opts: { target: string }) => unknown)(toml, { target: 'ast' }),
-    }));
-  }
-
-  if (name === 'yaml-block') {
-    return sizes.map((kb) => ({
-      name: `parse:${kb}KB`,
-      kb,
-      input: generateYamlBlock(kb * 1024),
-      run: (api, yaml) => (api.render as (input: string, opts: { target: string }) => unknown)(yaml, { target: 'ast' }),
-    }));
-  }
-
-  // markdown
-  return sizes.flatMap((kb) => {
-    const input = generateMarkdown(kb * 1024);
-    return [
-      {
-        name: `parse:${kb}KB`,
-        kb,
-        input,
-        run: (api, markdown) => (api.render as (input: string, opts: { target: string }) => unknown)(markdown, { target: 'ast' }),
-      },
-      {
-        name: `render:${kb}KB`,
-        kb,
-        input,
-        run: (api, markdown) => (api.render as (input: string, opts: { target: string }) => unknown)(markdown, { target: 'html' }),
-      },
-    ];
-  });
-}
-
-function generateMarkdown(targetBytes: number): string {
-  const seed = [
-    '# Release notes',
-    'Plain paragraph',
-    '',
-    '## Installation guide',
-    '- first item',
-    '+ alternate marker',
-    '* star marker',
-    '1. ordered item',
-    '- [x] completed task',
-    '- [ ] pending task',
-    '',
-    '> quoted text',
-    '',
-    'Setext heading',
-    '---',
-    '',
-    '**bold**',
-    '*italic*',
-    '~~removed~~',
-    '`code`',
-    '[docs](https://example.com)',
-    '[docs][id]',
-    '![diagram](https://example.com/diagram.png)',
-    '![diagram][image-id]',
-    '<https://example.com>',
-    '&amp;',
-    '',
-    '```js',
-    'sample',
-    '```',
-    '',
-    '```',
-    'plain',
-    '```',
-    '',
-    '| name | value |',
-    '| --- | --- |',
-    '|:---|---:|',
-    '',
-    '[id]: https://example.com',
-    '[^1]: footnote text',
-    '[^1]',
-    '',
-    '<div>html</div>',
-    '',
-  ].join('\n');
-  return repeat(seed, targetBytes);
-}
-
-function generateHtml(targetBytes: number): string {
-  const seed = '<!doctype html><h1 class="title">Hello world</h1><p class="copy" disabled>Parser benchmark text</p><br />\n';
-  return repeat(seed, targetBytes);
-}
-
-function generateCss(targetBytes: number): string {
-  const chunks: string[] = [];
-  let bytes = 0;
-  let i = 0;
-  while (bytes < targetBytes) {
-    const chunk = realisticRule(i);
-    chunks.push(chunk);
-    bytes += chunk.length;
-    i++;
-  }
-  return chunks.join('');
-}
-
-function realisticRule(i: number): string {
-  switch (i % 5) {
-    case 0:
-      return `.card-${i}, #panel-${i} { color: red; margin: ${i % 17}px ${i % 11}px; background: url("asset-${i}.svg"); }\n`;
-    case 1:
-      return `@media screen and (max-width: ${320 + (i % 600)}px) { .card-${i}:hover { border-color: green; transform: translate(${i % 9}px, ${i % 7}px); } }\n`;
-    case 2:
-      return `/* theme ${i} */ [data-state="open-${i}"]::before { content: "{ item ${i}; }"; padding: calc(100% - ${i % 13}px); }\n`;
-    case 3:
-      return `@font-face { font-family: "Inter ${i}"; src: url("inter-${i}.woff2"); font-display: swap; }\n`;
-    default:
-      return `.grid-${i} > .item:not(.disabled), .grid-${i} + .summary { --gap: ${i % 20}px; color: rgb(${i % 255}, ${(i * 2) % 255}, ${(i * 3) % 255}); }\n`;
-  }
-}
-
 function resolvePackageName(arg: string | undefined): PackageName {
   const candidate = arg ?? basename(process.cwd());
   if (packageNames.has(candidate as PackageName)) return candidate as PackageName;
@@ -350,167 +122,6 @@ function readTolerance(name: string, fallback: number): number {
     throw new Error(`${name} must be a number from 0 to 0.99`);
   }
   return parsed;
-}
-
-function generateJson(targetBytes: number): string {
-  const seed = JSON.stringify({
-    name: 'my-project',
-    version: '1.0.0',
-    tags: ['alpha', 'beta', 'gamma'],
-    settings: {
-      strict: true,
-      timeout: 30,
-      retries: 3,
-      targets: ['node', 'browser', 'deno'],
-      flags: { verbose: false, color: true, exitOnError: true },
-    },
-    dependencies: Object.fromEntries(
-      Array.from({ length: 16 }, (_, i) => [`pkg-${i}`, `^${i}.0.${i}`]),
-    ),
-  });
-  const items: string[] = [];
-  let total = 2;
-  while (total < targetBytes) {
-    items.push(seed);
-    total += seed.length + 1;
-  }
-  return `[${items.join(',')}]`;
-}
-
-function repeat(seed: string, targetBytes: number): string {
-  let out = '';
-  while (out.length < targetBytes) out += seed;
-  return out;
-}
-
-// Line-oriented bench runner — one iteration parses every line of the
-// input through `render(line, { target: 'ast' })`. Mirrors the cron
-// validate-per-row pattern but routes through the schema-default `render`
-// so it works for any parser whose root accepts one line at a time.
-function parsePerLine(api: Record<string, unknown>, input: string): unknown {
-  const render = api.render as (value: string, opts: { target: string }) => unknown;
-  let rows = 0;
-  for (const row of input.trim().split(/\n/)) {
-    if (row === '') continue;
-    render(row, { target: 'ast' });
-    rows++;
-  }
-  return rows;
-}
-
-function generateIsoDuration(targetBytes: number): string {
-  // ISO 8601 durations — date-only, time-only, full forms, and week
-  // designator. Mirrors the schema's tested surface so per-line bench
-  // measures realistic parse cost (no negatives / fractional values —
-  // the schema rejects those).
-  const seed = [
-    'P1Y2M3DT4H5M6S',
-    'PT15M',
-    'P2W',
-    'P10D',
-    'PT1H',
-    'PT45S',
-    'P1DT1H',
-    'P1Y2M',
-    'PT4H5M',
-    'P1MT1M',
-  ].join('\n') + '\n';
-  return repeat(seed, targetBytes);
-}
-
-function generateJsExpr(targetBytes: number): string {
-  // Mixed arithmetic / logical / parenthesised expressions covering
-  // every declared operator-precedence layer plus unary prefixes.
-  const seed = [
-    'a + b * c - d',
-    '(x + y) / z',
-    'a == b && c != d',
-    '!a || b',
-    'x ** y ** z',
-    '~a + ~b',
-    'a + b + c + d',
-    '(a + b) * (c - d) / e',
-    '42 + foo * bar',
-    'a >= b && b <= c',
-  ].join('\n') + '\n';
-  return repeat(seed, targetBytes);
-}
-
-function generatePgSelect(targetBytes: number): string {
-  // SELECT shapes that stay within the schema's tested surface — the
-  // grammar accepts numeric comparisons (no boolean literals, no
-  // string equality on the right-hand side).
-  const seed = [
-    'SELECT * FROM users',
-    'SELECT id, name FROM users',
-    'SELECT id, name, email FROM users',
-    'SELECT name FROM users WHERE id = 42',
-    'SELECT * FROM orders WHERE total > 100',
-    'SELECT a, b, c FROM t WHERE x <= 10',
-    'SELECT name, age FROM people WHERE age >= 18',
-    'SELECT a FROM t WHERE x < 1',
-    'SELECT * FROM users LIMIT 25',
-    'SELECT id FROM users WHERE active = 1 LIMIT 10',
-  ].join('\n') + '\n';
-  return repeat(seed, targetBytes);
-}
-
-function generateRrule(targetBytes: number): string {
-  // RFC 5545 RRULE strings exercising FREQ, COUNT, INTERVAL, BYDAY,
-  // BYMONTHDAY shapes.
-  const seed = [
-    'FREQ=DAILY',
-    'FREQ=DAILY;COUNT=10',
-    'FREQ=DAILY;INTERVAL=2',
-    'FREQ=WEEKLY;BYDAY=MO',
-    'FREQ=WEEKLY;BYDAY=MO,WE,FR',
-    'FREQ=MONTHLY;BYMONTHDAY=1,15',
-    'FREQ=MONTHLY;COUNT=12',
-    'FREQ=YEARLY;BYMONTH=1',
-    'FREQ=DAILY;COUNT=10;INTERVAL=2',
-    'FREQ=WEEKLY;COUNT=4;BYDAY=TU,TH',
-  ].join('\n') + '\n';
-  return repeat(seed, targetBytes);
-}
-
-function generateToml(targetBytes: number): string {
-  // Scalar key/value pairs that stay within the schema's tested
-  // surface — quoted strings, integers, booleans, and section
-  // headers. The schema today rejects floats with decimals, so they
-  // are intentionally omitted.
-  const block = [
-    'title = "parser benchmark"',
-    'count = 42',
-    'active = true',
-    'disabled = false',
-    'name = "alice"',
-    'home = "/home/alice"',
-    'version = "release"',
-    'retries = 3',
-    'timeout = 30',
-    'depth = 9001',
-  ].join('\n') + '\n';
-  return repeat(block, targetBytes);
-}
-
-function generateYamlBlock(targetBytes: number): string {
-  // Flat yaml-block document — each repeated unit is a top-level key
-  // with a scalar value. Keeps indent semantics simple so the bench
-  // input stays parseable when scaled to 100KB. Schema authors who
-  // want nested-block coverage can extend this later.
-  const block = [
-    'name: my-project',
-    'version: 1.0.0',
-    'author: alice',
-    'license: MIT',
-    'description: parser2 yaml-block benchmark',
-    'language: typescript',
-    'target: esnext',
-    'strict: true',
-    'declaration: true',
-    'composite: true',
-  ].join('\n') + '\n';
-  return repeat(block, targetBytes);
 }
 
 function hashInput(input: string): string {

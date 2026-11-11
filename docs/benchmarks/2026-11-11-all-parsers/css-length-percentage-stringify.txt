@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+css-length-percentage: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/3e3a8a47    generated (checked inverse) 15.81ms     63.3        +/-3.1  20480 documents       1.00x
+                              css-tree value              7.20ms      139.0       +/-7.8  20480 documents       0.46x
+-----------------------------------------------------------------------------------------------------------------------

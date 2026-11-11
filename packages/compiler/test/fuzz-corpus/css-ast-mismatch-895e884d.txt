@@ -1,7 +1,0 @@
-# schema=css
-# kind=ast-mismatch
-# target=-
-# mutator=insert-noise@15+1
-# seed="@import \"foo.css\";"
-# detail=interp parse produced different AST than v2 parse
-@import "foo.cs[s";

@@ -1,0 +1,22 @@
+
+> @parser3/less@0.0.0 bench:json
+> tsx bench/parse.ts --json
+
+less: JSON (full structural outputs, native competitor metadata)
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/e1d74681      generated JSON              229.83us    4351.0      +/-1.8  12974 bytes           1.00x
+                              postcss-less normalized JSON972.32us    1028.5      +/-2.0  12974 bytes           4.23x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/3fe95f59     generated JSON              838.04us    1193.3      +/-1.1  50414 bytes           1.00x
+                              postcss-less normalized JSON10.56ms     94.7        +/-2.1  50414 bytes           12.59x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/51a6a041    generated JSON              4.29ms      233.3       +/-1.9  251054 bytes          1.00x
+                              postcss-less normalized JSON226.37ms    4.4         +/-4.6  251054 bytes          52.80x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/3c07cb29    generated JSON              23.52ms     42.5        +/-3.1  1254254 bytes         1.00x
+                              postcss-less normalized JSONskipped (too slow for input)
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/fb418f59   generated JSON              51.75ms     19.3        +/-11.8 2508014 bytes         1.00x
+                              postcss-less normalized JSONskipped (too slow for input)
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,5 @@
+
+> example-parser-workspace@0.0.0 audit:parser-contract
+> tsx scripts/parser-contract-audit.ts
+
+Parser contract: 52 schema-owned standalone parsers.

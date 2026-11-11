@@ -1,0 +1,36 @@
+
+> @parser3/css@0.0.0 size:gate
+> npm run browser:build && tsx ../../scripts/size-gate.ts css
+
+
+> @parser3/css@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts css
+
+browser built packages/css/dist/browser/index.min.js
+css size gate (5% tolerance)
+asset                           bytes       gzip        maximum
+dist/browser/index.min.js       15109       2527        17974/2566
+
+> @parser3/less@0.0.0 size:gate
+> npm run browser:build && tsx ../../scripts/size-gate.ts less
+
+
+> @parser3/less@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts less
+
+browser built packages/less/dist/browser/index.min.js
+less size gate (5% tolerance)
+asset                           bytes       gzip        maximum
+dist/browser/index.min.js       22353       2849        26547/2868
+
+> @parser3/scss@0.0.0 size:gate
+> npm run browser:build && tsx ../../scripts/size-gate.ts scss
+
+
+> @parser3/scss@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts scss
+
+browser built packages/scss/dist/browser/index.min.js
+scss size gate (5% tolerance)
+asset                           bytes       gzip        maximum
+dist/browser/index.min.js       21834       2839        25446/2841

@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+cron: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/47ce1fc5    generated (checked inverse) 8.91ms      112.3       +/-10.1 7877 documents        1.00x
+                              cron-parser                 57.77ms     17.3        +/-1.7  7877 documents        6.49x
+-----------------------------------------------------------------------------------------------------------------------

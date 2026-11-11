@@ -1,0 +1,79 @@
+
+> example-parser-workspace@0.0.0 gate
+> npm run gate --workspaces --if-present
+
+
+> @parser3/css@0.0.0 gate
+> npm run perf:gate && npm run size:gate
+
+
+> @parser3/css@0.0.0 perf:gate
+> tsx ../../scripts/perf-gate.ts css
+
+css performance gate (25% tolerance, 100% floor)
+case              input             ops/s         minimum
+parse:5KB         5KB/e39ba972      15149         8843 ops/s
+parse:20KB        20KB/fada8088     3239          2419 ops/s
+parse:100KB       100KB/abecaf9c    605           477 ops/s
+
+> @parser3/css@0.0.0 size:gate
+> npm run browser:build && tsx ../../scripts/size-gate.ts css
+
+
+> @parser3/css@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts css
+
+browser built packages/css/dist/browser/index.min.js
+css size gate (5% tolerance)
+asset                           bytes       gzip        maximum
+dist/browser/index.min.js       17118       2444        17974/2566
+
+> @parser3/less@0.0.0 gate
+> npm run perf:gate && npm run size:gate
+
+
+> @parser3/less@0.0.0 perf:gate
+> tsx ../../scripts/perf-gate.ts less
+
+less performance gate (25% tolerance, 100% floor)
+case              input             ops/s         minimum
+parse:5KB         5KB/e1d74681      6378          4859 ops/s
+parse:20KB        20KB/3fe95f59     1438          1083 ops/s
+parse:100KB       100KB/51a6a041    291           214 ops/s
+
+> @parser3/less@0.0.0 size:gate
+> npm run browser:build && tsx ../../scripts/size-gate.ts less
+
+
+> @parser3/less@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts less
+
+browser built packages/less/dist/browser/index.min.js
+less size gate (5% tolerance)
+asset                           bytes       gzip        maximum
+dist/browser/index.min.js       25283       2731        26547/2868
+
+> @parser3/scss@0.0.0 gate
+> npm run perf:gate && npm run size:gate
+
+
+> @parser3/scss@0.0.0 perf:gate
+> tsx ../../scripts/perf-gate.ts scss
+
+scss performance gate (25% tolerance, 100% floor)
+case              input             ops/s         minimum
+parse:5KB         5KB/129c4e2d      6485          4841 ops/s
+parse:20KB        20KB/9249f781     1404          1047 ops/s
+parse:100KB       100KB/916565c5    273           207 ops/s
+
+> @parser3/scss@0.0.0 size:gate
+> npm run browser:build && tsx ../../scripts/size-gate.ts scss
+
+
+> @parser3/scss@0.0.0 browser:build
+> tsx ../../scripts/browser-build.ts scss
+
+browser built packages/scss/dist/browser/index.min.js
+scss size gate (5% tolerance)
+asset                           bytes       gzip        maximum
+dist/browser/index.min.js       24234       2706        25446/2841

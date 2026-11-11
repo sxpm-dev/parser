@@ -1,3 +1,4 @@
+import { appendFileSync } from 'node:fs';
 import { Bench } from 'tinybench';
 
 export interface BenchResult {
@@ -92,10 +93,16 @@ export async function runBenchTable(options: {
   );
   console.log('-'.repeat(95 + parserWidth));
 
+  const selectedSizes=process.env.PARSER_BENCH_SIZES_KB?.split(',').map(Number);
+  if(selectedSizes?.some(n=>!Number.isFinite(n)||n<=0))throw new Error('PARSER_BENCH_SIZES_KB requires positive comma-separated sizes');
+  function record(row:Record<string,unknown>){
+    const path=process.env.PARSER_BENCH_JSONL;
+    if(path)appendFileSync(path,JSON.stringify({package:process.env.PARSER_BENCH_PACKAGE,mode:process.env.PARSER_BENCH_MODE,title:options.title,...row})+'\n');
+  }
   const inputs: Array<{ readonly label: string; readonly input: string }> = [
     ...(options.smallInputs ?? []).map((input, index) => ({ label: `small${index + 1}`, input })),
     ...(options.namedInputs ?? []),
-    ...(options.sizesKb ?? DEFAULT_SIZES_KB).map((kb) => ({
+    ...(selectedSizes ?? options.sizesKb ?? DEFAULT_SIZES_KB).map((kb) => ({
       label: `${kb}KB`,
       input: generateInput(kb * 1024),
     })),
@@ -159,6 +166,7 @@ export async function runBenchTable(options: {
       if (!result?.hz) {
         const reason = sanity.get(contestant.label);
         const detail = reason instanceof Error ? `error: ${reason.message.split('\n')[0]}` : 'error';
+        record({label,inputBytes:Buffer.byteLength(input),inputHash:hashInput(input),contestant:contestant.label,error:detail});
         console.log(size.padEnd(12) + inputInfo.padEnd(18) + contestant.label.padEnd(parserWidth) + detail);
         continue;
       }
@@ -172,6 +180,7 @@ export async function runBenchTable(options: {
         : coverage
           ? `${sane?.units ?? 0} ${contestant.unit}`
           : `0 ${contestant.unit} (partial)`;
+      record({label,inputBytes:Buffer.byteLength(input),inputHash:hashInput(input),contestant:contestant.label,hz:ops,meanMs:1000/ops,rme:result.rme,units:sane instanceof Error?null:sane?.units,coverage,error:sane instanceof Error?sane.message:undefined});
       const rel = !coverage ? 'n/a' : base > 0 ? `${(base / ops).toFixed(2)}x` : '-';
       console.log(
         size.padEnd(12) +

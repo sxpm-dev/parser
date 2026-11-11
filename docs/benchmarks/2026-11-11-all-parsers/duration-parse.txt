@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+duration: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/17d10247    generated (checked inverse) 12.21ms     81.9        +/-15.2 25600 documents       1.00x
+                              ms                          6.98ms      143.3       +/-5.0  25600 documents       0.57x
+-----------------------------------------------------------------------------------------------------------------------

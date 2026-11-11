@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+npm-range: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/f4e515f3    generated (checked inverse) 20.87ms     47.9        +/-1.6  14629 documents       1.00x
+                              semver.Range                71.63us     13961.3     +/-1.7  14629 documents       0.00x
+-----------------------------------------------------------------------------------------------------------------------

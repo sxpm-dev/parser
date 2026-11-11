@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+json-flat: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/7e0a0503    generated (checked inverse) 3.56ms      280.6       +/-14.9 5390 documents        1.00x
+                              JSON.parse                  2.31ms      433.6       +/-3.4  5390 documents        0.65x
+-----------------------------------------------------------------------------------------------------------------------

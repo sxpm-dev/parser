@@ -1,0 +1,7 @@
+Independent log field extraction.
+log: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/0eef8647    generated (checked inverse) 2.40ms      416.7       +/-9.0  2560 documents        1.00x
+                              regexp log fields           419.30us    2384.9      +/-1.6  2560 documents        0.17x
+-----------------------------------------------------------------------------------------------------------------------

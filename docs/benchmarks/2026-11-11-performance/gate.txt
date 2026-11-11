@@ -1,0 +1,82 @@
+
+> example-parser-workspace@0.0.0 gate
+> npm run gate --workspaces --if-present
+
+
+> @parser3/css@0.0.0 gate
+> npm run perf:gate && npm run size:gate
+
+
+> @parser3/css@0.0.0 perf:gate
+> tsx ../../scripts/perf-gate.ts css
+
+css performance gate (25% tolerance, 100% floor)
+case              input             ops/s         minimum
+parse:5KB         5KB/e39ba972      5492          8843 ops/s
+parse:20KB        20KB/fada8088     1156          2419 ops/s
+parse:100KB       100KB/abecaf9c    245           477 ops/s
+
+Performance gate failed:
+- parse:5KB: 5492 ops/s < 8843 ops/s
+- parse:20KB: 1156 ops/s < 2419 ops/s
+- parse:100KB: 245 ops/s < 477 ops/s
+npm ERR! Lifecycle script `perf:gate` failed with error: 
+npm ERR! Error: command failed 
+npm ERR!   in workspace: @parser3/css@0.0.0 
+npm ERR!   at location: /Users/valerii/Develop/parser3_codex/packages/css 
+npm ERR! Lifecycle script `gate` failed with error: 
+npm ERR! Error: command failed 
+npm ERR!   in workspace: @parser3/css@0.0.0 
+npm ERR!   at location: /Users/valerii/Develop/parser3_codex/packages/css 
+
+> @parser3/less@0.0.0 gate
+> npm run perf:gate && npm run size:gate
+
+
+> @parser3/less@0.0.0 perf:gate
+> tsx ../../scripts/perf-gate.ts less
+
+less performance gate (25% tolerance, 100% floor)
+case              input             ops/s         minimum
+parse:5KB         5KB/e1d74681      2777          4859 ops/s
+parse:20KB        20KB/3fe95f59     740           1083 ops/s
+parse:100KB       100KB/51a6a041    154           214 ops/s
+
+Performance gate failed:
+- parse:5KB: 2777 ops/s < 4859 ops/s
+- parse:20KB: 740 ops/s < 1083 ops/s
+- parse:100KB: 154 ops/s < 214 ops/s
+npm ERR! Lifecycle script `perf:gate` failed with error: 
+npm ERR! Error: command failed 
+npm ERR!   in workspace: @parser3/less@0.0.0 
+npm ERR!   at location: /Users/valerii/Develop/parser3_codex/packages/less 
+npm ERR! Lifecycle script `gate` failed with error: 
+npm ERR! Error: command failed 
+npm ERR!   in workspace: @parser3/less@0.0.0 
+npm ERR!   at location: /Users/valerii/Develop/parser3_codex/packages/less 
+
+> @parser3/scss@0.0.0 gate
+> npm run perf:gate && npm run size:gate
+
+
+> @parser3/scss@0.0.0 perf:gate
+> tsx ../../scripts/perf-gate.ts scss
+
+scss performance gate (25% tolerance, 100% floor)
+case              input             ops/s         minimum
+parse:5KB         5KB/129c4e2d      2917          4841 ops/s
+parse:20KB        20KB/9249f781     597           1047 ops/s
+parse:100KB       100KB/916565c5    137           207 ops/s
+
+Performance gate failed:
+- parse:5KB: 2917 ops/s < 4841 ops/s
+- parse:20KB: 597 ops/s < 1047 ops/s
+- parse:100KB: 137 ops/s < 207 ops/s
+npm ERR! Lifecycle script `perf:gate` failed with error: 
+npm ERR! Error: command failed 
+npm ERR!   in workspace: @parser3/scss@0.0.0 
+npm ERR!   at location: /Users/valerii/Develop/parser3_codex/packages/scss 
+npm ERR! Lifecycle script `gate` failed with error: 
+npm ERR! Error: command failed 
+npm ERR!   in workspace: @parser3/scss@0.0.0 
+npm ERR!   at location: /Users/valerii/Develop/parser3_codex/packages/scss 

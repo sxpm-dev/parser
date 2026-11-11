@@ -1,0 +1,7 @@
+color-string does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+color: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a2e08647    generated (checked inverse) 4.37ms      228.7       +/-3.1  12800 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------

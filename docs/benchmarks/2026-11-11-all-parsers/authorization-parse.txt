@@ -1,0 +1,7 @@
+Independent two-field regexp baseline.
+authorization: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/0800c3c4    generated (checked inverse) 3.16ms      316.4       +/-14.8 7315 documents        1.00x
+                              regexp auth fields          1.23ms      814.3       +/-3.3  7315 documents        0.39x
+-----------------------------------------------------------------------------------------------------------------------

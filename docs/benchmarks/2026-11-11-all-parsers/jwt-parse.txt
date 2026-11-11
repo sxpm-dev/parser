@@ -1,0 +1,7 @@
+Segment splitting/validation only, without authentication.
+jwt: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/18da76f1    generated (checked inverse) 865.89us    1154.9      +/-1.7  1933 documents        1.00x
+                              compact JWS split           1.25ms      802.2       +/-1.5  1933 documents        1.44x
+-----------------------------------------------------------------------------------------------------------------------

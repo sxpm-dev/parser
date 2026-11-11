@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+http: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/aa6edd7b    generated (checked inverse) 2.45ms      408.7       +/-10.1 2134 documents        1.00x
+                              http-parser-js              6.34ms      157.8       +/-9.9  2134 documents        2.59x
+-----------------------------------------------------------------------------------------------------------------------

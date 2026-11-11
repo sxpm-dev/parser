@@ -1,8 +1,0 @@
-# schema=markdown
-# kind=round-trip-mismatch
-# target=source
-# mutator=replace-byte@1
-# seed="|:---|---:|"
-# detail=round-trip via interp stringify+v2 reparse changed the rendered value
-|
----|---:|

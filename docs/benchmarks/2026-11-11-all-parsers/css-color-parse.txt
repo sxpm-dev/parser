@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+css-color: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a2e08647    generated (checked inverse) 3.44ms      291.1       +/-10.2 12800 documents       1.00x
+                              color-string                5.44ms      183.9       +/-10.7 12800 documents       1.58x
+-----------------------------------------------------------------------------------------------------------------------

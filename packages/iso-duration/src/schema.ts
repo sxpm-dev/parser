@@ -1,69 +1,251 @@
-import { defineSchema, prefixed, prefixedRange, span, suffixed } from '@parser2/parser';
-
-// ISO 8601 duration. Forms:
-//   P[nY][nM][nW][nD][T[nH][nM][nS]]
-// The `M` letter means months before `T` and minutes after it — the split
-// between DateUnit and TimeUnit roles resolves this without lookahead.
-//
-// Round-trip note: the engine's interp parser can't take `sep: ''` on a
-// repeats span (it loops on a zero-length separator sweep), so each
-// repeats() here runs without an explicit separator. The standard
-// whitespace policy means the canonical rebuild inserts a single space
-// between adjacent unit children (e.g. 'P1Y 2M 3D'). That's value-stable
-// — re-parsing tolerates the inserted space — and the engine's contract
-// is value-stable, not byte-stable.
-//
-// Targets:
-//   ast    — { type:'duration', date:[...], time?:[...] }
-//   source — canonical-ish ISO 8601 string (with rebuild whitespace).
-
+import { defineSchema } from '../../compiler/src/schema.ts';
 export default defineSchema({
-  rootType: 'Duration',
-  defaultTarget: 'ast',
-  punctuators: {
-    P: 'P',
-    T: 'T',
-    Y: 'Y',
-    Mo: 'M',
-    W: 'W',
-    D: 'D',
-    H: 'H',
-    S: 'S',
+  "input": "source",
+  "output": "value",
+  "root": "root",
+  "productions": {
+    "years": {
+      "examples": [
+        {
+          "source": "12Y",
+          "value": {
+            "unit": "Y",
+            "amount": "12"
+          }
+        }
+      ],
+      "fields": {
+        "amount": {
+          "kind": "text",
+          "pattern": "[0-9]+(?:\\.[0-9]+)?",
+          "token": true
+        }
+      }
+    },
+    "months": {
+      "examples": [
+        {
+          "source": "12M",
+          "value": {
+            "unit": "M",
+            "amount": "12"
+          }
+        }
+      ],
+      "fields": {
+        "amount": {
+          "kind": "text",
+          "pattern": "[0-9]+(?:\\.[0-9]+)?",
+          "token": true
+        }
+      }
+    },
+    "weeks": {
+      "examples": [
+        {
+          "source": "12W",
+          "value": {
+            "unit": "W",
+            "amount": "12"
+          }
+        }
+      ],
+      "fields": {
+        "amount": {
+          "kind": "text",
+          "pattern": "[0-9]+(?:\\.[0-9]+)?",
+          "token": true
+        }
+      }
+    },
+    "days": {
+      "examples": [
+        {
+          "source": "12D",
+          "value": {
+            "unit": "D",
+            "amount": "12"
+          }
+        }
+      ],
+      "fields": {
+        "amount": {
+          "kind": "text",
+          "pattern": "[0-9]+(?:\\.[0-9]+)?",
+          "token": true
+        }
+      }
+    },
+    "hours": {
+      "examples": [
+        {
+          "source": "12H",
+          "value": {
+            "unit": "H",
+            "amount": "12"
+          }
+        }
+      ],
+      "fields": {
+        "amount": {
+          "kind": "text",
+          "pattern": "[0-9]+(?:\\.[0-9]+)?",
+          "token": true
+        }
+      }
+    },
+    "seconds": {
+      "examples": [
+        {
+          "source": "12S",
+          "value": {
+            "unit": "S",
+            "amount": "12"
+          }
+        }
+      ],
+      "fields": {
+        "amount": {
+          "kind": "text",
+          "pattern": "[0-9]+(?:\\.[0-9]+)?",
+          "token": true
+        }
+      }
+    },
+    "combined": {
+      "examples": [
+        {
+          "source": "P12DT34H",
+          "value": {
+            "date": [
+              {
+                "unit": "D",
+                "amount": "12"
+              }
+            ],
+            "time": [
+              {
+                "unit": "H",
+                "amount": "34"
+              }
+            ]
+          }
+        }
+      ],
+      "fields": {
+        "date": {
+          "kind": "list",
+          "item": [
+            "years",
+            "months",
+            "weeks",
+            "days"
+          ],
+          "separator": ""
+        },
+        "time": {
+          "kind": "list",
+          "item": [
+            "hours",
+            "months",
+            "seconds"
+          ],
+          "min": 1,
+          "separator": ""
+        }
+      }
+    },
+    "dateOnly": {
+      "examples": [
+        {
+          "source": "P12D",
+          "value": {
+            "date": [
+              {
+                "unit": "D",
+                "amount": "12"
+              }
+            ]
+          }
+        }
+      ],
+      "fields": {
+        "date": {
+          "kind": "list",
+          "item": [
+            "years",
+            "months",
+            "weeks",
+            "days"
+          ],
+          "min": 1,
+          "separator": ""
+        }
+      }
+    },
+    "timeOnly": {
+      "examples": [
+        {
+          "source": "PT12H",
+          "value": {
+            "time": [
+              {
+                "unit": "H",
+                "amount": "12"
+              }
+            ]
+          }
+        }
+      ],
+      "fields": {
+        "time": {
+          "kind": "list",
+          "item": [
+            "hours",
+            "months",
+            "seconds"
+          ],
+          "min": 1,
+          "separator": ""
+        }
+      }
+    },
+    "root": {
+      "examples": [
+        {
+          "source": "P12DT34H",
+          "value": {
+            "date": [
+              {
+                "unit": "D",
+                "amount": "12"
+              }
+            ],
+            "time": [
+              {
+                "unit": "H",
+                "amount": "34"
+              }
+            ]
+          }
+        }
+      ],
+      "fields": {
+        "": {
+          "kind": "ref",
+          "item": [
+            "combined",
+            "dateOnly",
+            "timeOnly"
+          ]
+        }
+      }
+    }
   },
-  tokens: ['number'],
-  examples: [
-    // --- DateUnit: Y | M | W | D ---------------------------------------
-    // Each unit production is `<digits><letter>` — collapsed via the
-    // `suffixed` Phase 7 helper. The expansion is identical to writing
-    // the relation() call by hand (verified by the byte-identity gate).
-    suffixed('DateUnit', span('value', '1').number().int(), 'Y', 'years'),
-    suffixed('DateUnit', span('value', '1').number().int(), 'M', 'months'),
-    suffixed('DateUnit', span('value', '1').number().int(), 'W', 'weeks'),
-    suffixed('DateUnit', span('value', '1').number().int(), 'D', 'days'),
-
-    // --- TimeUnit: H | M | S -------------------------------------------
-    // `M` here means minutes; the wrapping Duration production gates this
-    // role list behind the `T` literal so the `M` ambiguity stays scoped.
-    suffixed('TimeUnit', span('value', '1').number().int(), 'H', 'hours'),
-    suffixed('TimeUnit', span('value', '1').number().int(), 'M', 'minutes'),
-    suffixed('TimeUnit', span('value', '1').number().int(), 'S', 'seconds'),
-
-    // --- Duration root -------------------------------------------------
-    // Two productions so source templates never have adjacent slots:
-    //   1. Date-only        → tpl`P${date}`             (no T anywhere)
-    //   2. Date + time      → tpl`P${date}T${time}`     (T separates slots)
-    //
-    // Inverse-direction discrimination:
-    //   - ast: field-name set differs (`time` is present only in #2).
-    //   - source: #2 contains a literal `T` segment that #1's segments don't.
-    prefixed('Duration', 'P', span('date', '1D').of('DateUnit').repeats({ min: 1 }), 'duration'),
-    prefixedRange(
-      'Duration',
-      'P',
-      span('date', '1D').of('DateUnit').repeats({ min: 0 }),
-      'T',
-      span('time', '1H').of('TimeUnit').repeats({ min: 1 }),
-      'duration',
-    ),
-  ],
+  "encodings": {
+    "json": {
+      "from": "value",
+      "format": "json"
+    }
+  }
 });

@@ -1,0 +1,11 @@
+{
+  "scripts/perf-gate.ts": "9f986365e85b5a009608ad1d4b365e0037b0876f9e00c19d31cbd1a588b3972f",
+  "packages/css/bench/perf-baseline.json": "983085957d04bd3de153e8bf2bb38a5e2a1d6051ed2cfaacd88fa98f75d76776",
+  "packages/css/bench/cases.ts": "7197f6fc2cec714c04db7fce58517a0946262af625672c84667d676e9fd26124",
+  "packages/css/src/schema.ts": "13e0cc4ff726a1e7faf149507b52f1dd4fb49376aa753115c8e9d6cb88804fbd",
+  "packages/css/src/_generated/parser.ts": "f8a1226c3783f97476b819cea5d89f3b766a91e6271d34b328b18ded4af6bffa",
+  "packages/scss/bench/perf-baseline.json": "7e2a730234e0258cbbaba49153db130bb7522c9623af52f0a76e87902fcfed5c",
+  "packages/scss/bench/cases.ts": "39a0b84c8d43721594b52015ecdefdc1d38a34e7e2a8193e862a0bd1fe4aa92c",
+  "packages/scss/src/schema.ts": "1d2cf668110dc56e9db83921922d79f3114772ab582d616df6808ef3f8df31ce",
+  "packages/scss/src/_generated/parser.ts": "586068eb6f8efed0ae9567b773ba7e149b90f9c34d58af47b9b0b172a7c94001"
+}

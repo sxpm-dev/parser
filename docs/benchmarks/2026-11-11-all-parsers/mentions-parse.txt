@@ -1,0 +1,7 @@
+Extracts identifiers only, dropping intervening text.
+mentions: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/ac215f15    generated (checked inverse) 6.22ms      160.7       +/-14.8 7877 documents        1.00x
+                              regexp mentions             6.26ms      159.8       +/-2.3  7877 documents        1.01x
+-----------------------------------------------------------------------------------------------------------------------

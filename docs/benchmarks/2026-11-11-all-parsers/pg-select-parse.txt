@@ -1,0 +1,7 @@
+Native library output; output shape and validation work differ.
+pg-select: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+100KB       100KB/df17c85b    generated (checked inverse) 3.11ms      321.2       +/-10.6 2134 documents        1.00x
+                              node-sql-parser             724.91ms    1.4         +/-0.0  2134 documents        232.86x
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,19 @@
+Segment splitting/validation only, without authentication.
+jwt: round-trip — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/51063571      generated (checked inverse) 58.41us     17118.9     +/-2.5  97 documents          1.00x
+                              compact JWS split           22.69us     44070.6     +/-0.5  97 documents          0.39x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/f8fe4931     generated (checked inverse) 232.41us    4302.8      +/-2.5  387 documents         1.00x
+                              compact JWS split           89.64us     11155.4     +/-0.4  387 documents         0.39x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/18da76f1    generated (checked inverse) 1.15ms      868.4       +/-3.1  1933 documents        1.00x
+                              compact JWS split           451.34us    2215.6      +/-0.5  1933 documents        0.39x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/75753cf1    generated (checked inverse) 5.59ms      179.0       +/-1.2  9661 documents        1.00x
+                              compact JWS split           2.25ms      445.2       +/-0.8  9661 documents        0.40x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/8cb57871   generated (checked inverse) 11.77ms     85.0        +/-10.2 19321 documents       1.00x
+                              compact JWS split           4.45ms      224.6       +/-0.5  19321 documents       0.38x
+-----------------------------------------------------------------------------------------------------------------------

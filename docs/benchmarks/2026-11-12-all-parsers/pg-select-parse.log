@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+pg-select: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/fbc8aa20      generated (checked inverse) 46.24us     21627.0     +/-5.2  107 documents         1.00x
+                              node-sql-parser             5.52ms      181.0       +/-2.7  107 documents         119.47x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/eb3d6aa0     generated (checked inverse) 178.98us    5587.2      +/-5.1  427 documents         1.00x
+                              node-sql-parser             22.19ms     45.1        +/-4.0  427 documents         123.96x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/df17c85b    generated (checked inverse) 874.66us    1143.3      +/-5.6  2134 documents        1.00x
+                              node-sql-parser             104.31ms    9.6         +/-2.4  2134 documents        119.26x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/dd557aa0    generated (checked inverse) 4.49ms      222.9       +/-6.9  10667 documents       1.00x
+                              node-sql-parser             505.56ms    2.0         +/-0.0  10667 documents       112.69x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/a948665b   generated (checked inverse) 8.36ms      119.6       +/-3.0  21334 documents       1.00x
+                              node-sql-parser             1.04s       1.0         +/-0.0  21334 documents       124.04x
+-----------------------------------------------------------------------------------------------------------------------

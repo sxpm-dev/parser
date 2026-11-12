@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+arn: json — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/113bf1a8      generated (checked inverse) 56.97us     17552.6     +/-2.7  95 documents          1.00x
+                              @aws-sdk/util-arn-parser    48.86us     20465.5     +/-3.4  95 documents          0.86x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/46ec6037     generated (checked inverse) 225.57us    4433.2      +/-2.6  380 documents         1.00x
+                              @aws-sdk/util-arn-parser    187.42us    5335.5      +/-3.1  380 documents         0.83x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/888ab8a0    generated (checked inverse) 1.15ms      868.6       +/-3.7  1897 documents        1.00x
+                              @aws-sdk/util-arn-parser    956.56us    1045.4      +/-4.0  1897 documents        0.83x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/bab5788f    generated (checked inverse) 5.76ms      173.5       +/-7.3  9482 documents        1.00x
+                              @aws-sdk/util-arn-parser    4.67ms      214.1       +/-4.1  9482 documents        0.81x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/ba8be598   generated (checked inverse) 11.01ms     90.8        +/-1.1  18963 documents       1.00x
+                              @aws-sdk/util-arn-parser    9.68ms      103.3       +/-8.8  18963 documents       0.88x
+-----------------------------------------------------------------------------------------------------------------------

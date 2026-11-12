@@ -1,0 +1,19 @@
+Extracts identifiers only, dropping intervening text.
+mentions: json — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/f3005e9f      generated (checked inverse) 175.90us    5685.0      +/-5.1  394 documents         1.00x
+                              regexp mentions             131.88us    7582.5      +/-1.7  394 documents         0.75x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/5f378be7     generated (checked inverse) 610.54us    1637.9      +/-4.0  1576 documents        1.00x
+                              regexp mentions             514.28us    1944.5      +/-0.8  1576 documents        0.84x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/ac215f15    generated (checked inverse) 3.00ms      333.7       +/-4.8  7877 documents        1.00x
+                              regexp mentions             2.61ms      383.0       +/-2.1  7877 documents        0.87x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/69c3cbc5    generated (checked inverse) 15.36ms     65.1        +/-9.6  39385 documents       1.00x
+                              regexp mentions             12.85ms     77.8        +/-0.7  39385 documents       0.84x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/d9aea33f   generated (checked inverse) 30.97ms     32.3        +/-10.7 78770 documents       1.00x
+                              regexp mentions             25.99ms     38.5        +/-1.8  78770 documents       0.84x
+-----------------------------------------------------------------------------------------------------------------------

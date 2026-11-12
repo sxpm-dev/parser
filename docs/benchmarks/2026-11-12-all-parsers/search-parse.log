@@ -1,0 +1,19 @@
+Token extraction, without output projection or inverse validation.
+search: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/bb41e967      generated (checked inverse) 87.51us     11427.6     +/-4.7  244 documents         1.00x
+                              regexp query tokens         27.58us     36261.0     +/-1.1  244 documents         0.32x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/673547c7     generated (checked inverse) 327.86us    3050.1      +/-4.8  976 documents         1.00x
+                              regexp query tokens         108.97us    9177.1      +/-1.7  976 documents         0.33x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/33eeccc9    generated (checked inverse) 1.59ms      629.1       +/-5.4  4877 documents        1.00x
+                              regexp query tokens         535.84us    1866.2      +/-1.0  4877 documents        0.34x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/ebafec49    generated (checked inverse) 8.70ms      115.0       +/-12.1 24381 documents       1.00x
+                              regexp query tokens         2.66ms      376.0       +/-0.7  24381 documents       0.31x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/8a5cb437   generated (checked inverse) 16.83ms     59.4        +/-12.4 48762 documents       1.00x
+                              regexp query tokens         5.33ms      187.7       +/-0.8  48762 documents       0.32x
+-----------------------------------------------------------------------------------------------------------------------

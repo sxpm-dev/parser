@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+email: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/f961df11      generated (checked inverse) 49.97us     20013.3     +/-6.0  285 documents         1.00x
+                              email-addresses             5.99ms      167.1       +/-1.8  285 documents         119.79x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/badd56a7     generated (checked inverse) 213.50us    4683.9      +/-7.2  1138 documents        1.00x
+                              email-addresses             30.43ms     32.9        +/-53.5 1138 documents        142.53x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/0179f251    generated (checked inverse) 927.35us    1078.3      +/-6.7  5689 documents        1.00x
+                              email-addresses             118.11ms    8.5         +/-6.8  5689 documents        127.36x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/59edff11    generated (checked inverse) 5.85ms      171.0       +/-6.7  28445 documents       1.00x
+                              email-addresses             864.57ms    1.2         +/-0.0  28445 documents       147.87x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/d1f17251   generated (checked inverse) 10.05ms     99.5        +/-6.0  56889 documents       1.00x
+                              email-addresses             1.29s       0.8         +/-0.0  56889 documents       128.69x
+-----------------------------------------------------------------------------------------------------------------------

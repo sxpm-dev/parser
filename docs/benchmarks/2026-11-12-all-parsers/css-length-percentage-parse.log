@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+css-length-percentage: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/fa4d9647      generated (checked inverse) 122.41us    8169.5      +/-6.3  1024 documents        1.00x
+                              css-tree value              929.16us    1076.2      +/-1.9  1024 documents        7.59x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/83deca47     generated (checked inverse) 491.30us    2035.4      +/-6.7  4096 documents        1.00x
+                              css-tree value              3.73ms      268.4       +/-1.8  4096 documents        7.58x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/3e3a8a47    generated (checked inverse) 2.54ms      393.1       +/-8.9  20480 documents       1.00x
+                              css-tree value              18.34ms     54.5        +/-1.2  20480 documents       7.21x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/22054a47    generated (checked inverse) 11.30ms     88.5        +/-5.4  102400 documents      1.00x
+                              css-tree value              94.49ms     10.6        +/-1.1  102400 documents      8.36x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/5cc2ba47   generated (checked inverse) 20.85ms     48.0        +/-2.4  204800 documents      1.00x
+                              css-tree value              185.38ms    5.4         +/-10.0 204800 documents      8.89x
+-----------------------------------------------------------------------------------------------------------------------

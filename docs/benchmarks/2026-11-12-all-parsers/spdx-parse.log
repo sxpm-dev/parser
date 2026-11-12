@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+spdx: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/c9f7ead1      generated (checked inverse) 116.25us    8601.9      +/-4.5  285 documents         1.00x
+                              spdx-expression-parse       340.81us    2934.2      +/-2.0  285 documents         2.93x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/acfc4c47     generated (checked inverse) 436.90us    2288.9      +/-5.0  1138 documents        1.00x
+                              spdx-expression-parse       1.37ms      732.2       +/-1.9  1138 documents        3.13x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/3d3e46d1    generated (checked inverse) 2.30ms      434.3       +/-8.1  5689 documents        1.00x
+                              spdx-expression-parse       6.70ms      149.2       +/-0.7  5689 documents        2.91x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/72e5ead1    generated (checked inverse) 10.81ms     92.5        +/-12.3 28445 documents       1.00x
+                              spdx-expression-parse       33.80ms     29.6        +/-1.8  28445 documents       3.13x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/cb0646d1   generated (checked inverse) 21.74ms     46.0        +/-14.4 56889 documents       1.00x
+                              spdx-expression-parse       67.62ms     14.8        +/-3.1  56889 documents       3.11x
+-----------------------------------------------------------------------------------------------------------------------

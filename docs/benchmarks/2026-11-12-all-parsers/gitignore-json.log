@@ -1,0 +1,19 @@
+Pattern compiler/parser; does more work than source-record extraction.
+gitignore: json — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/5bd2e82b      generated (checked inverse) 309.81us    3227.8      +/-8.1  854 documents         1.00x
+                              picomatch.parse             1.94ms      515.3       +/-8.5  854 documents         6.26x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/adfacc2b     generated (checked inverse) 1.16ms      859.8       +/-8.0  3414 documents        1.00x
+                              picomatch.parse             8.88ms      112.6       +/-6.3  3414 documents        7.63x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/8ddca101    generated (checked inverse) 31.15ms     32.1        +/-160.417067 documents       1.00x
+                              picomatch.parse             31.30ms     31.9        +/-2.5  17067 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/2ef74c2b    generated (checked inverse) 25.44ms     39.3        +/-4.1  85334 documents       1.00x
+                              picomatch.parse             173.90ms    5.8         +/-2.5  85334 documents       6.84x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/d95c9101   generated (checked inverse) 45.50ms     22.0        +/-2.0  170667 documents      1.00x
+                              picomatch.parse             380.51ms    2.6         +/-0.0  170667 documents      8.36x
+-----------------------------------------------------------------------------------------------------------------------

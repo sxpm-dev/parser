@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+iso-duration: round-trip — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/7282871d      generated (checked inverse) 901.26us    1109.6      +/-3.4  569 documents         1.00x
+                              Temporal.Duration           1.91ms      522.9       +/-26.0 569 documents         2.12x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/250e4657     generated (checked inverse) 3.82ms      261.8       +/-6.6  2276 documents        1.00x
+                              Temporal.Duration           7.83ms      127.7       +/-34.0 2276 documents        2.05x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a984c9af    generated (checked inverse) 16.75ms     59.7        +/-4.2  11378 documents       1.00x
+                              Temporal.Duration           58.55ms     17.1        +/-65.8 11378 documents       3.50x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/effcb71d    generated (checked inverse) 157.11ms    6.4         +/-38.2 56889 documents       1.00x
+                              Temporal.Duration           466.83ms    2.1         +/-0.0  56889 documents       2.97x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/53ca89af   generated (checked inverse) 202.11ms    4.9         +/-46.9 113778 documents      1.00x
+                              Temporal.Duration           516.97ms    1.9         +/-0.0  113778 documents      2.56x
+-----------------------------------------------------------------------------------------------------------------------

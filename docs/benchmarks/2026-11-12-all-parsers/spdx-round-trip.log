@@ -1,0 +1,15 @@
+spdx-expression-parse does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+spdx: round-trip — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/c9f7ead1      generated (checked inverse) 358.77us    2787.3      +/-2.7  285 documents         1.00x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/acfc4c47     generated (checked inverse) 1.41ms      707.5       +/-3.6  1138 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/3d3e46d1    generated (checked inverse) 6.54ms      152.9       +/-0.7  5689 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/72e5ead1    generated (checked inverse) 36.09ms     27.7        +/-14.0 28445 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/cb0646d1   generated (checked inverse) 64.35ms     15.5        +/-1.0  56889 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------

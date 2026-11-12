@@ -1,0 +1,2504 @@
+{
+  "label": "100KB",
+  "ratioDefinition": "generated ops/s divided by competitor ops/s",
+  "packages": [
+    {
+      "package": "arn",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1285.8098286963623,
+          "competitor": "@aws-sdk/util-arn-parser",
+          "competitorOpsPerSecond": 2199.6707092948095,
+          "generatedRmePercent": 5.007817882967702,
+          "competitorRmePercent": 0.7296531268472078,
+          "speedRatio": 0.5845465065580561,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 868.6238631008432,
+          "competitor": "@aws-sdk/util-arn-parser",
+          "competitorOpsPerSecond": 1045.4147191004208,
+          "generatedRmePercent": 3.729685339343273,
+          "competitorRmePercent": 4.005142851503884,
+          "speedRatio": 0.8308892607216147,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 914.1178420030462,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.5936967146068682,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "@aws-sdk/util-arn-parser does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 503.15646239538836,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 3.1440496434830205,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "@aws-sdk/util-arn-parser does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "authorization",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1136.453752264323,
+          "competitor": "regexp auth fields",
+          "competitorOpsPerSecond": 2796.1588433819265,
+          "generatedRmePercent": 5.967151486405145,
+          "competitorRmePercent": 0.9128950514557742,
+          "speedRatio": 0.40643390305029786,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 614.3452738113305,
+          "competitor": "regexp auth fields",
+          "competitorOpsPerSecond": 791.3222592551111,
+          "generatedRmePercent": 6.073049183050246,
+          "competitorRmePercent": 4.189423765637597,
+          "speedRatio": 0.7763528279738107,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 715.1046229832016,
+          "competitor": "regexp auth fields",
+          "competitorOpsPerSecond": 15745.0556588352,
+          "generatedRmePercent": 1.9863074597236023,
+          "competitorRmePercent": 0.4929648013578206,
+          "speedRatio": 0.04541772595017325,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 416.2882930139864,
+          "competitor": "regexp auth fields",
+          "competitorOpsPerSecond": 2443.8745346798783,
+          "generatedRmePercent": 4.606237871144398,
+          "competitorRmePercent": 0.5817853510177247,
+          "speedRatio": 0.1703394700123244,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "cache-control",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 644.9399881099968,
+          "competitor": "parse-cache-control",
+          "competitorOpsPerSecond": 618.621963899438,
+          "generatedRmePercent": 6.63837101598659,
+          "competitorRmePercent": 0.6268640817136792,
+          "speedRatio": 1.0425429838356612,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 446.3624286120928,
+          "competitor": "parse-cache-control",
+          "competitorOpsPerSecond": 481.76334770910677,
+          "generatedRmePercent": 4.92113809081321,
+          "competitorRmePercent": 0.7204731077362202,
+          "speedRatio": 0.9265180315909184,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 446.985867915005,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.5544032058608961,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "parse-cache-control does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 255.21260597641617,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 4.247301558415042,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "parse-cache-control does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "color",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 745.8085676976773,
+          "competitor": "color-string",
+          "competitorOpsPerSecond": 408.8809867818032,
+          "generatedRmePercent": 6.586902742597147,
+          "competitorRmePercent": 12.667906370806556,
+          "speedRatio": 1.8240235956378021,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 397.81372714346446,
+          "competitor": "color-string",
+          "competitorOpsPerSecond": 268.6723936525817,
+          "generatedRmePercent": 3.8704268987780823,
+          "competitorRmePercent": 3.6284834186270674,
+          "speedRatio": 1.4806646925469926,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 579.482985280531,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.4642077128749903,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "color-string does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 316.6326260830863,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.7267266170462992,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "color-string does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "commits",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1198.9156048137645,
+          "competitor": "conventional-commits-parser",
+          "competitorOpsPerSecond": 22.74570843412733,
+          "generatedRmePercent": 4.4796286030611165,
+          "competitorRmePercent": 0.4892286166136793,
+          "speedRatio": 52.70953016415743,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 671.4189433237112,
+          "competitor": "conventional-commits-parser",
+          "competitorOpsPerSecond": 21.55030504827939,
+          "generatedRmePercent": 5.341889152195344,
+          "competitorRmePercent": 2.876416962786383,
+          "speedRatio": 31.155890453500486,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 775.1720710637316,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.4766057856206511,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "conventional-commits-parser does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 430.3293905824936,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 3.4097500303086843,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "conventional-commits-parser does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "cookie",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 766.3171511613258,
+          "competitor": "cookie",
+          "competitorOpsPerSecond": 1600.3381951516326,
+          "generatedRmePercent": 7.430609064391333,
+          "competitorRmePercent": 0.8150354873086425,
+          "speedRatio": 0.47884700464123897,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 427.29544523003915,
+          "competitor": "cookie",
+          "competitorOpsPerSecond": 912.2269157504883,
+          "generatedRmePercent": 7.305796715609676,
+          "competitorRmePercent": 0.8169263772162662,
+          "speedRatio": 0.4684091620761963,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 453.36599302234305,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.5865280879902115,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "cookie does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 260.69218054251394,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 5.481486558920881,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "cookie does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "cron",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 264.5135734254337,
+          "competitor": "cron-parser",
+          "competitorOpsPerSecond": 43.678405345681654,
+          "generatedRmePercent": 3.357529440831761,
+          "competitorRmePercent": 1.9508183989065433,
+          "speedRatio": 6.055934765292098,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 199.1837817115459,
+          "competitor": "cron-parser",
+          "competitorOpsPerSecond": 29.480781889788584,
+          "generatedRmePercent": 2.605028330221928,
+          "competitorRmePercent": 0.8763062709720749,
+          "speedRatio": 6.756394130121028,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 201.1790518075134,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.6341687609850033,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "cron-parser does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 112.12768953774385,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.4625783308003415,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "cron-parser does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "css",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 674.6232633847978,
+          "competitor": "postcss",
+          "competitorOpsPerSecond": 251.80159051845928,
+          "generatedRmePercent": 5.691382227359146,
+          "competitorRmePercent": 6.456523629989959,
+          "speedRatio": 2.67918587009617,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 537.8930339886193,
+          "competitor": "postcss normalized JSON",
+          "competitorOpsPerSecond": 188.07862171432458,
+          "generatedRmePercent": 5.245839456982049,
+          "competitorRmePercent": 5.534103212624774,
+          "speedRatio": 2.8599371320661477,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 536.4633422608857,
+          "competitor": "postcss stringify",
+          "competitorOpsPerSecond": 1417.363897631765,
+          "generatedRmePercent": 1.2949390499296527,
+          "competitorRmePercent": 1.120109817727376,
+          "speedRatio": 0.3784937256813496,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 289.1894835735721,
+          "competitor": "postcss parse + stringify",
+          "competitorOpsPerSecond": 201.8428516495623,
+          "generatedRmePercent": 4.708004258380342,
+          "competitorRmePercent": 7.02106736598396,
+          "speedRatio": 1.4327457287199856,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "css-color",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 699.4777908656599,
+          "competitor": "color-string",
+          "competitorOpsPerSecond": 478.2680693624843,
+          "generatedRmePercent": 8.717883182154068,
+          "competitorRmePercent": 2.7334954247571424,
+          "speedRatio": 1.4625224548192,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 383.9296798786104,
+          "competitor": "color-string",
+          "competitorOpsPerSecond": 263.74848705407817,
+          "generatedRmePercent": 3.9524135631555386,
+          "competitorRmePercent": 4.816445309059081,
+          "speedRatio": 1.455665904160772,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 544.7115888315009,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.4905781730078578,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "color-string does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 317.2308169625746,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.5479314487717932,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "color-string does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "css-length-percentage",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 393.10464293545203,
+          "competitor": "css-tree value",
+          "competitorOpsPerSecond": 54.53904242178854,
+          "generatedRmePercent": 8.888114019942803,
+          "competitorRmePercent": 1.2472255229235392,
+          "speedRatio": 7.207765767049943,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 199.5242001268723,
+          "competitor": "css-tree value",
+          "competitorOpsPerSecond": 33.742118293070156,
+          "generatedRmePercent": 10.064762132934609,
+          "competitorRmePercent": 1.1199005006083105,
+          "speedRatio": 5.913209075787335,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 188.7916756940974,
+          "competitor": "css-tree value",
+          "competitorOpsPerSecond": 597.5842135281845,
+          "generatedRmePercent": 1.9973657347065663,
+          "competitorRmePercent": 0.5824762221013874,
+          "speedRatio": 0.3159248042706088,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 119.09657861135484,
+          "competitor": "css-tree value",
+          "competitorOpsPerSecond": 46.77612001375693,
+          "generatedRmePercent": 3.1598130097565527,
+          "competitorRmePercent": 1.441956738641345,
+          "speedRatio": 2.546097850277628,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "csv",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 330.3318536651937,
+          "competitor": "csv-parse",
+          "competitorOpsPerSecond": 17.33488152646099,
+          "generatedRmePercent": 9.267076323963312,
+          "competitorRmePercent": 1.5512490891123414,
+          "speedRatio": 19.055904891011547,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 228.28859516655177,
+          "competitor": "csv-parse",
+          "competitorOpsPerSecond": 16.64460594557642,
+          "generatedRmePercent": 4.620549786312191,
+          "competitorRmePercent": 1.064745250931691,
+          "speedRatio": 13.71547009962247,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 211.90250380757482,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.693598525116151,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "csv-parse does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 114.7524940749862,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 2.5223366071744793,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "csv-parse does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "docker-ref",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 957.0447816496109,
+          "competitor": "regexp image reference",
+          "competitorOpsPerSecond": 2630.112541641405,
+          "generatedRmePercent": 8.503961759263992,
+          "competitorRmePercent": 0.6414082251879509,
+          "speedRatio": 0.36387978327814696,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 582.2593885859096,
+          "competitor": "regexp image reference",
+          "competitorOpsPerSecond": 720.5832539488733,
+          "generatedRmePercent": 4.5220768675447065,
+          "competitorRmePercent": 4.2123852959440855,
+          "speedRatio": 0.8080390231039452,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 773.4247850758564,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.7733457581406122,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "regexp image reference does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 411.4490849761379,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 5.265252840357255,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "regexp image reference does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "duration",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 224.17915457477406,
+          "competitor": "ms",
+          "competitorOpsPerSecond": 538.0261716305107,
+          "generatedRmePercent": 13.276971851479988,
+          "competitorRmePercent": 1.459242688170325,
+          "speedRatio": 0.41666960901807026,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 132.73830520223567,
+          "competitor": "ms",
+          "competitorOpsPerSecond": 328.0077644805271,
+          "generatedRmePercent": 2.755887093898547,
+          "competitorRmePercent": 1.5723329018585486,
+          "speedRatio": 0.4046803752114105,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 102.27234788993785,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.9277853926744356,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "ms does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 69.21085882583077,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.1950967246851585,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "ms does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "email",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1078.3397126945265,
+          "competitor": "email-addresses",
+          "competitorOpsPerSecond": 8.466877009856688,
+          "generatedRmePercent": 6.654109347719641,
+          "competitorRmePercent": 6.8133436418624225,
+          "speedRatio": 127.35979410580556,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 602.3150290545677,
+          "competitor": "email-addresses",
+          "competitorOpsPerSecond": 5.044768452358876,
+          "generatedRmePercent": 7.256193551734662,
+          "competitorRmePercent": 12.450769982013423,
+          "speedRatio": 119.3939889893127,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 782.9938386339534,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 2.210127934343519,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "email-addresses does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 423.37292703665014,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 4.1800731142411545,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "email-addresses does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "env",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 944.5210097829147,
+          "competitor": "dotenv",
+          "competitorOpsPerSecond": 773.4105639500324,
+          "generatedRmePercent": 8.394385513462613,
+          "competitorRmePercent": 3.9467063302323884,
+          "speedRatio": 1.2212414127872415,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 571.4585254093199,
+          "competitor": "dotenv",
+          "competitorOpsPerSecond": 593.1206630746043,
+          "generatedRmePercent": 5.0847406697436615,
+          "competitorRmePercent": 3.2609009192779417,
+          "speedRatio": 0.9634776884133615,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 577.316036801584,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.5564924223572966,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "dotenv does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 347.1740911898327,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 4.7915975695169415,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "dotenv does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "expression",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 159.9733568373517,
+          "competitor": "jsep",
+          "competitorOpsPerSecond": 241.13694688268077,
+          "generatedRmePercent": 9.634081453069776,
+          "competitorRmePercent": 6.933632793846055,
+          "speedRatio": 0.6634128817894621,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 74.6647474441771,
+          "competitor": "jsep",
+          "competitorOpsPerSecond": 152.8737014707461,
+          "generatedRmePercent": 7.394858191709661,
+          "competitorRmePercent": 2.0671298049056164,
+          "speedRatio": 0.4884080566235582,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 61.86470760571436,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.2275207294306931,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "jsep does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 45.613875485485,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.6567835209765611,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "jsep does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "filter",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 153.4865755516552,
+          "competitor": "jsep",
+          "competitorOpsPerSecond": 250.43572841269875,
+          "generatedRmePercent": 10.16401923959748,
+          "competitorRmePercent": 3.5510022280375524,
+          "speedRatio": 0.6128781085848948,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 74.59508853504573,
+          "competitor": "jsep",
+          "competitorOpsPerSecond": 153.2174588902236,
+          "generatedRmePercent": 8.068811859353442,
+          "competitorRmePercent": 2.4209195355690794,
+          "speedRatio": 0.4868576275533404,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 65.3568601601939,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 4.147425238658676,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "jsep does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 46.25357710558932,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.3962028527392125,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "jsep does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "gitignore",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 248.5930400228783,
+          "competitor": "picomatch.parse",
+          "competitorOpsPerSecond": 65.492988330372,
+          "generatedRmePercent": 66.60692044899632,
+          "competitorRmePercent": 6.115566106596345,
+          "speedRatio": 3.7957199138460247,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 32.098197333633394,
+          "competitor": "picomatch.parse",
+          "competitorOpsPerSecond": 31.94790011158738,
+          "generatedRmePercent": 160.44658205437793,
+          "competitorRmePercent": 2.503483388928573,
+          "speedRatio": 1.0047044476012839,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 221.78826703484725,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.5636168259403986,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "picomatch.parse does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 122.41706305186747,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 3.1949958925217543,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "picomatch.parse does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "glob",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 270.6874074179209,
+          "competitor": "picomatch.parse",
+          "competitorOpsPerSecond": 49.369865500046146,
+          "generatedRmePercent": 16.819487233857444,
+          "competitorRmePercent": 6.867154627469092,
+          "speedRatio": 5.482846766468665,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 117.4650087890257,
+          "competitor": "picomatch.parse",
+          "competitorOpsPerSecond": 12.401153782513974,
+          "generatedRmePercent": 10.59827031433659,
+          "competitorRmePercent": 151.55520758621498,
+          "speedRatio": 9.47210322918946,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 152.64796542137546,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.2694457143452247,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "picomatch.parse does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 92.43600748246122,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 2.565634166140777,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "picomatch.parse does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "graphql",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 240.76866921688267,
+          "competitor": "graphql",
+          "competitorOpsPerSecond": 147.01497371179224,
+          "generatedRmePercent": 4.569572762652658,
+          "competitorRmePercent": 14.565773028464491,
+          "speedRatio": 1.6377152825866903,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 207.2722316229076,
+          "competitor": "graphql",
+          "competitorOpsPerSecond": 79.64602380031717,
+          "generatedRmePercent": 3.2476386926018606,
+          "competitorRmePercent": 3.768545127900054,
+          "speedRatio": 2.602417819909827,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 152.5049083704759,
+          "competitor": "graphql",
+          "competitorOpsPerSecond": 187.4048732863193,
+          "generatedRmePercent": 1.7040707975252862,
+          "competitorRmePercent": 0.9072172829157285,
+          "speedRatio": 0.8137723725971479,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 73.85657684988057,
+          "competitor": "graphql",
+          "competitorOpsPerSecond": 94.99635760215837,
+          "generatedRmePercent": 16.68275066153721,
+          "competitorRmePercent": 2.7186213758262987,
+          "speedRatio": 0.777467459954512,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "html",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 511.0700818866988,
+          "competitor": "htmlparser2",
+          "competitorOpsPerSecond": 309.46929188501895,
+          "generatedRmePercent": 5.968708652116573,
+          "competitorRmePercent": 6.481355706189963,
+          "speedRatio": 1.6514403699756521,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 334.2483239853648,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 5.22863008173923,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "htmlparser2 does not support this output mode; comparison omitted."
+          ]
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 192.19945147125276,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.374438460468153,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "htmlparser2 does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 127.22098656552348,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.767401105938558,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "htmlparser2 does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "http",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 720.618966367668,
+          "competitor": "http-parser-js",
+          "competitorOpsPerSecond": 267.2306008228519,
+          "generatedRmePercent": 6.038785942896355,
+          "competitorRmePercent": 10.317479249809264,
+          "speedRatio": 2.6966184417082117,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 448.36575390541486,
+          "competitor": "http-parser-js",
+          "competitorOpsPerSecond": 226.81167532988403,
+          "generatedRmePercent": 5.505969064828301,
+          "competitorRmePercent": 4.788863261374734,
+          "speedRatio": 1.9768195497577172,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 461.3349815444043,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.9747465633368129,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "http-parser-js does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 241.7376223907613,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 4.791132900316025,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "http-parser-js does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "ini",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 467.7235485633379,
+          "competitor": "ini",
+          "competitorOpsPerSecond": 77.5983709638185,
+          "generatedRmePercent": 7.897425838973475,
+          "competitorRmePercent": 2.9688083124430182,
+          "speedRatio": 6.0274918500727495,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 298.2065370885149,
+          "competitor": "ini",
+          "competitorOpsPerSecond": 61.55906977242633,
+          "generatedRmePercent": 5.367256409782893,
+          "competitorRmePercent": 5.466519431371722,
+          "speedRatio": 4.844233972198329,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 250.0932971807025,
+          "competitor": "ini",
+          "competitorOpsPerSecond": 124.72054054361999,
+          "generatedRmePercent": 1.2692055728222043,
+          "competitorRmePercent": 17.161286231248038,
+          "speedRatio": 2.005229420034741,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 122.49497740581374,
+          "competitor": "ini",
+          "competitorOpsPerSecond": 37.38097235474083,
+          "generatedRmePercent": 13.686899151227905,
+          "competitorRmePercent": 7.287348746141295,
+          "speedRatio": 3.276933950335788,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "ipv4",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 264.8920022062393,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 97.1980931668364,
+          "generatedRmePercent": 4.54633727782668,
+          "competitorRmePercent": 4.621977436511893,
+          "speedRatio": 2.7252798236644766,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 131.12813904837788,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 74.55264536046147,
+          "generatedRmePercent": 4.662039177054415,
+          "competitorRmePercent": 3.5387724926095614,
+          "speedRatio": 1.7588663475906767,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 114.97132816275472,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 554.4849928969346,
+          "generatedRmePercent": 0.8297714405242842,
+          "competitorRmePercent": 12.93082046778731,
+          "speedRatio": 0.20734795284914972,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 48.667129004392166,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 64.80418362848681,
+          "generatedRmePercent": 27.268845253081675,
+          "competitorRmePercent": 6.750696377116215,
+          "speedRatio": 0.7509874560474971,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "ipv6",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 826.8925709191014,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 69.39489077836507,
+          "generatedRmePercent": 1.5908739763467385,
+          "competitorRmePercent": 2.9017077145587478,
+          "speedRatio": 11.91575578035059,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 672.2975119075934,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 68.18963657751125,
+          "generatedRmePercent": 1.127890171949191,
+          "competitorRmePercent": 4.262406726583843,
+          "speedRatio": 9.859232951672823,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 902.4929602931325,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 357.2872711587554,
+          "generatedRmePercent": 0.9563558900585871,
+          "competitorRmePercent": 1.8806333759691045,
+          "speedRatio": 2.5259588939907207,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 352.85698134519953,
+          "competitor": "ipaddr.js",
+          "competitorOpsPerSecond": 44.990134788194396,
+          "generatedRmePercent": 2.691179419258986,
+          "competitorRmePercent": 8.197019094879062,
+          "speedRatio": 7.8429856457729645,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "iso-duration",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 89.3234213084589,
+          "competitor": "Temporal.Duration",
+          "competitorOpsPerSecond": 18.526414716627986,
+          "generatedRmePercent": 2.576890288711822,
+          "competitorRmePercent": 100.36741286467479,
+          "speedRatio": 4.8214089274536525,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 82.05061860795817,
+          "competitor": "Temporal.Duration",
+          "competitorOpsPerSecond": 17.262241409373395,
+          "generatedRmePercent": 4.855694714751571,
+          "competitorRmePercent": 63.169894384512226,
+          "speedRatio": 4.753184517707225,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 81.65136995880925,
+          "competitor": "Temporal.Duration",
+          "competitorOpsPerSecond": 46.712797110907154,
+          "generatedRmePercent": 1.7807442170958137,
+          "competitorRmePercent": 4.4031310937902095,
+          "speedRatio": 1.7479443537699042,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 59.71005795998098,
+          "competitor": "Temporal.Duration",
+          "competitorOpsPerSecond": 17.080759796605754,
+          "generatedRmePercent": 4.240523912154266,
+          "competitorRmePercent": 65.7900296576496,
+          "speedRatio": 3.495749525840555,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "js-expr",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 120.74292689227948,
+          "competitor": "jsep",
+          "competitorOpsPerSecond": 134.477442845879,
+          "generatedRmePercent": 5.649570546568497,
+          "competitorRmePercent": 5.02920357770353,
+          "speedRatio": 0.897867510989629,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 53.83445642817127,
+          "competitor": "jsep",
+          "competitorOpsPerSecond": 88.23493469004543,
+          "generatedRmePercent": 5.904796684652784,
+          "competitorRmePercent": 4.255584360739052,
+          "speedRatio": 0.6101263248766796,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 36.179181040966924,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 4.243410459928005,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "jsep does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 30.82271770483836,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.3825999075533415,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "jsep does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "json",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 492.33758481177205,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 583.7982906251318,
+          "generatedRmePercent": 7.279947938880897,
+          "competitorRmePercent": 1.7724042274545733,
+          "speedRatio": 0.8433350914484118,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 290.88839104708245,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 450.62559579674746,
+          "generatedRmePercent": 5.6400810487204,
+          "competitorRmePercent": 2.3424871868316757,
+          "speedRatio": 0.6455212348352406,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 265.5962545189245,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 1957.7914448379606,
+          "generatedRmePercent": 1.099633679456451,
+          "competitorRmePercent": 0.9133108268811647,
+          "speedRatio": 0.13566115799474596,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 125.77612035541632,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 423.1164684802011,
+          "generatedRmePercent": 13.214482298209399,
+          "competitorRmePercent": 1.8257865261734305,
+          "speedRatio": 0.29726122645897857,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "json-flat",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 670.9943222904958,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 814.1015514220803,
+          "generatedRmePercent": 7.430167872706026,
+          "competitorRmePercent": 0.8799450834444843,
+          "speedRatio": 0.8242145235055707,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 516.5826860440006,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 705.3401075227436,
+          "generatedRmePercent": 4.798007363035795,
+          "competitorRmePercent": 0.8029096982214654,
+          "speedRatio": 0.7323880785091234,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 476.3372928209972,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 2470.866892881519,
+          "generatedRmePercent": 0.8588597790141586,
+          "competitorRmePercent": 7.826378283999544,
+          "speedRatio": 0.19278144613670137,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 263.84113125877616,
+          "competitor": "JSON.parse",
+          "competitorOpsPerSecond": 704.1128073011099,
+          "generatedRmePercent": 5.418676306600108,
+          "competitorRmePercent": 0.5219944351646655,
+          "speedRatio": 0.37471429083940233,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "jwt",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 2265.7894309402113,
+          "competitor": "compact JWS split",
+          "competitorOpsPerSecond": 2820.5062475950604,
+          "generatedRmePercent": 4.618364941666673,
+          "competitorRmePercent": 0.6124144878978517,
+          "speedRatio": 0.8033272157692134,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 1420.7635919847799,
+          "competitor": "compact JWS split",
+          "competitorOpsPerSecond": 1757.3972757357283,
+          "generatedRmePercent": 5.104240173930219,
+          "competitorRmePercent": 0.6606480854023834,
+          "speedRatio": 0.8084475898541393,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 1494.0122748697945,
+          "competitor": "compact JWS split",
+          "competitorOpsPerSecond": 9276.691026159182,
+          "generatedRmePercent": 0.5253486522901896,
+          "competitorRmePercent": 0.3965516575606114,
+          "speedRatio": 0.16105012775103267,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 868.395630388906,
+          "competitor": "compact JWS split",
+          "competitorOpsPerSecond": 2215.606880240234,
+          "generatedRmePercent": 3.0526998993713566,
+          "competitorRmePercent": 0.5051017635002275,
+          "speedRatio": 0.39194481572233947,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "less",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 538.8693900496904,
+          "competitor": "postcss-less",
+          "competitorOpsPerSecond": 4.668032375782727,
+          "generatedRmePercent": 0.38341545620004736,
+          "competitorRmePercent": 5.334941615973352,
+          "speedRatio": 115.4382289303068,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 427.2994843757153,
+          "competitor": "postcss-less normalized JSON",
+          "competitorOpsPerSecond": 4.592461172342408,
+          "generatedRmePercent": 0.5665454902336776,
+          "competitorRmePercent": 6.361377920027793,
+          "speedRatio": 93.04367926920742,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 342.18957759184235,
+          "competitor": "postcss-less stringify",
+          "competitorOpsPerSecond": 1090.8424757665032,
+          "generatedRmePercent": 0.7784095625932291,
+          "competitorRmePercent": 1.542175860945753,
+          "speedRatio": 0.31369293476713556,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 195.27723780119723,
+          "competitor": "postcss-less parse + stringify",
+          "competitorOpsPerSecond": 4.503490204908805,
+          "generatedRmePercent": 1.2750683226486292,
+          "competitorRmePercent": 4.770185206034292,
+          "speedRatio": 43.361310653755844,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "log",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1016.3915081752947,
+          "competitor": "regexp log fields",
+          "competitorOpsPerSecond": 4841.801884795085,
+          "generatedRmePercent": 5.076433203829564,
+          "competitorRmePercent": 2.3396134396703108,
+          "speedRatio": 0.2099200942870281,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 628.3267564227474,
+          "competitor": "regexp log fields",
+          "competitorOpsPerSecond": 2181.5032384478004,
+          "generatedRmePercent": 4.712204387843594,
+          "competitorRmePercent": 0.5994151063887851,
+          "speedRatio": 0.2880246727801418,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 624.9618673665293,
+          "competitor": "regexp log fields",
+          "competitorOpsPerSecond": 6548.687593891189,
+          "generatedRmePercent": 0.5635974287377657,
+          "competitorRmePercent": 0.4779112830318287,
+          "speedRatio": 0.09543314723846537,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 354.80681301241844,
+          "competitor": "regexp log fields",
+          "competitorOpsPerSecond": 2763.027806012631,
+          "generatedRmePercent": 4.568328735801256,
+          "competitorRmePercent": 0.7182744375550488,
+          "speedRatio": 0.12841232080267978,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "mac",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 473.68414216359025,
+          "competitor": "regexp MAC octets",
+          "competitorOpsPerSecond": 1049.5394988018022,
+          "generatedRmePercent": 6.015443591412882,
+          "competitorRmePercent": 0.8479258821460253,
+          "speedRatio": 0.4513256935106946,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 335.87826804236806,
+          "competitor": "regexp MAC octets",
+          "competitorOpsPerSecond": 610.6943736859433,
+          "generatedRmePercent": 6.165436685922743,
+          "competitorRmePercent": 0.9312056859823862,
+          "speedRatio": 0.5499940436901706,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 173.81765925638268,
+          "competitor": "regexp MAC octets",
+          "competitorOpsPerSecond": 1946.8464582452905,
+          "generatedRmePercent": 0.5669387680237379,
+          "competitorRmePercent": 0.5985316893015135,
+          "speedRatio": 0.08928164751782533,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 116.45771480710324,
+          "competitor": "regexp MAC octets",
+          "competitorOpsPerSecond": 679.4634379150295,
+          "generatedRmePercent": 1.2475256362613918,
+          "competitorRmePercent": 0.8946976369420298,
+          "speedRatio": 0.17139658782003056,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "markdown",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 641.3954000664236,
+          "competitor": "markdown-it",
+          "competitorOpsPerSecond": 144.64952772762823,
+          "generatedRmePercent": 8.808823133858553,
+          "competitorRmePercent": 8.415186711066054,
+          "speedRatio": 4.434134076636299,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 399.0114441594502,
+          "competitor": "markdown-it",
+          "competitorOpsPerSecond": 56.608585175329864,
+          "generatedRmePercent": 3.5019407543121064,
+          "competitorRmePercent": 1.5568677795612695,
+          "speedRatio": 7.048603015313306,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 380.26574859413574,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.6564600132338322,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "markdown-it does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 231.33078941766223,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.895500089939819,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "markdown-it does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "mentions",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 649.7030818332116,
+          "competitor": "regexp mentions",
+          "competitorOpsPerSecond": 464.4101004852395,
+          "generatedRmePercent": 7.817848012825554,
+          "competitorRmePercent": 3.84727109708181,
+          "speedRatio": 1.3989856834603047,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 333.7039140201814,
+          "competitor": "regexp mentions",
+          "competitorOpsPerSecond": 382.96049410378873,
+          "generatedRmePercent": 4.755100627701861,
+          "competitorRmePercent": 2.077008675192786,
+          "speedRatio": 0.8713794742748113,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 302.0614437861489,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.607579765365919,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "regexp mentions does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 191.5622443872396,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 7.454452629136572,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "regexp mentions does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "mime",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1278.6728303059426,
+          "competitor": "content-type",
+          "competitorOpsPerSecond": 2262.9157358042785,
+          "generatedRmePercent": 4.1508826803916135,
+          "competitorRmePercent": 1.2438442997992654,
+          "speedRatio": 0.565055432720954,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 749.463655703103,
+          "competitor": "content-type",
+          "competitorOpsPerSecond": 590.6030582787008,
+          "generatedRmePercent": 3.5758669694594847,
+          "competitorRmePercent": 0.7395066570862987,
+          "speedRatio": 1.268980316301439,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 868.4282404119651,
+          "competitor": "content-type",
+          "competitorOpsPerSecond": 3298.7796824321435,
+          "generatedRmePercent": 0.563132392403825,
+          "competitorRmePercent": 0.43299144100228126,
+          "speedRatio": 0.2632574236578556,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 484.36931966179355,
+          "competitor": "content-type",
+          "competitorOpsPerSecond": 1385.3796349073664,
+          "generatedRmePercent": 2.193545243965166,
+          "competitorRmePercent": 0.7247548937718857,
+          "speedRatio": 0.34962930553990784,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "npm-range",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 254.35928105309205,
+          "competitor": "semver.Range",
+          "competitorOpsPerSecond": 303.6541116037319,
+          "generatedRmePercent": 10.89884984591161,
+          "competitorRmePercent": 2.0153120628802985,
+          "speedRatio": 0.8376612445973742,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 164.66093555298983,
+          "competitor": "semver.Range",
+          "competitorOpsPerSecond": 61.51988533461151,
+          "generatedRmePercent": 2.174824484430889,
+          "competitorRmePercent": 1.1009820821963687,
+          "speedRatio": 2.6765481544282146,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 122.27521688348278,
+          "competitor": "semver.Range",
+          "competitorOpsPerSecond": 31062.944331999337,
+          "generatedRmePercent": 1.1648090663042674,
+          "competitorRmePercent": 0.1737977453926754,
+          "speedRatio": 0.0039363691856319485,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 81.29162559243066,
+          "competitor": "semver.Range",
+          "competitorOpsPerSecond": 254.93273854626224,
+          "generatedRmePercent": 1.8465458187926664,
+          "competitorRmePercent": 1.8364303515507912,
+          "speedRatio": 0.3188747983330466,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "pg-select",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1143.3035975627924,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 9.586868865714637,
+          "generatedRmePercent": 5.585615511281803,
+          "competitorRmePercent": 2.4044023450288816,
+          "speedRatio": 119.2572479687889,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 846.0096186951432,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 9.231982682573033,
+          "generatedRmePercent": 3.6315476455622755,
+          "competitorRmePercent": 3.30282945655914,
+          "speedRatio": 91.63899541234332,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 719.1238626332009,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 325.8712182567395,
+          "generatedRmePercent": 0.590728661005935,
+          "competitorRmePercent": 0.36157394895138595,
+          "speedRatio": 2.206773174016967,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 410.64925411622784,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 9.16963421437374,
+          "generatedRmePercent": 2.5770092009796524,
+          "competitorRmePercent": 1.6769276030864064,
+          "speedRatio": 44.783602542456926,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "proto",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 782.3979401007045,
+          "competitor": "protobufjs",
+          "competitorOpsPerSecond": 119.51912228144576,
+          "generatedRmePercent": 6.096152613654563,
+          "competitorRmePercent": 6.9419449112169325,
+          "speedRatio": 6.546215577606903,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 538.5274048892392,
+          "competitor": "protobufjs",
+          "competitorOpsPerSecond": 93.71408669656857,
+          "generatedRmePercent": 5.309045078298479,
+          "competitorRmePercent": 7.837557169294315,
+          "speedRatio": 5.746493658236311,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 513.6099326935145,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.5772318782531481,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "protobufjs does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 296.2201099222544,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 2.1454223802938928,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "protobufjs does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "route",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 498.23950186014196,
+          "competitor": "path-to-regexp",
+          "competitorOpsPerSecond": 207.9831046410541,
+          "generatedRmePercent": 8.032314750927453,
+          "competitorRmePercent": 7.1887599599002305,
+          "speedRatio": 2.3955768076451425,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 256.4040349262425,
+          "competitor": "path-to-regexp",
+          "competitorOpsPerSecond": 140.21951951257734,
+          "generatedRmePercent": 6.196280523675016,
+          "competitorRmePercent": 7.2730186901405345,
+          "speedRatio": 1.8285901693112256,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 241.91903928951442,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.6897521177050531,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "path-to-regexp does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 155.02138478171915,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.0060741843836567,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "path-to-regexp does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "rrule",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 639.6977384875391,
+          "competitor": "rrule",
+          "competitorOpsPerSecond": 79.0598796019821,
+          "generatedRmePercent": 8.846244756443431,
+          "competitorRmePercent": 1.1970208958138484,
+          "speedRatio": 8.091306762773028,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 386.7565031658782,
+          "competitor": "rrule",
+          "competitorOpsPerSecond": 38.35930068990571,
+          "generatedRmePercent": 3.455408670043103,
+          "competitorRmePercent": 0.9943834625135228,
+          "speedRatio": 10.082470123540432,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 398.0792279173784,
+          "competitor": "rrule",
+          "competitorOpsPerSecond": 422.7383929285147,
+          "generatedRmePercent": 0.8388201397299337,
+          "competitorRmePercent": 3.3096865562553743,
+          "speedRatio": 0.9416680258438078,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 191.69639195150467,
+          "competitor": "rrule",
+          "competitorOpsPerSecond": 66.56139447995025,
+          "generatedRmePercent": 8.309230969000255,
+          "competitorRmePercent": 0.8260617717069254,
+          "speedRatio": 2.8799936276762925,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "scss",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 482.61942418895137,
+          "competitor": "postcss-scss",
+          "competitorOpsPerSecond": 280.47091354301057,
+          "generatedRmePercent": 0.7537173114860235,
+          "competitorRmePercent": 3.746637682722629,
+          "speedRatio": 1.7207467900764728,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 396.2709023928833,
+          "competitor": "postcss-scss normalized JSON",
+          "competitorOpsPerSecond": 184.69646475067609,
+          "generatedRmePercent": 0.7851649342256852,
+          "competitorRmePercent": 1.9147054230375056,
+          "speedRatio": 2.1455251075206774,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 324.32954353513173,
+          "competitor": "postcss-scss stringify",
+          "competitorOpsPerSecond": 1102.2326286756843,
+          "generatedRmePercent": 0.7877781984857734,
+          "competitorRmePercent": 1.3566274711393975,
+          "speedRatio": 0.29424781583975496,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 187.24433237557702,
+          "competitor": "postcss-scss parse + stringify",
+          "competitorOpsPerSecond": 179.34300916765645,
+          "generatedRmePercent": 1.4776858634246874,
+          "competitorRmePercent": 4.874193840279979,
+          "speedRatio": 1.0440570460180811,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "search",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 629.1465139949086,
+          "competitor": "regexp query tokens",
+          "competitorOpsPerSecond": 1866.2163697255125,
+          "generatedRmePercent": 5.430457908180862,
+          "competitorRmePercent": 1.0003974957442274,
+          "speedRatio": 0.3371240999710258,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 366.055487393011,
+          "competitor": "regexp query tokens",
+          "competitorOpsPerSecond": 1121.434981608724,
+          "generatedRmePercent": 4.599967900131019,
+          "competitorRmePercent": 0.8235392595531342,
+          "speedRatio": 0.32641704012826145,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 307.95606480229935,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.6482450570298812,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "regexp query tokens does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 197.95083522323796,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 2.529482332774097,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "regexp query tokens does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "semver",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 729.3194592494805,
+          "competitor": "semver",
+          "competitorOpsPerSecond": 579.1329886896343,
+          "generatedRmePercent": 4.9226930655566115,
+          "competitorRmePercent": 0.7022271030928844,
+          "speedRatio": 1.2593298490898663,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 464.6516088701842,
+          "competitor": "semver",
+          "competitorOpsPerSecond": 274.32125651624625,
+          "generatedRmePercent": 2.149589715213205,
+          "competitorRmePercent": 6.22734737401695,
+          "speedRatio": 1.6938228366661987,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 493.2433839751546,
+          "competitor": "semver",
+          "competitorOpsPerSecond": 206744.26088924863,
+          "generatedRmePercent": 0.6037426384402127,
+          "competitorRmePercent": 0.1317006366198914,
+          "speedRatio": 0.0023857657854859703,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 276.1025208956137,
+          "competitor": "semver",
+          "competitorOpsPerSecond": 579.1972528794245,
+          "generatedRmePercent": 3.111163068789414,
+          "competitorRmePercent": 0.7221060898613425,
+          "speedRatio": 0.4766986022861746,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "spdx",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 434.3389415601801,
+          "competitor": "spdx-expression-parse",
+          "competitorOpsPerSecond": 149.23368651209688,
+          "generatedRmePercent": 8.055338393280342,
+          "competitorRmePercent": 0.7441266791075826,
+          "speedRatio": 2.9104617845446885,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 289.32109430945155,
+          "competitor": "spdx-expression-parse",
+          "competitorOpsPerSecond": 129.40087556365154,
+          "generatedRmePercent": 4.504321287686029,
+          "competitorRmePercent": 1.6245666974584214,
+          "speedRatio": 2.2358511335353075,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 258.8646049579396,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.5789326165162861,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "spdx-expression-parse does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 152.882922014202,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.7254778194746899,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "spdx-expression-parse does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "sql",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 550.1041287375865,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 5.921762175564453,
+          "generatedRmePercent": 7.788081660356891,
+          "competitorRmePercent": 4.306950768482181,
+          "speedRatio": 92.89534304628697,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 293.2439868276501,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 6.179456559804586,
+          "generatedRmePercent": 4.893545102382999,
+          "competitorRmePercent": 13.912126624123431,
+          "speedRatio": 47.454656245196325,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 287.8187804825973,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 271.74172916153344,
+          "generatedRmePercent": 0.7883928401709595,
+          "competitorRmePercent": 0.8280301136893434,
+          "speedRatio": 1.0591629830673044,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 171.3139910981974,
+          "competitor": "node-sql-parser",
+          "competitorOpsPerSecond": 6.360420086156594,
+          "generatedRmePercent": 6.827094046313668,
+          "competitorRmePercent": 1.7789133448314443,
+          "speedRatio": 26.93438307181329,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "toml",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 699.4880516898475,
+          "competitor": "@iarna/toml",
+          "competitorOpsPerSecond": 114.16501392747348,
+          "generatedRmePercent": 7.126197801530464,
+          "competitorRmePercent": 0.5981824423559428,
+          "speedRatio": 6.126991340221067,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 434.70786054402953,
+          "competitor": "@iarna/toml",
+          "competitorOpsPerSecond": 108.28712481762912,
+          "generatedRmePercent": 4.618685407727786,
+          "competitorRmePercent": 0.6190934062510729,
+          "speedRatio": 4.014400246346361,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 423.6855156875793,
+          "competitor": "@iarna/toml",
+          "competitorOpsPerSecond": 428.0752633864319,
+          "generatedRmePercent": 0.6401146712731853,
+          "competitorRmePercent": 0.4796788087506196,
+          "speedRatio": 0.9897453834072868,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 229.10800863505213,
+          "competitor": "@iarna/toml",
+          "competitorOpsPerSecond": 86.70455764835954,
+          "generatedRmePercent": 7.236531709465097,
+          "competitorRmePercent": 0.5346205498933637,
+          "speedRatio": 2.642398679481492,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "ulid",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 3524.724921655376,
+          "competitor": "ulid.decodeTime",
+          "competitorOpsPerSecond": 584.2273593173062,
+          "generatedRmePercent": 1.7646972873397286,
+          "competitorRmePercent": 0.5786333412354363,
+          "speedRatio": 6.033139094639735,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 1724.7392496083921,
+          "competitor": "ulid.decodeTime",
+          "competitorOpsPerSecond": 468.01041401836807,
+          "generatedRmePercent": 1.1257424290274596,
+          "competitorRmePercent": 0.44428188341126196,
+          "speedRatio": 3.685258271925336,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 2762.8300663588097,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 0.49117384292449334,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "ulid.decodeTime does not support this output mode; comparison omitted."
+          ]
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 1577.1237534717518,
+          "competitor": null,
+          "competitorOpsPerSecond": null,
+          "generatedRmePercent": 1.525463235948143,
+          "competitorRmePercent": null,
+          "speedRatio": null,
+          "status": "complete",
+          "unsupportedComparisons": [
+            "ulid.decodeTime does not support this output mode; comparison omitted."
+          ]
+        }
+      }
+    },
+    {
+      "package": "url",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1179.3140254625189,
+          "competitor": "WHATWG URL",
+          "competitorOpsPerSecond": 786.9631927321587,
+          "generatedRmePercent": 4.186480123862295,
+          "competitorRmePercent": 0.7335136610872451,
+          "speedRatio": 1.498563130212236,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 737.9245245511077,
+          "competitor": "WHATWG URL",
+          "competitorOpsPerSecond": 652.6096832501112,
+          "generatedRmePercent": 4.015165550344039,
+          "competitorRmePercent": 0.630185887890371,
+          "speedRatio": 1.130728739537105,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 820.841905507191,
+          "competitor": "WHATWG URL",
+          "competitorOpsPerSecond": 111552.70954398277,
+          "generatedRmePercent": 0.6329024453033272,
+          "competitorRmePercent": 0.15104488411692232,
+          "speedRatio": 0.007358332297464735,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 447.8778049212157,
+          "competitor": "WHATWG URL",
+          "competitorOpsPerSecond": 784.3161096857897,
+          "generatedRmePercent": 1.9460382864547245,
+          "competitorRmePercent": 0.6841150853976053,
+          "speedRatio": 0.5710424653914646,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "uuid",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 1102.2421213223074,
+          "competitor": "regexp UUID fields",
+          "competitorOpsPerSecond": 1610.6696149162392,
+          "generatedRmePercent": 4.343192588191991,
+          "competitorRmePercent": 0.6571519253924825,
+          "speedRatio": 0.6843378127423283,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 698.826277248765,
+          "competitor": "regexp UUID fields",
+          "competitorOpsPerSecond": 1068.9613009934376,
+          "generatedRmePercent": 3.5632842605911113,
+          "competitorRmePercent": 0.5449718828936077,
+          "speedRatio": 0.6537432894898176,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 792.3860865761967,
+          "competitor": "regexp UUID fields",
+          "competitorOpsPerSecond": 4643.259450978524,
+          "generatedRmePercent": 0.4819030680767721,
+          "competitorRmePercent": 0.3738438950657134,
+          "speedRatio": 0.17065298524492503,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 430.88314654046894,
+          "competitor": "regexp UUID fields",
+          "competitorOpsPerSecond": 1171.476413697471,
+          "generatedRmePercent": 2.039853275309331,
+          "competitorRmePercent": 0.6567887651932138,
+          "speedRatio": 0.3678120545171666,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "yaml",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 659.2612186931109,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 20.899711348745516,
+          "generatedRmePercent": 7.384156535575428,
+          "competitorRmePercent": 1.2488764480163121,
+          "speedRatio": 31.544034637238298,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 394.20744002871,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 20.4265345013598,
+          "generatedRmePercent": 4.594974913066702,
+          "competitorRmePercent": 0.3802151972005895,
+          "speedRatio": 19.2987919709272,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 321.9082593851193,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 38.09345078680669,
+          "generatedRmePercent": 0.5964937988273442,
+          "competitorRmePercent": 0.9897746179190847,
+          "speedRatio": 8.45048827911934,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 208.29428538726427,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 12.327024845236924,
+          "generatedRmePercent": 2.6484118417857925,
+          "competitorRmePercent": 1.3774770452522165,
+          "speedRatio": 16.897368830058596,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    },
+    {
+      "package": "yaml-block",
+      "status": "complete",
+      "modes": {
+        "parse": {
+          "generatedOpsPerSecond": 553.8650225650805,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 20.69177386735593,
+          "generatedRmePercent": 7.448770104142334,
+          "competitorRmePercent": 1.461334649561469,
+          "speedRatio": 26.767401679315537,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "json": {
+          "generatedOpsPerSecond": 358.83874489281266,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 20.401532397181235,
+          "generatedRmePercent": 4.770561701187125,
+          "competitorRmePercent": 1.137744964500878,
+          "speedRatio": 17.588813325727994,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "stringify": {
+          "generatedOpsPerSecond": 323.3006228125346,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 39.35594013803102,
+          "generatedRmePercent": 0.6023800815281934,
+          "competitorRmePercent": 0.21031826840506745,
+          "speedRatio": 8.214785917415243,
+          "status": "complete",
+          "unsupportedComparisons": []
+        },
+        "round-trip": {
+          "generatedOpsPerSecond": 192.87519904905906,
+          "competitor": "yaml",
+          "competitorOpsPerSecond": 12.279710889433938,
+          "generatedRmePercent": 5.117314698697185,
+          "competitorRmePercent": 2.8293567801254813,
+          "speedRatio": 15.706819222838405,
+          "status": "complete",
+          "unsupportedComparisons": []
+        }
+      }
+    }
+  ]
+}

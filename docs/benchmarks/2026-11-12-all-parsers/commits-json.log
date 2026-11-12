@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+commits: json — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/eaafcbdb      generated (checked inverse) 73.24us     13654.2     +/-2.5  214 documents         1.00x
+                              conventional-commits-parser 2.28ms      439.5       +/-0.6  214 documents         31.07x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/bd62b2db     generated (checked inverse) 294.02us    3401.1      +/-2.6  854 documents         1.00x
+                              conventional-commits-parser 9.22ms      108.4       +/-0.7  854 documents         31.37x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a75fb320    generated (checked inverse) 1.49ms      671.4       +/-5.3  4267 documents        1.00x
+                              conventional-commits-parser 46.40ms     21.6        +/-2.9  4267 documents        31.16x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/e4bf92db    generated (checked inverse) 7.70ms      129.8       +/-7.2  21334 documents       1.00x
+                              conventional-commits-parser 226.05ms    4.4         +/-0.9  21334 documents       29.34x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/561d5720   generated (checked inverse) 13.83ms     72.3        +/-1.5  42667 documents       1.00x
+                              conventional-commits-parser 460.50ms    2.2         +/-0.0  42667 documents       33.29x
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+pg-select: json — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/fbc8aa20      generated (checked inverse) 62.76us     15933.7     +/-3.9  107 documents         1.00x
+                              node-sql-parser             5.63ms      177.6       +/-2.7  107 documents         89.73x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/eb3d6aa0     generated (checked inverse) 254.41us    3930.6      +/-4.6  427 documents         1.00x
+                              node-sql-parser             21.49ms     46.5        +/-3.1  427 documents         84.45x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/df17c85b    generated (checked inverse) 1.18ms      846.0       +/-3.6  2134 documents        1.00x
+                              node-sql-parser             108.32ms    9.2         +/-3.3  2134 documents        91.64x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/dd557aa0    generated (checked inverse) 6.47ms      154.5       +/-9.2  10667 documents       1.00x
+                              node-sql-parser             537.01ms    1.9         +/-0.0  10667 documents       82.94x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/a948665b   generated (checked inverse) 11.80ms     84.8        +/-2.5  21334 documents       1.00x
+                              node-sql-parser             1.09s       0.9         +/-0.0  21334 documents       92.13x
+-----------------------------------------------------------------------------------------------------------------------

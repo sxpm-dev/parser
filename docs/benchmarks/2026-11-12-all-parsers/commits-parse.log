@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+commits: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/eaafcbdb      generated (checked inverse) 42.96us     23277.6     +/-3.6  214 documents         1.00x
+                              conventional-commits-parser 2.21ms      451.7       +/-0.5  214 documents         51.53x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/bd62b2db     generated (checked inverse) 167.34us    5975.7      +/-3.5  854 documents         1.00x
+                              conventional-commits-parser 8.76ms      114.1       +/-0.3  854 documents         52.35x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a75fb320    generated (checked inverse) 834.09us    1198.9      +/-4.5  4267 documents        1.00x
+                              conventional-commits-parser 43.96ms     22.7        +/-0.5  4267 documents        52.71x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/e4bf92db    generated (checked inverse) 4.27ms      234.2       +/-8.8  21334 documents       1.00x
+                              conventional-commits-parser 219.75ms    4.6         +/-5.0  21334 documents       51.46x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/561d5720   generated (checked inverse) 8.27ms      120.9       +/-9.8  42667 documents       1.00x
+                              conventional-commits-parser 442.28ms    2.3         +/-0.0  42667 documents       53.45x
+-----------------------------------------------------------------------------------------------------------------------

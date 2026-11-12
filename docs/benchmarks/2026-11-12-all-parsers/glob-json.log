@@ -1,0 +1,19 @@
+Pattern compiler/parser; does more work than source-record extraction.
+glob: json — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/08096d7b      generated (checked inverse) 470.08us    2127.3      +/-10.3 732 documents         1.00x
+                              picomatch.parse             1.97ms      508.0       +/-7.0  732 documents         4.19x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/6a4797e1     generated (checked inverse) 1.32ms      757.3       +/-7.3  2926 documents        1.00x
+                              picomatch.parse             8.94ms      111.8       +/-5.5  2926 documents        6.77x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/ee53dc02    generated (checked inverse) 8.51ms      117.5       +/-10.6 14629 documents       1.00x
+                              picomatch.parse             80.64ms     12.4        +/-151.614629 documents       9.47x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/52d87e04    generated (checked inverse) 30.88ms     32.4        +/-4.1  73143 documents       1.00x
+                              picomatch.parse             176.64ms    5.7         +/-5.4  73143 documents       5.72x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/774cc7e1   generated (checked inverse) 59.75ms     16.7        +/-2.6  146286 documents      1.00x
+                              picomatch.parse             359.74ms    2.8         +/-0.0  146286 documents      6.02x
+-----------------------------------------------------------------------------------------------------------------------

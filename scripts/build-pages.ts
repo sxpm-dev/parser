@@ -28,6 +28,10 @@ for(const file of files){
   if(/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(href))return href;
   const match=/^([^?#]*)(.*)$/.exec(href)!;let path:string;
   try{path=posix.normalize(posix.join(posix.dirname(file),decodeURI(match[1])));}catch{return href;}
+  if(path.startsWith('docs/benchmarks/')&&path.endsWith('.json')&&existsSync(resolve(repositoryRoot,path))){
+   const target=resolve(destination,path);mkdirSync(dirname(target),{recursive:true});copyFileSync(resolve(repositoryRoot,path),target);
+   const to=posix.relative(base,path);generatedLinks.push({from:output,to});return to+match[2];
+  }
   const doc=outputs.has(path)?path:outputs.has(`${path}/README.md`)?`${path}/README.md`:undefined;
   if(doc){const to=local(doc);generatedLinks.push({from:output,to});return to+match[2];}
   return `${repo}/${existsSync(resolve(repositoryRoot,path))&&readdirSafe(path)?'tree':'blob'}/main/${path.split('/').map(encodeURIComponent).join('/')}${match[2]}`;
@@ -55,7 +59,7 @@ for(const file of files){
   'Other languages':['env','log','commits','gitignore','glob','search','filter','mentions'],
  };
  const parserMenu=group('Parsers',`<a href="${local('README.md')}#parsers">All ${parserPackages.length} parsers<small>Browse the full catalogue</small></a><div class="parser-search"><label for="parser-search">Find a parser</label><input id="parser-search" type="search" placeholder="Search ${parserPackages.length} parsers…" autocomplete="off"></div><div class="parser-groups">${Object.entries(families).map(([label,names])=>`<section class="parser-family"><h2>${label}</h2>${names.map(name=>{const target=`packages/${name}/README.md`;const href=local(target);return `<a href="${href}" data-parser="${name}"${file===target?' aria-current="page"':''}>${name}</a>`;}).join('')}</section>`).join('')}</div><p class="parser-empty" role="status" hidden>No matching parsers. Try another name.</p>`,file.startsWith('packages/')&&!file.startsWith('packages/compiler/'),'parser-panel');
- const reports=[['docs/benchmarks/README.md','Benchmark overview','Methodology, comparisons and gates'],['docs/benchmarks/2026-11-11/RESULTS.md','Initial rebuild','Recorded CSS, Less and SCSS results'],['docs/benchmarks/2026-11-11-performance/RESULTS.md','Performance work','Compiler optimizations and measured results'],['docs/benchmarks/2026-11-11-migration/RESULTS.md','Migration verification','Correctness and competitor checks'],['docs/benchmarks/2026-11-11-all-parsers/README.md','Interrupted comparison','Partial run · awaiting a quiet-machine rerun']];
+ const reports=[['docs/benchmarks/2026-11-12-all-parsers/README.md','All-parser results','52 parsers · parse, JSON, reverse and round trip'],['docs/benchmarks/README.md','Benchmark overview','Methodology, comparisons and gates'],['docs/benchmarks/2026-11-11/RESULTS.md','Initial rebuild','Recorded CSS, Less and SCSS results'],['docs/benchmarks/2026-11-11-performance/RESULTS.md','Performance work','Compiler optimizations and measured results'],['docs/benchmarks/2026-11-11-migration/RESULTS.md','Migration verification','Correctness and competitor checks'],['docs/benchmarks/2026-11-11-all-parsers/README.md','Interrupted comparison','Partial run · awaiting a quiet-machine rerun']];
  const benchMenu=group('Benchmarks',reports.filter(([path])=>outputs.has(path)).map(([path,label,description])=>link(path,label,description)).join(''),file.startsWith('docs/benchmarks/'));
  const sections=headings.filter(h=>h.level>1);if(!sections.length&&headings[0])sections.push({...headings[0],text:'Overview'});
  const contents=`<ul class="toc-links">${sections.map(h=>`<li class="toc-level-${h.level}"><a href="#${escape(h.id)}" data-toc>${escape(h.text)}</a></li>`).join('')}</ul>`;

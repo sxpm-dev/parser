@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+iso-duration: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/7282871d      generated (checked inverse) 709.44us    1409.6      +/-9.8  569 documents         1.00x
+                              Temporal.Duration           4.88ms      204.8       +/-89.0 569 documents         6.88x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/250e4657     generated (checked inverse) 2.59ms      385.7       +/-9.3  2276 documents        1.00x
+                              Temporal.Duration           10.69ms     93.6        +/-66.7 2276 documents        4.12x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a984c9af    generated (checked inverse) 11.20ms     89.3        +/-2.6  11378 documents       1.00x
+                              Temporal.Duration           53.98ms     18.5        +/-100.411378 documents       4.82x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/effcb71d    generated (checked inverse) 73.88ms     13.5        +/-12.6 56889 documents       1.00x
+                              Temporal.Duration           852.12ms    1.2         +/-0.0  56889 documents       11.53x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/53ca89af   generated (checked inverse) 91.62ms     10.9        +/-5.3  113778 documents      1.00x
+                              Temporal.Duration           491.04ms    2.0         +/-0.0  113778 documents      5.36x
+-----------------------------------------------------------------------------------------------------------------------

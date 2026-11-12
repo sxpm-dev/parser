@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+iso-duration: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/7282871d      generated (checked inverse) 728.62us    1372.4      +/-2.3  569 documents         1.00x
+                              Temporal.Duration           1.30ms      770.6       +/-3.3  569 documents         1.78x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/250e4657     generated (checked inverse) 3.80ms      263.0       +/-2.2  2276 documents        1.00x
+                              Temporal.Duration           3.76ms      266.0       +/-1.8  2276 documents        0.99x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a984c9af    generated (checked inverse) 12.25ms     81.7        +/-1.8  11378 documents       1.00x
+                              Temporal.Duration           21.41ms     46.7        +/-4.4  11378 documents       1.75x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/effcb71d    generated (checked inverse) 67.64ms     14.8        +/-4.1  56889 documents       1.00x
+                              Temporal.Duration           129.68ms    7.7         +/-17.2 56889 documents       1.92x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/53ca89af   generated (checked inverse) 132.81ms    7.5         +/-3.4  113778 documents      1.00x
+                              Temporal.Duration           183.39ms    5.5         +/-23.5 113778 documents      1.38x
+-----------------------------------------------------------------------------------------------------------------------

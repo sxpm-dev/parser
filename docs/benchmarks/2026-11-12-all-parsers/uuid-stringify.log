@@ -1,0 +1,19 @@
+Independent lexical/field baseline.
+uuid: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/aebd17a6      generated (checked inverse) 67.50us     14815.9     +/-1.4  139 documents         1.00x
+                              regexp UUID fields          11.01us     90833.3     +/-0.4  139 documents         0.16x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/b4bcbe99     generated (checked inverse) 250.94us    3985.0      +/-0.4  554 documents         1.00x
+                              regexp UUID fields          42.66us     23440.0     +/-0.3  554 documents         0.17x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a26d77b7    generated (checked inverse) 1.26ms      792.4       +/-0.5  2768 documents        1.00x
+                              regexp UUID fields          215.37us    4643.3      +/-0.4  2768 documents        0.17x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/6d47bf4d    generated (checked inverse) 6.25ms      160.0       +/-0.6  13838 documents       1.00x
+                              regexp UUID fields          1.07ms      931.6       +/-0.7  13838 documents       0.17x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/4de54aa3   generated (checked inverse) 12.72ms     78.6        +/-1.0  27676 documents       1.00x
+                              regexp UUID fields          2.14ms      466.8       +/-0.6  27676 documents       0.17x
+-----------------------------------------------------------------------------------------------------------------------

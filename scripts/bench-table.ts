@@ -158,6 +158,7 @@ export async function runBenchTable(options: {
       first = false;
 
       if (skipped.has(contestant.label)) {
+        record({label,inputBytes:Buffer.byteLength(input),inputHash:hashInput(input),contestant:contestant.label,status:'skipped',reason:'Existing harness size limit for this competitor'});
         console.log(size.padEnd(12) + inputInfo.padEnd(18) + contestant.label.padEnd(parserWidth) + 'skipped (too slow for input)');
         continue;
       }

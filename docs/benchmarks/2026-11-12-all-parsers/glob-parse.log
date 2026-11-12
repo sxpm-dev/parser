@@ -1,0 +1,19 @@
+Pattern compiler/parser; does more work than source-record extraction.
+glob: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/08096d7b      generated (checked inverse) 308.64us    3240.0      +/-13.7 732 documents         1.00x
+                              picomatch.parse             1.28ms      779.1       +/-13.6 732 documents         4.16x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/6a4797e1     generated (checked inverse) 856.35us    1167.7      +/-11.9 2926 documents        1.00x
+                              picomatch.parse             6.53ms      153.0       +/-83.9 2926 documents        7.63x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/ee53dc02    generated (checked inverse) 3.69ms      270.7       +/-16.8 14629 documents       1.00x
+                              picomatch.parse             20.26ms     49.4        +/-6.9  14629 documents       5.48x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/52d87e04    generated (checked inverse) 14.11ms     70.9        +/-5.4  73143 documents       1.00x
+                              picomatch.parse             86.46ms     11.6        +/-13.0 73143 documents       6.13x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/774cc7e1   generated (checked inverse) 27.95ms     35.8        +/-3.9  146286 documents      1.00x
+                              picomatch.parse             345.83ms    2.9         +/-659.7146286 documents      12.37x
+-----------------------------------------------------------------------------------------------------------------------

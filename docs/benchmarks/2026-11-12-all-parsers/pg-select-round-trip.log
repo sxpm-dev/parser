@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+pg-select: round-trip — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/fbc8aa20      generated (checked inverse) 123.36us    8106.6      +/-2.4  107 documents         1.00x
+                              node-sql-parser             5.52ms      181.2       +/-2.3  107 documents         44.75x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/eb3d6aa0     generated (checked inverse) 483.57us    2067.9      +/-2.3  427 documents         1.00x
+                              node-sql-parser             21.69ms     46.1        +/-1.1  427 documents         44.84x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/df17c85b    generated (checked inverse) 2.44ms      410.6       +/-2.6  2134 documents        1.00x
+                              node-sql-parser             109.06ms    9.2         +/-1.7  2134 documents        44.78x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/dd557aa0    generated (checked inverse) 13.19ms     75.8        +/-8.1  10667 documents       1.00x
+                              node-sql-parser             541.78ms    1.8         +/-0.0  10667 documents       41.07x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/a948665b   generated (checked inverse) 23.85ms     41.9        +/-1.4  21334 documents       1.00x
+                              node-sql-parser             1.08s       0.9         +/-0.0  21334 documents       45.13x
+-----------------------------------------------------------------------------------------------------------------------

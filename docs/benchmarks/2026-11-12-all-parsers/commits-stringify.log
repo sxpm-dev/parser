@@ -1,0 +1,15 @@
+conventional-commits-parser does not support this output mode; comparison omitted.
+Native library output; output shape and validation work differ.
+commits: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/eaafcbdb      generated (checked inverse) 66.26us     15092.8     +/-0.6  214 documents         1.00x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/bd62b2db     generated (checked inverse) 258.49us    3868.6      +/-0.4  854 documents         1.00x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/a75fb320    generated (checked inverse) 1.29ms      775.2       +/-0.5  4267 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/e4bf92db    generated (checked inverse) 6.58ms      151.9       +/-0.8  21334 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/561d5720   generated (checked inverse) 13.54ms     73.9        +/-1.2  42667 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------

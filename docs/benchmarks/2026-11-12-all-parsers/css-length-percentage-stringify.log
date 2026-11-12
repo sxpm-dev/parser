@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+css-length-percentage: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/fa4d9647      generated (checked inverse) 246.02us    4064.7      +/-0.8  1024 documents        1.00x
+                              css-tree value              84.54us     11828.3     +/-1.2  1024 documents        0.34x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/83deca47     generated (checked inverse) 980.46us    1019.9      +/-0.6  4096 documents        1.00x
+                              css-tree value              333.20us    3001.2      +/-0.8  4096 documents        0.34x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/3e3a8a47    generated (checked inverse) 5.30ms      188.8       +/-2.0  20480 documents       1.00x
+                              css-tree value              1.67ms      597.6       +/-0.6  20480 documents       0.32x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/22054a47    generated (checked inverse) 24.86ms     40.2        +/-1.1  102400 documents      1.00x
+                              css-tree value              8.38ms      119.3       +/-0.9  102400 documents      0.34x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/5cc2ba47   generated (checked inverse) 50.30ms     19.9        +/-2.8  204800 documents      1.00x
+                              css-tree value              17.25ms     58.0        +/-3.0  204800 documents      0.34x
+-----------------------------------------------------------------------------------------------------------------------

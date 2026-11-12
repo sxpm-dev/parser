@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+pg-select: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/fbc8aa20      generated (checked inverse) 69.81us     14324.7     +/-0.5  107 documents         1.00x
+                              node-sql-parser             161.10us    6207.3      +/-0.9  107 documents         2.31x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/eb3d6aa0     generated (checked inverse) 274.32us    3645.4      +/-0.4  427 documents         1.00x
+                              node-sql-parser             620.74us    1611.0      +/-0.6  427 documents         2.26x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/df17c85b    generated (checked inverse) 1.39ms      719.1       +/-0.6  2134 documents        1.00x
+                              node-sql-parser             3.07ms      325.9       +/-0.4  2134 documents        2.21x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/dd557aa0    generated (checked inverse) 6.81ms      146.9       +/-0.6  10667 documents       1.00x
+                              node-sql-parser             15.43ms     64.8        +/-0.5  10667 documents       2.27x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/a948665b   generated (checked inverse) 13.61ms     73.5        +/-1.0  21334 documents       1.00x
+                              node-sql-parser             31.48ms     31.8        +/-1.4  21334 documents       2.31x
+-----------------------------------------------------------------------------------------------------------------------

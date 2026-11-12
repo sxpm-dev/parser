@@ -1,5 +1,7 @@
 # Benchmarks and gates
 
+[All 52 parsers: 12 November 2026](2026-11-12-all-parsers/README.md) — four modes, full size matrix, per-parser JSON reports.
+
 [Initial rebuild results](2026-11-11/RESULTS.md) · [Generic performance optimization](2026-11-11-performance/RESULTS.md)
 
 The existing `scripts/bench-table.ts`, `bench-fixture.ts`, `perf-gate.ts`, `size-gate.ts`, and esbuild browser bundler remain the platform. Only package registrations, the new public API and corpus providers changed. CSS's original `huge-page.css` fixture is preserved byte-for-byte.

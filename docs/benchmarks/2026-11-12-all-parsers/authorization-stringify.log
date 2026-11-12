@@ -1,0 +1,19 @@
+Independent two-field regexp baseline.
+authorization: stringify — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/6f9c2aa3      generated (checked inverse) 69.24us     14443.1     +/-0.9  366 documents         1.00x
+                              regexp auth fields          3.24us      308874.0    +/-0.5  366 documents         0.05x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/a3d206bc     generated (checked inverse) 274.64us    3641.1      +/-0.8  1463 documents        1.00x
+                              regexp auth fields          12.75us     78427.4     +/-0.4  1463 documents        0.05x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/0800c3c4    generated (checked inverse) 1.40ms      715.1       +/-2.0  7315 documents        1.00x
+                              regexp auth fields          63.51us     15745.1     +/-0.5  7315 documents        0.05x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/a285abaf    generated (checked inverse) 6.87ms      145.6       +/-1.0  36572 documents       1.00x
+                              regexp auth fields          322.78us    3098.0      +/-0.9  36572 documents       0.05x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/633956bc   generated (checked inverse) 13.63ms     73.4        +/-0.9  73143 documents       1.00x
+                              regexp auth fields          644.48us    1551.6      +/-0.8  73143 documents       0.05x
+-----------------------------------------------------------------------------------------------------------------------

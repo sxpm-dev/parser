@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+cache-control: parse — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/f72186d7      generated (checked inverse) 81.28us     12302.4     +/-4.6  223 documents         1.00x
+                              parse-cache-control         82.76us     12083.0     +/-0.9  223 documents         1.02x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/cb8e84d7     generated (checked inverse) 310.22us    3223.6      +/-4.6  891 documents         1.00x
+                              parse-cache-control         316.74us    3157.1      +/-0.6  891 documents         1.02x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/649f25d7    generated (checked inverse) 1.55ms      644.9       +/-6.6  4453 documents        1.00x
+                              parse-cache-control         1.62ms      618.6       +/-0.6  4453 documents        1.04x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/98182dd7    generated (checked inverse) 7.42ms      134.8       +/-9.2  22261 documents       1.00x
+                              parse-cache-control         8.16ms      122.5       +/-1.1  22261 documents       1.10x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/99394547   generated (checked inverse) 15.28ms     65.4        +/-11.1 44522 documents       1.00x
+                              parse-cache-control         16.54ms     60.5        +/-3.5  44522 documents       1.08x
+-----------------------------------------------------------------------------------------------------------------------

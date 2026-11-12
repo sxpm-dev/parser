@@ -1,5 +1,5 @@
 import { deepStrictEqual } from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Schema } from '../packages/compiler/src/schema.ts';
@@ -53,26 +53,47 @@ ${code('json', JSON.stringify(canonical))}
 
 Parsing this canonical source reproduces the value above. You can modify the value and stringify it again, provided it satisfies the schema. Reverse conversion is checked; it does not promise preservation of original whitespace or skipped comments.
 ${jsonUsage}
-## Benchmark results
-
-**Awaiting results.** This section is reserved for a future measured comparison. No timings or speedup claims are published here yet.
-
-| Measurement | This parser | Competitor | Comparison |
-| --- | --- | --- | --- |
-| Parse | Pending | Pending | Pending |
-| JSON conversion | Pending | Pending | Pending |
-| Reverse conversion | Pending | Pending | Pending |
-| Parse + reverse round trip | Pending | Pending | Pending |
-| Minified / gzip runtime size | Pending | Pending | Pending |
-
-The report will identify the competitor and version, fixture sizes, machine and runtime, measurement uncertainty, and differences in supported syntax or output shape. Unsupported comparisons will be marked explicitly.
-
-See [benchmark methodology and gates](../../docs/benchmarks/README.md) for the existing harness and [coverage and competitor wiring](../../docs/parser-migration.md) for package details.
+${benchmarkDocumentation(name)}
 
 ## Schema and source
 
 - [Schema examples and metadata](src/schema.ts)
 - [Generated parser](src/_generated/parser.ts)
 - [Package scripts](package.json)
+`;
+}
+
+function benchmarkDocumentation(name: string): string {
+  const reportDirectory = 'docs/benchmarks/2026-11-12-all-parsers';
+  const path = resolve(repositoryRoot, reportDirectory, `${name}.json`);
+  if (!existsSync(path)) return '## Benchmark results\n\n**Awaiting results.**';
+  const report = JSON.parse(readFileSync(path, 'utf8'));
+  const rows = report.modes.map((mode: any) => {
+    const selected = mode.rows.filter((row: any) => row.label === '100KB');
+    const ours = selected.find((row: any) => row.contestant.startsWith('generated'));
+    const theirs = selected.find((row: any) => !row.contestant.startsWith('generated'));
+    const valid = (row: any) => row?.hz > 0 && row.coverage && !row.error;
+    const rate = (row: any) => valid(row) ? `${row.hz.toFixed(1)} ±${row.rme.toFixed(1)}%` : '—';
+    const ratio = valid(ours) && valid(theirs) ? ours.hz / theirs.hz : null;
+    const noisy = Math.max(ours?.rme ?? 0, theirs?.rme ?? 0) > 10;
+    const comparison = ratio === null ? '—' : `${ratio.toFixed(ratio < 0.01 ? 4 : 2)}×${noisy ? '†' : ''}`;
+    const label = {parse:'Parse',json:'JSON',stringify:'Reverse conversion','round-trip':'Round trip'}[mode.mode as string] ?? mode.mode;
+    return `| ${label} | ${rate(ours)} | ${theirs?.contestant ?? 'Unsupported in adapter'} | ${rate(theirs)} | ${comparison} |`;
+  });
+  return `## Benchmark results
+
+Measured **12 November 2026**, Node 22.16.0 on Apple M2 Max. These are **100 KB** input/batch results. Rates are operations per second with relative margin of error; one operation processes the whole input/batch.
+
+| Mode | Generated ops/s | Competitor | Competitor ops/s | Throughput ratio |
+| --- | ---: | --- | ---: | ---: |
+${rows.join('\n')}
+
+Above 1× means higher generated throughput; below 1× means higher competitor throughput. † marks relative margin of error above 10% for either measurement. A dash means no supported comparison, not a win.
+
+Output shapes, supported syntax and validation work differ. Generated reverse conversion reconstructs and validates source; some competitor adapters return stored text. These measurements describe the benchmark corpus, not every input in the language.
+
+[Download full per-parser JSON](../../${reportDirectory}/${name}.json) · [All-parser report and methodology](../../${reportDirectory}/README.md) · [Environment and dependency versions](../../${reportDirectory}/manifest.json)
+
+The JSON includes all five sizes (5, 20, 100, 500 and 1000 KB), plus the CSS fixture where applicable, errors/skips, timing uncertainty and CPU snapshots. Runtime-size results are still pending for this report. Performance gates were not run and their thresholds were not changed.
 `;
 }

@@ -1,0 +1,15 @@
+picomatch.parse does not support this output mode; comparison omitted.
+Pattern compiler/parser; does more work than source-record extraction.
+gitignore: round-trip — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/5bd2e82b      generated (checked inverse) 521.62us    1917.1      +/-8.2  854 documents         1.00x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/adfacc2b     generated (checked inverse) 1.65ms      606.0       +/-5.4  3414 documents        1.00x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/8ddca101    generated (checked inverse) 8.17ms      122.4       +/-3.2  17067 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/2ef74c2b    generated (checked inverse) 43.71ms     22.9        +/-5.5  85334 documents       1.00x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/d95c9101   generated (checked inverse) 90.33ms     11.1        +/-3.8  170667 documents      1.00x
+-----------------------------------------------------------------------------------------------------------------------

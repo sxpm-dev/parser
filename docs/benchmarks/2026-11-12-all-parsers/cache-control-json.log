@@ -1,0 +1,19 @@
+Native library output; output shape and validation work differ.
+cache-control: json — batched independent documents
+size        input             parser                      avg time    ops/s       +/-     units                 rel
+---------------------------------------------------------------------------------------------------------------------------
+5KB         5KB/f72186d7      generated (checked inverse) 117.14us    8537.1      +/-3.6  223 documents         1.00x
+                              parse-cache-control         106.18us    9417.9      +/-1.3  223 documents         0.91x
+-----------------------------------------------------------------------------------------------------------------------
+20KB        20KB/cb8e84d7     generated (checked inverse) 443.33us    2255.6      +/-3.8  891 documents         1.00x
+                              parse-cache-control         409.40us    2442.6      +/-0.5  891 documents         0.92x
+-----------------------------------------------------------------------------------------------------------------------
+100KB       100KB/649f25d7    generated (checked inverse) 2.24ms      446.4       +/-4.9  4453 documents        1.00x
+                              parse-cache-control         2.08ms      481.8       +/-0.7  4453 documents        0.93x
+-----------------------------------------------------------------------------------------------------------------------
+500KB       500KB/98182dd7    generated (checked inverse) 11.20ms     89.3        +/-9.4  22261 documents       1.00x
+                              parse-cache-control         10.46ms     95.6        +/-1.2  22261 documents       0.93x
+-----------------------------------------------------------------------------------------------------------------------
+1000KB      1000KB/99394547   generated (checked inverse) 22.43ms     44.6        +/-9.1  44522 documents       1.00x
+                              parse-cache-control         20.64ms     48.4        +/-0.7  44522 documents       0.92x
+-----------------------------------------------------------------------------------------------------------------------
